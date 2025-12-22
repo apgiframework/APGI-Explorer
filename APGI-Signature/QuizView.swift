@@ -1,4 +1,5 @@
 import SwiftUI
+import Intents
 
 #if canImport(UIKit)
 import UIKit
@@ -8,85 +9,139 @@ struct QuizView: View {
     @StateObject private var quizModel = QuizModel()
     @State private var currentQuestionIndex = 0
     @State private var showExitAlert = false
+    @State private var handoffActivity: NSUserActivity?
     
     var body: some View {
+        mainContent
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Exit") {
+                        showExitAlert = true
+                    }
+                }
+            }
+            .alert("Exit Quiz?", isPresented: $showExitAlert) {
+                Button("Continue Quiz", role: .cancel) { }
+                Button("Exit", role: .destructive) {
+                    // Navigate back
+                }
+            } message: {
+                Text("Your progress will be lost if you exit now.")
+            }
+            .onAppear {
+                setupHandoffActivity()
+            }
+            .onChange(of: currentQuestionIndex) { oldValue, newValue in
+                updateHandoffActivity()
+            }
+            .onChange(of: quizModel.answers) { oldValue, newValue in
+                updateHandoffActivity()
+            }
+            .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
+                if let restoredAnswers = HandoffActivity.restoreUserActivity(userActivity, currentQuestionIndex: $currentQuestionIndex) {
+                    quizModel.restoreAnswers(restoredAnswers)
+                }
+            }
+            .userActivity(HandoffActivity.activityType) { activity in
+                // This ensures the activity is updated in the system
+                if let handoffActivity = handoffActivity {
+                    activity.userInfo = handoffActivity.userInfo
+                }
+            }
+    }
+    
+    private var mainContent: some View {
         VStack(spacing: 0) {
-            // Progress Bar
-            ProgressView(value: Double(currentQuestionIndex + 1), total: Double(quizModel.questions.count))
-                .progressViewStyle(.linear)
-                .tint(.blue)
-                .padding()
-            
-            // Progress Text
-            Text("Question \(currentQuestionIndex + 1) of \(quizModel.questions.count)")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            LiveScoreTracker(quizModel: quizModel)
-                .padding(.horizontal)
-
-            // Current Section
-            Text(sectionName(for: quizModel.questions[currentQuestionIndex]))
-                .font(.subheadline)
-                .foregroundColor(.blue)
-                .padding(.vertical, 8)
-            
+            progressBarSection
+            progressTextSection
+            liveScoreSection
+            currentSectionSection
             if currentQuestionIndex < quizModel.questions.count {
-                QuestionView(
-                    question: quizModel.questions[currentQuestionIndex],
-                    selectedAnswer: quizModel.answers[quizModel.questions[currentQuestionIndex].id]
-                ) { answer in
-                    quizModel.selectAnswer(for: quizModel.questions[currentQuestionIndex].id, answer: answer)
+                questionSection
+                navigationButtonsSection
+            }
+        }
+    }
+    
+    private var progressBarSection: some View {
+        ProgressView(value: Double(currentQuestionIndex + 1), total: Double(quizModel.questions.count))
+            .progressViewStyle(.linear)
+            .tint(.blue)
+            .padding()
+    }
+    
+    private var progressTextSection: some View {
+        Text("Question \(currentQuestionIndex + 1) of \(quizModel.questions.count)")
+            .font(.caption)
+            .foregroundColor(.secondary)
+    }
+    
+    private var liveScoreSection: some View {
+        LiveScoreTracker(quizModel: quizModel)
+            .padding(.horizontal)
+    }
+    
+    private var currentSectionSection: some View {
+        Text(sectionName(for: quizModel.questions[currentQuestionIndex]))
+            .font(.subheadline)
+            .foregroundColor(.blue)
+            .padding(.vertical, 8)
+    }
+    
+    private var questionSection: some View {
+        QuestionView(
+            question: quizModel.questions[currentQuestionIndex],
+            selectedAnswer: quizModel.answers[quizModel.questions[currentQuestionIndex].id]
+        ) { answer in
+            quizModel.selectAnswer(for: quizModel.questions[currentQuestionIndex].id, answer: answer)
+        }
+    }
+    
+    private var navigationButtonsSection: some View {
+        HStack {
+            if currentQuestionIndex > 0 {
+                Button(action: { currentQuestionIndex -= 1 }) {
+                    Label("Previous", systemImage: "chevron.left")
                 }
-                
-                // Navigation Buttons
-                HStack {
-                    if currentQuestionIndex > 0 {
-                        Button(action: { currentQuestionIndex -= 1 }) {
-                            Label("Previous", systemImage: "chevron.left")
-                        }
-                        .buttonStyle(.bordered)
+                .buttonStyle(.bordered)
+            }
+            
+            Spacer()
+            
+            if currentQuestionIndex < quizModel.questions.count - 1 {
+                Button(action: {
+                    if quizModel.answers[quizModel.questions[currentQuestionIndex].id] != nil {
+                        currentQuestionIndex += 1
                     }
-                    
-                    Spacer()
-                    
-                    if currentQuestionIndex < quizModel.questions.count - 1 {
-                        Button(action: {
-                            if quizModel.answers[quizModel.questions[currentQuestionIndex].id] != nil {
-                                currentQuestionIndex += 1
-                            }
-                        }) {
-                            Label("Next", systemImage: "chevron.right")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(quizModel.answers[quizModel.questions[currentQuestionIndex].id] == nil)
-                    } else {
-                        NavigationLink(destination: ResultsView(quizModel: quizModel)) {
-                            Label("See Results", systemImage: "chart.bar.fill")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!quizModel.isComplete)
-                    }
+                }) {
+                    Label("Next", systemImage: "chevron.right")
                 }
-                .padding()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Exit") {
-                    showExitAlert = true
+                .buttonStyle(.borderedProminent)
+                .disabled(quizModel.answers[quizModel.questions[currentQuestionIndex].id] == nil)
+            } else {
+                NavigationLink(destination: ResultsView(quizModel: quizModel)) {
+                    Label("See Results", systemImage: "chart.bar.fill")
                 }
+                .buttonStyle(.borderedProminent)
+                .disabled(!quizModel.isComplete)
             }
         }
-        .alert("Exit Quiz?", isPresented: $showExitAlert) {
-            Button("Continue Quiz", role: .cancel) { }
-            Button("Exit", role: .destructive) {
-                // Navigate back
-            }
-        } message: {
-            Text("Your progress will be lost if you exit now.")
-        }
+        .padding()
+    }
+    
+    private func setupHandoffActivity() {
+        handoffActivity = HandoffActivity.createUserActivity(
+            quizModel: quizModel,
+            currentQuestionIndex: currentQuestionIndex
+        )
+    }
+    
+    private func updateHandoffActivity() {
+        handoffActivity = HandoffActivity.createUserActivity(
+            quizModel: quizModel,
+            currentQuestionIndex: currentQuestionIndex
+        )
     }
     
     private func sectionName(for question: QuizQuestion) -> String {

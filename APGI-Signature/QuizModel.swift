@@ -560,6 +560,12 @@ class QuizModel: ObservableObject {
         // Invalidate cached validation result
         _validationResult = nil
     }
+    
+    func restoreAnswers(_ restoredAnswers: [Int: Int]) {
+        answers = restoredAnswers
+        // Invalidate cached validation result
+        _validationResult = nil
+    }
 
     func questionsNeededForConfidence(target: Double = 0.9) -> Int? {
         let currentConfidence = calculateResponseConfidence()
