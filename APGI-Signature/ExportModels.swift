@@ -31,12 +31,14 @@ enum ExportFormat {
     case pdf
     case json
     case text
+    case html
     
     var fileExtension: String {
         switch self {
         case .pdf: return "pdf"
         case .json: return "json"
         case .text: return "txt"
+        case .html: return "html"
         }
     }
     
@@ -45,6 +47,7 @@ enum ExportFormat {
         case .pdf: return "application/pdf"
         case .json: return "application/json"
         case .text: return "text/plain"
+        case .html: return "text/html"
         }
     }
 }

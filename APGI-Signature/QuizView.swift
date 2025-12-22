@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 struct QuizView: View {
     @StateObject private var quizModel = QuizModel()
     @State private var currentQuestionIndex = 0
@@ -18,6 +22,9 @@ struct QuizView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
+            LiveScoreTracker(quizModel: quizModel)
+                .padding(.horizontal)
+
             // Current Section
             Text(sectionName(for: quizModel.questions[currentQuestionIndex]))
                 .font(.subheadline)
@@ -96,11 +103,83 @@ struct QuizView: View {
     }
 }
 
+private var toolTipBackground: Color {
+    #if os(macOS)
+    Color(NSColor.windowBackgroundColor).opacity(0.9)
+    #else
+    Color(uiColor: .systemGray6)
+    #endif
+}
+
+private struct QuestionOptionRow: View {
+    let option: QuizOption
+    let isSelected: Bool
+    @Binding var tooltipOptionID: UUID?
+    let onSelect: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button(action: onSelect) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: isSelected ? "circle.fill" : "circle")
+                        .foregroundColor(isSelected ? .blue : .gray)
+                        .font(.title3)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(option.text)
+                            .foregroundColor(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(option.note)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button(action: toggleTooltip) {
+                        Image(systemName: "info.circle")
+                            .font(.title3)
+                            .foregroundColor(.blue.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isSelected ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                )
+            }
+            .buttonStyle(.plain)
+
+            if tooltipOptionID == option.id {
+                Text(option.tooltip)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(toolTipBackground)
+                    )
+            }
+        }
+    }
+
+    private func toggleTooltip() {
+        tooltipOptionID = tooltipOptionID == option.id ? nil : option.id
+    }
+}
+
 // Enhanced QuestionView with selection state
 struct QuestionView: View {
     let question: QuizQuestion
     let selectedAnswer: Int?
     let onAnswer: (Int) -> Void
+    @State private var tooltipOptionID: UUID?
     
     var body: some View {
         ScrollView {
@@ -111,35 +190,14 @@ struct QuestionView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 
                 ForEach(question.options) { option in
-                    Button(action: { onAnswer(option.value) }) {
-                        HStack(alignment: .top, spacing: 12) {
-                            // Radio button
-                            Image(systemName: selectedAnswer == option.value ? "circle.fill" : "circle")
-                                .foregroundColor(selectedAnswer == option.value ? .blue : .gray)
-                                .font(.title3)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(option.text)
-                                    .foregroundColor(.primary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Text(option.note)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
+                    QuestionOptionRow(
+                        option: option,
+                        isSelected: selectedAnswer == option.value,
+                        tooltipOptionID: $tooltipOptionID,
+                        onSelect: {
+                            onAnswer(option.value)
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(selectedAnswer == option.value ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(selectedAnswer == option.value ? Color.blue : Color.clear, lineWidth: 2)
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    )
                 }
             }
             .padding()

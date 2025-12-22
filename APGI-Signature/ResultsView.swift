@@ -15,6 +15,11 @@ struct ResultsView: View {
     @State private var showSavedAlert = false
     @State private var selectedTab = 0
     @StateObject private var stateModel = StateModel()
+    @Environment(\.appDependencies) private var dependencies
+
+    private var analytics: AnalyticsService {
+        dependencies.getAnalyticsService()
+    }
 
     private var apgiProfile: APGIProfile {
         quizModel.calculateScore().profile
@@ -103,6 +108,10 @@ struct ResultsView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Your results have been saved to '\(profileName)'.")
+        }
+        .onAppear {
+            analytics.track(event: .quizCompleted(resultStateId: resultStateId))
+            analytics.setUserProperty(profileType.rawValue, forKey: "recentProfileType")
         }
     }
 
@@ -234,7 +243,7 @@ struct ResultsView: View {
     }
 
     private func interpretEpsilon(_ value: Double) -> String {
-        apgiProfile.epsilonCategory.description
+        apgiProfile.epsilonCategory.rawValue
     }
 
     private func interpretPrecision(_ value: Double) -> String {
@@ -258,6 +267,7 @@ struct ResultsView: View {
             name: profileName,
             results: quizModel.calculateRawScore()
         )
+        analytics.track(event: .profileCreated)
         showSavedAlert = true
         profileName = ""
     }
@@ -270,6 +280,10 @@ struct ResultsView: View {
             dateModified: Date(),
             results: quizModel.calculateRawScore()
         )
+    }
+
+    private var resultStateId: Int {
+        profileType.likelyStates.first?.stateId ?? stateModel.states.first?.id ?? 0
     }
 }
 

@@ -7,6 +7,11 @@ import AppKit
 
 struct PsychologicalStatesView: View {
     @StateObject private var stateModel = StateModel()
+    @Environment(\.appDependencies) private var dependencies
+
+    private var searchService: StateSearchService {
+        dependencies.getStateSearchService()
+    }
     @State private var searchText = ""
     @State private var selectedParameter = "All"
 
@@ -16,10 +21,7 @@ struct PsychologicalStatesView: View {
         var result = stateModel.states
 
         if !searchText.isEmpty {
-            result = result.filter { state in
-                state.name.localizedCaseInsensitiveContains(searchText) ||
-                state.description.localizedCaseInsensitiveContains(searchText)
-            }
+            result = searchService.search(query: searchText, in: result)
         }
 
         if let key = parameterKey(for: selectedParameter) {

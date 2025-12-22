@@ -86,47 +86,7 @@ struct ScoringWeights {
 
 // MARK: - Profile Models
 
-enum EpsilonLevel: String, CaseIterable {
-    case veryLow = "Very Low"
-    case low = "Low"
-    case moderate = "Moderate"
-    case high = "High"
-    case veryHigh = "Very High"
-    
-    var description: String {
-        switch self {
-        case .veryLow: return "Hardly notice prediction errors"
-        case .low: return "Notice only major inconsistencies"
-        case .moderate: return "Moderately sensitive to errors"
-        case .high: return "Highly sensitive to mismatches"
-        case .veryHigh: return "Extremely sensitive to any inconsistency"
-        }
-    }
-}
-
-enum PrecisionLevel: String, CaseIterable {
-    case veryLow = "Very Low"
-    case low = "Low"
-    case moderate = "Moderate"
-    case high = "High"
-    case veryHigh = "Very High"
-}
-
-enum ThresholdLevel: String, CaseIterable {
-    case veryLow = "Very Low"
-    case low = "Low"
-    case moderate = "Moderate"
-    case high = "High"
-    case veryHigh = "Very High"
-}
-
-enum SomaticLevel: String, CaseIterable {
-    case veryLow = "Very Low"
-    case low = "Low"
-    case moderate = "Moderate"
-    case high = "High"
-    case veryHigh = "Very High"
-}
+// Using ParameterLevel from ParameterValueTypes.swift instead of separate enums
 
 struct APGIProfile: Codable {
     var epsilon: Double          // 0-100 normalized
@@ -137,7 +97,7 @@ struct APGIProfile: Codable {
     var temporalStability: Double
     var environmentalFit: Double
     
-    var epsilonCategory: EpsilonLevel {
+    var epsilonCategory: ParameterLevel {
         switch epsilon {
         case 0..<25: return .veryLow
         case 25..<40: return .low
@@ -147,7 +107,7 @@ struct APGIProfile: Codable {
         }
     }
     
-    var precisionCategory: PrecisionLevel {
+    var precisionCategory: ParameterLevel {
         switch precision {
         case 0..<25: return .veryLow
         case 25..<40: return .low
@@ -157,7 +117,7 @@ struct APGIProfile: Codable {
         }
     }
     
-    var thresholdCategory: ThresholdLevel {
+    var thresholdCategory: ParameterLevel {
         switch threshold {
         case 0..<25: return .veryLow
         case 25..<40: return .low
@@ -167,7 +127,7 @@ struct APGIProfile: Codable {
         }
     }
     
-    var somaticCategory: SomaticLevel {
+    var somaticCategory: ParameterLevel {
         switch somaticBias {
         case 0..<25: return .veryLow
         case 25..<40: return .low
@@ -601,6 +561,30 @@ class QuizModel: ObservableObject {
         _validationResult = nil
     }
 
+    func questionsNeededForConfidence(target: Double = 0.9) -> Int? {
+        let currentConfidence = calculateResponseConfidence()
+        guard currentConfidence < target, answers.count < questions.count else {
+            return nil
+        }
+
+        let remaining = questions.count - answers.count
+        guard remaining > 0 else { return nil }
+
+        let shortfall = target - currentConfidence
+        let capacity = 1 - currentConfidence
+        let estimatedQuestions = Int(ceil(Double(remaining) * max(0, shortfall / max(capacity, 0.01))))
+        return min(remaining, max(1, estimatedQuestions))
+    }
+
+    func confidenceLevel(for parameter: String) -> Double {
+        let parameterQuestions = questions.filter { $0.parameter == parameter }
+        guard !parameterQuestions.isEmpty else { return 0.0 }
+        let answered = parameterQuestions.filter { answers[$0.id] != nil }.count
+        let completionRatio = Double(answered) / Double(parameterQuestions.count)
+        let globalConfidence = calculateResponseConfidence()
+        return min(1, completionRatio * 0.7 + globalConfidence * 0.3)
+    }
+
     // MARK: - Validation & Response Analysis
     
     /// Validates response consistency and patterns
@@ -744,40 +728,18 @@ class QuizModel: ObservableObject {
     // MARK: - Scoring
     
     func calculateScore() -> (profile: APGIProfile, validation: ValidationResult) {
-        var rawScores = [String: Double]()
-        var maxPossible = [String: Double]()
-        
-        // Calculate weighted raw scores
-        for question in questions {
-            guard let answer = answers[question.id] else { continue }
-            
-            let weight = ScoringWeights.questionReliability[question.id] ?? 0.8
-            let paramWeight = ScoringWeights.parameterWeights[question.parameter] ?? 1.0
-            
-            let weightedValue = Double(answer) * weight * paramWeight
-            rawScores[question.parameter, default: 0] += weightedValue
-            maxPossible[question.parameter, default: 0] += 4.0 * weight * paramWeight
-        }
-        
-        // Normalize to percentiles (0-100 scale)
-        var normalizedScores = [String: Double]()
-        for (param, raw) in rawScores {
-            guard let max = maxPossible[param], max > 0 else { continue }
-            normalizedScores[param] = (raw / max) * 100
-        }
-        
-        // Calculate derived metrics
+        let (rawScores, maxPossible) = accumulateScores()
+        let normalizedScores = normalizedPercentiles(rawScores: rawScores, maxPossible: maxPossible)
+
         let validation = validateResponses()
-        
-        // Adjust scores based on validation confidence
+
         var adjustedScores = normalizedScores
         if !validation.isValid {
-            // Apply penalty to scores if validation fails
             for (param, score) in adjustedScores {
                 adjustedScores[param] = score * validation.confidence
             }
         }
-        
+
         let profile = APGIProfile(
             epsilon: adjustedScores["epsilon"] ?? 0,
             precision: adjustedScores["precision"] ?? 0,
@@ -787,8 +749,23 @@ class QuizModel: ObservableObject {
             temporalStability: normalizedScores["temporal"] ?? 0,
             environmentalFit: normalizedScores["environment"] ?? 0
         )
-        
+
         return (profile, validation)
+    }
+
+    func calculatePartialScore() -> APGIProfile {
+        let (rawScores, maxPossible) = accumulateScores()
+        let normalizedScores = normalizedPercentiles(rawScores: rawScores, maxPossible: maxPossible)
+
+        return APGIProfile(
+            epsilon: normalizedScores["epsilon"] ?? 0,
+            precision: normalizedScores["precision"] ?? 0,
+            threshold: normalizedScores["threshold"] ?? 0,
+            somaticBias: normalizedScores["somatic"] ?? 0,
+            interactionScore: normalizedScores["interactions"] ?? 0,
+            temporalStability: normalizedScores["temporal"] ?? 0,
+            environmentalFit: normalizedScores["environment"] ?? 0
+        )
     }
     
     private func calculateInteractionScore(from rawScores: [String: Double]) -> Double {
@@ -798,17 +775,46 @@ class QuizModel: ObservableObject {
         let threshold = rawScores["threshold"] ?? 0
         let somatic = rawScores["somatic"] ?? 0
         let interactions = rawScores["interactions"] ?? 0
-        
+
         // Weighted interaction score
         let interactionWeight = 0.6
         let derivedWeight = 0.4
-        
-        let rawInteractionScore = (interactions * interactionWeight) + 
-            ((epsilon * precision * 0.3 + epsilon * somatic * 0.3 + threshold * (1 - epsilon/100) * 0.4) * derivedWeight)
-        
+
+        let rawInteractionScore = (interactions * interactionWeight) +
+            ((epsilon * precision * 0.3 + epsilon * somatic * 0.3 + threshold * (1 - epsilon / 100) * 0.4) * derivedWeight)
+
         // Normalize (assuming max possible interaction score)
         let maxInteractionScore = 20.0 // Approximate max based on question weights
         return min(100, (rawInteractionScore / maxInteractionScore) * 100)
+    }
+
+    private func accumulateScores() -> ([String: Double], [String: Double]) {
+        var rawScores = [String: Double]()
+        var maxPossible = [String: Double]()
+
+        for question in questions {
+            guard let answer = answers[question.id] else { continue }
+
+            let weight = ScoringWeights.questionReliability[question.id] ?? 0.8
+            let paramWeight = ScoringWeights.parameterWeights[question.parameter] ?? 1.0
+
+            let weightedValue = Double(answer) * weight * paramWeight
+            rawScores[question.parameter, default: 0] += weightedValue
+            maxPossible[question.parameter, default: 0] += 4.0 * weight * paramWeight
+        }
+
+        return (rawScores, maxPossible)
+    }
+
+    private func normalizedPercentiles(rawScores: [String: Double], maxPossible: [String: Double]) -> [String: Double] {
+        var normalizedScores = [String: Double]()
+
+        for (param, raw) in rawScores {
+            guard let max = maxPossible[param], max > 0 else { continue }
+            normalizedScores[param] = (raw / max) * 100
+        }
+
+        return normalizedScores
     }
     
     // Legacy method for backward compatibility
@@ -844,13 +850,58 @@ struct QuizOption: Identifiable, Hashable {
     let id = UUID()
     let text: String
     let note: String
+    let scientificBasis: String?
+    let example: String?
+    let relatedStates: [Int]?
     let value: Int
-    
+
+    init(
+        text: String,
+        note: String,
+        scientificBasis: String? = nil,
+        example: String? = nil,
+        relatedStates: [Int]? = nil,
+        value: Int
+    ) {
+        self.text = text
+        self.note = note
+        self.scientificBasis = scientificBasis
+        self.example = example
+        self.relatedStates = relatedStates
+        self.value = value
+    }
+
+    init(text: String, note: String, value: Int) {
+        self.init(text: text, note: note, scientificBasis: nil, example: nil, relatedStates: nil, value: value)
+    }
+
+    var tooltip: String {
+        let basis = scientificBasis ?? "Additional scientific context is being compiled."
+        let exampleText = example.map { "Example: \($0)\n" } ?? ""
+        let related = relatedStates?
+            .map { getStateName($0) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+        let relatedText = related ?? "No specific states linked yet."
+
+        return """
+        This response suggests: \(note)
+
+        Scientific basis: \(basis)
+
+        \(exampleText)People who select this often experience: \(relatedText)
+        """
+    }
+
     static func == (lhs: QuizOption, rhs: QuizOption) -> Bool {
         lhs.id == rhs.id
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
+}
+
+private func getStateName(_ id: Int) -> String {
+    PsychologicalState.exampleStates.first { $0.id == id }?.name ?? "State \(id)"
 }

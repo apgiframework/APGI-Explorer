@@ -7,6 +7,7 @@ import AppKit
 class ProfileManager: ObservableObject {
     @Published var profiles: [QuizProfile] = []
     private let profilesKey = "savedQuizProfiles"
+    private let scorer = APGIScorer()
 
     init() {
         loadProfiles()
@@ -68,7 +69,7 @@ class ProfileManager: ObservableObject {
 
     /// Determines the APGI profile type based on the stored integer results.
     func determineProfileType(for results: [String: Int]) -> APGIProfileType {
-        let normalizedProfile = profile(from: results)
+        let normalizedProfile = enhancedProfile(from: results)
         return determineProfileType(for: normalizedProfile)
     }
 
@@ -164,6 +165,51 @@ class ProfileManager: ObservableObject {
         """
     }
 
+    /// Enhanced profile calculation using APGIScorer
+    private func enhancedProfile(from results: [String: Int]) -> APGIProfile {
+        // Convert [String: Int] results to [Int: Int] for the scorer
+        let answerMapping: [String: Int] = [
+            "epsilon": 1, "precision": 2, "threshold": 3, "somatic": 4,
+            "interactions": 5, "temporal": 6, "environment": 7
+        ]
+        
+        var answers: [Int: Int] = [:]
+        for (parameter, value) in results {
+            guard answerMapping[parameter] != nil else { continue }
+
+            // Map the parameter value to question IDs
+            let questionIds = getQuestionIdsForParameter(parameter)
+            for questionId in questionIds {
+                // Distribute the parameter value across related questions
+                // This is a simplified approach - in practice, you'd want actual individual answers
+                answers[questionId] = value
+            }
+        }
+        
+        return scorer.calculateRobustScore(answers: answers)
+    }
+    
+    private func getQuestionIdsForParameter(_ parameter: String) -> [Int] {
+        switch parameter {
+        case "epsilon":
+            return [1, 2, 3, 4, 5]
+        case "precision":
+            return [6, 7, 8, 9, 10]
+        case "threshold":
+            return [11, 12, 13, 14, 15]
+        case "somatic":
+            return [16, 17, 18, 19, 20]
+        case "interactions":
+            return [21, 22, 23, 24, 25]
+        case "temporal":
+            return [26, 27, 28, 29, 30]
+        case "environment":
+            return [31, 32, 33, 34, 35]
+        default:
+            return []
+        }
+    }
+
     internal func profile(from results: [String: Int]) -> APGIProfile {
         APGIProfile(
             epsilon: Double(results["epsilon"] ?? 0),
@@ -189,7 +235,7 @@ class ProfileManager: ObservableObject {
     
     /// Generates a PDF report for the given profile
     func generatePDFReport(for profile: QuizProfile) -> URL? {
-        let apgiProfile = self.profile(from: profile.results)
+        let apgiProfile = enhancedProfile(from: profile.results)
         let profileType = determineProfileType(for: apgiProfile)
         
         // Page size with margins
@@ -331,7 +377,7 @@ class ProfileManager: ObservableObject {
     
     /// Exports the profile to JSON format
     func exportToJSON(profile: QuizProfile) -> Data? {
-        let apgiScores = self.profile(from: profile.results)
+        let apgiScores = enhancedProfile(from: profile.results)
         let export = ProfileExport(
             version: "1.0",
             timestamp: Date(),
@@ -350,6 +396,37 @@ class ProfileManager: ObservableObject {
         }
     }
     
+    /// Generates an interactive HTML report for sharing
+    func generateHTMLReport(for profile: QuizProfile) -> URL? {
+        let apgiProfile = enhancedProfile(from: profile.results)
+        let profileType = determineProfileType(for: apgiProfile)
+        let history = timelineSnapshots(excluding: profile)
+
+        let html = ReportGenerator.generateInteractiveHTMLReport(
+            for: profile,
+            apgiProfile: apgiProfile,
+            profileType: profileType,
+            history: history
+        )
+
+        guard let data = html.data(using: .utf8) else {
+            print("Failed to encode HTML for profile report")
+            return nil
+        }
+
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .html)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let tempFile = tempDir.appendingPathComponent(filename)
+
+        do {
+            try data.write(to: tempFile)
+            return tempFile
+        } catch {
+            print("Failed to write HTML export: \(error)")
+            return nil
+        }
+    }
+
     /// Returns a URL for the exported profile that can be shared
     @MainActor
     func getExportURL(for profile: QuizProfile, format: ExportFormat) -> URL? {
@@ -371,7 +448,24 @@ class ProfileManager: ObservableObject {
                 }
             }
             return nil
+        case .html:
+            return generateHTMLReport(for: profile)
         }
+    }
+
+    private func timelineSnapshots(excluding profile: QuizProfile) -> [ReportSnapshot] {
+        profiles
+            .filter { $0.id != profile.id }
+            .map { savedProfile in
+                let savedApgi = enhancedProfile(from: savedProfile.results)
+                let savedType = determineProfileType(for: savedApgi)
+                return ReportSnapshot(
+                    name: savedProfile.name,
+                    date: savedProfile.dateCreated,
+                    profileType: savedType,
+                    apgiProfile: savedApgi
+                )
+            }
     }
 }
 

@@ -1,0 +1,181 @@
+import SwiftUI
+
+#if canImport(UIKit)
+import UIKit
+#endif
+
+struct LiveScoreTracker: View {
+    @ObservedObject var quizModel: QuizModel
+
+    private let trackedParameters: [(key: String, label: String, description: String)] = [
+        ("epsilon", "ε", "Prediction Error"),
+        ("precision", "π", "Precision"),
+        ("threshold", "θₜ", "Threshold"),
+        ("somatic", "β", "Somatic Bias")
+    ]
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Your Emerging Profile")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+
+            SmallRadarChart(profile: quizModel.calculatePartialScore())
+                .frame(height: 140)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 10) {
+                ForEach(trackedParameters, id: \.key) { parameter in
+                    ConfidenceBar(
+                        parameter: parameter.label,
+                        confidence: quizModel.confidenceLevel(for: parameter.key),
+                        title: parameter.description
+                    )
+                }
+            }
+
+            if let remaining = quizModel.questionsNeededForConfidence() {
+                Text("Answer \(remaining) more question\(remaining == 1 ? "" : "s") for high confidence")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("Confidence target reached")
+                    .font(.caption2)
+                    .foregroundColor(.green)
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(panelBackground)
+                .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 3)
+        )
+    }
+
+    private var panelBackground: Color {
+        #if os(macOS)
+        Color(NSColor.windowBackgroundColor)
+        #else
+        Color(uiColor: .secondarySystemBackground)
+        #endif
+    }
+}
+
+struct ConfidenceBar: View {
+    let parameter: String
+    let confidence: Double
+    let title: String
+
+    private var barColor: Color {
+        switch parameter {
+        case "ε": return .orange
+        case "π": return .green
+        case "θₜ": return .purple
+        case "β": return .blue
+        default: return .gray
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("\(parameter) • \(title)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(Int(confidence * 100))%")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+            }
+
+            GeometryReader { geometry in
+                let width = max(0, min(confidence, 1)) * geometry.size.width
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(barColor)
+                            .frame(width: width, height: 6),
+                        alignment: .leading
+                    )
+            }
+            .frame(height: 6)
+        }
+    }
+}
+
+struct SmallRadarChart: View {
+    let profile: APGIProfile
+
+    private var values: [Double] {
+        [profile.epsilon, profile.precision, profile.threshold, profile.somaticBias]
+            .map { max(0, min($0 / 100, 1)) }
+    }
+
+    private func makeAngles(count: Int) -> [Double] {
+        guard count > 0 else { return [] }
+        let step = (2 * .pi) / Double(count)
+        return (0..<count).map { Double($0) * step - .pi / 2 }
+    }
+
+    private func radarPoints(in rect: CGRect) -> [CGPoint] {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+        let angles = makeAngles(count: values.count)
+
+        return zip(angles, values).map { angle, value in
+            let normalizedValue = max(0, min(value, 1))
+            let x = center.x + cos(angle) * radius * normalizedValue
+            let y = center.y + sin(angle) * radius * normalizedValue
+            return CGPoint(x: x, y: y)
+        }
+    }
+
+    private var panelBackground: Color {
+        #if os(macOS)
+        Color(NSColor.windowBackgroundColor)
+        #else
+        Color(uiColor: .secondarySystemBackground)
+        #endif
+    }
+
+    private func radarPath(in rect: CGRect) -> Path {
+        var path = Path()
+        let points = radarPoints(in: rect)
+        for (index, point) in points.enumerated() {
+            if index == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        path.closeSubpath()
+        return path
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let rect = CGRect(origin: .zero, size: geometry.size)
+            let center = CGPoint(x: rect.midX, y: rect.midY)
+
+            ZStack {
+                ForEach([0.25, 0.5, 0.75, 1.0], id: \.self) { scale in
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        .frame(width: rect.width * scale, height: rect.height * scale)
+                        .position(center)
+                }
+
+                radarPath(in: rect)
+                    .fill(Color.blue.opacity(0.3))
+
+                radarPath(in: rect)
+                    .stroke(Color.blue, lineWidth: 1.5)
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+    }
+}
