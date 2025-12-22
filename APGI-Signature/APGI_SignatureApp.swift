@@ -1,10 +1,3 @@
-//
-//  APGI_SignatureApp.swift
-//  APGI-Signature
-//
-//  Created by lesoto on 12/21/25.
-//
-
 import SwiftUI
 
 @main

@@ -1,24 +1,18 @@
-//
-//  ContentView.swift
-//  APGI-Signature
-//
-//  Created by lesoto on 12/21/25.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            VStack {
+                NavigationLink("Start Quiz") {
+                    IntroView()
+                }
+                NavigationLink("Browse Psychological States") {
+                    PsychologicalStatesView()
+                }
+            }
+            .padding()
+            .navigationTitle("Quiz App")
         }
-        .padding()
     }
-}
-
-#Preview {
-    ContentView()
 }
