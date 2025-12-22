@@ -214,6 +214,7 @@ struct SettingsView: View {
         case .radar: return "Radar"
         case .bar: return "Bar"
         case .line: return "Line"
+        case .area: return "Area"
         }
     }
     

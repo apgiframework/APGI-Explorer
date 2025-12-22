@@ -251,21 +251,23 @@ struct InteractiveStateView: View {
     }
     
     private func calculateParameterDistance(state: PsychologicalState, parameter: String, targetValue: Double) -> Double {
-        // Simplified distance calculation - in a real implementation,
-        // you would parse the actual numerical values from the parameter strings
-        switch parameter {
-        case "predictionError":
-            return Double.random(in: 0.1...3.0) // Placeholder
-        case "precision":
-            return Double.random(in: 0.1...3.0) // Placeholder
-        case "threshold":
-            return Double.random(in: 0.1...3.0) // Placeholder
-        case "somaticBias":
-            return Double.random(in: 0.1...3.0) // Placeholder
-        default:
-            return 1.0
-        }
+    let currentValue: Double
+    
+    switch parameter {
+    case "predictionError":
+        currentValue = state.parameters.predictionError.accuracy.average
+    case "precision":
+        currentValue = state.parameters.precision.task.value
+    case "threshold":
+        currentValue = state.parameters.threshold.adjustment
+    case "somaticBias":
+        currentValue = state.parameters.somaticBias.average
+    default:
+        return Double.infinity
     }
+    
+    return abs(currentValue - targetValue)
+}
 }
 
 // MARK: - Preview

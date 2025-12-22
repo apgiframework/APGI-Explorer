@@ -110,7 +110,7 @@ struct ResultsView: View {
             Text("Your results have been saved to '\(profileName)'.")
         }
         .onAppear {
-            analytics.track(event: .quizCompleted(resultStateId: resultStateId))
+            analytics.track(event: .quizCompleted(profileType: profileType, score: quizModel.calculatePartialScore().epsilon, duration: 0))
             analytics.setUserProperty(profileType.rawValue, forKey: "recentProfileType")
         }
     }
@@ -263,13 +263,24 @@ struct ResultsView: View {
     }
 
     private func saveProfile() {
-        profileManager.createProfile(
-            name: profileName,
-            results: quizModel.calculateRawScore()
-        )
-        analytics.track(event: .profileCreated)
-        showSavedAlert = true
-        profileName = ""
+        Task {
+            do {
+                _ = try await profileManager.createProfile(
+                    name: profileName,
+                    results: quizModel.calculateRawScore()
+                )
+                analytics.track(event: .profileCreated(profileType: profileType))
+                await MainActor.run {
+                    showSavedAlert = true
+                    profileName = ""
+                }
+            } catch {
+                await MainActor.run {
+                    // Handle error appropriately
+                    print("Failed to save profile: \(error)")
+                }
+            }
+        }
     }
     
     private func createTemporaryProfile() -> QuizProfile {

@@ -547,6 +547,8 @@ class QuizModel: ObservableObject {
         }
     }
     
+    @Published var currentQuestionIndex: Int = 0
+    
     // Cache for validation results
     private var _validationResult: ValidationResult?
     private let validationThreshold: Double = 0.7  // Minimum confidence threshold for valid responses
@@ -561,10 +563,33 @@ class QuizModel: ObservableObject {
         _validationResult = nil
     }
     
+    func selectAnswer(_ answer: Int) {
+        guard currentQuestionIndex < questions.count else { return }
+        let questionId = questions[currentQuestionIndex].id
+        selectAnswer(for: questionId, answer: answer)
+    }
+    
     func restoreAnswers(_ restoredAnswers: [Int: Int]) {
         answers = restoredAnswers
         // Invalidate cached validation result
         _validationResult = nil
+    }
+    
+    func nextQuestion() {
+        if currentQuestionIndex < questions.count - 1 {
+            currentQuestionIndex += 1
+        }
+    }
+    
+    func previousQuestion() {
+        if currentQuestionIndex > 0 {
+            currentQuestionIndex -= 1
+        }
+    }
+    
+    var hasAnsweredCurrentQuestion: Bool {
+        guard currentQuestionIndex < questions.count else { return false }
+        return answers[questions[currentQuestionIndex].id] != nil
     }
 
     func questionsNeededForConfidence(target: Double = 0.9) -> Int? {
@@ -772,6 +797,17 @@ class QuizModel: ObservableObject {
             temporalStability: normalizedScores["temporal"] ?? 0,
             environmentalFit: normalizedScores["environment"] ?? 0
         )
+    }
+    
+    static func calculateAPGIProfile(from results: [String: Int]) -> APGIProfile {
+        // Create a temporary QuizModel instance to use existing calculation logic
+        let tempModel = QuizModel()
+        // Convert String keys to Int keys for answers property
+        let intKeyResults = Dictionary(uniqueKeysWithValues: results.compactMap { key, value in
+            Int(key).map { ($0, value) }
+        })
+        tempModel.answers = intKeyResults
+        return tempModel.calculatePartialScore()
     }
     
     private func calculateInteractionScore(from rawScores: [String: Double]) -> Double {

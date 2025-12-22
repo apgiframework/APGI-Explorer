@@ -1,68 +1,169 @@
 import Foundation
 import Combine
-import PDFKit
 import SwiftUI
-import AppKit
+import PDFKit
 
+@MainActor
 class ProfileManager: ObservableObject {
     @Published var profiles: [QuizProfile] = []
-    private let profilesKey = "savedQuizProfiles"
+    @Published var currentProfile: QuizProfile?
+    @Published var isLoading = false
+    @Published var error: Error?
+    @Published var sortOption: ProfileSortOption = .dateModified
+    @Published var sortAscending = false
+    
+    private let persistence = PersistenceController.shared
+    private let userDefaults = UserDefaultsManager.shared
+    private let fileStorage = FileStorageManager.shared
     private let scorer = APGIScorer()
+    
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
-        loadProfiles()
+        Task {
+            await loadProfiles()
+            await restoreLastActiveProfile()
+        }
     }
 
-    // MARK: - Profile CRUD
-
-    /// Creates and saves a new profile with the given name and quiz results.
-    func createProfile(name: String, results: [String: Int]) {
-        let newProfile = QuizProfile(
+    // MARK: - Loading
+    
+    func loadProfiles() async {
+        isLoading = true
+        error = nil
+        
+        do {
+            profiles = try await persistence.fetchProfiles(sortBy: sortOption, ascending: sortAscending)
+        } catch {
+            self.error = error
+        }
+        
+        isLoading = false
+    }
+    
+    func restoreLastActiveProfile() async {
+        guard let lastID = userDefaults.lastActiveProfileID else { return }
+        
+        do {
+            currentProfile = try await persistence.fetchProfile(id: lastID)
+        } catch {
+            print("Failed to restore last profile: \(error)")
+        }
+    }
+    
+    // MARK: - CRUD Operations
+    
+    func createProfile(name: String, results: [String: Int]) async throws -> QuizProfile {
+        let profile = QuizProfile(
             id: UUID(),
             name: name,
             dateCreated: Date(),
             dateModified: Date(),
             results: results
         )
-        profiles.append(newProfile)
-        saveProfiles()
+        
+        try await persistence.saveProfile(profile)
+        await loadProfiles()
+        
+        currentProfile = profile
+        userDefaults.lastActiveProfileID = profile.id
+        userDefaults.totalQuizzesCompleted += 1
+        userDefaults.lastQuizDate = Date()
+        
+        return profile
+    }
+    
+    func updateProfile(_ profile: QuizProfile) async throws {
+        var updatedProfile = profile
+        updatedProfile.dateModified = Date()
+        
+        try await persistence.saveProfile(updatedProfile)
+        await loadProfiles()
+        
+        if currentProfile?.id == profile.id {
+            currentProfile = updatedProfile
+        }
+    }
+    
+    func deleteProfile(_ profile: QuizProfile) async throws {
+        try await persistence.deleteProfile(profile)
+        await loadProfiles()
+        
+        if currentProfile?.id == profile.id {
+            currentProfile = profiles.first
+            userDefaults.lastActiveProfileID = currentProfile?.id
+        }
+    }
+    
+    func duplicateProfile(_ profile: QuizProfile) async throws -> QuizProfile {
+        let newProfile = QuizProfile(
+            id: UUID(),
+            name: "\(profile.name) (Copy)",
+            dateCreated: Date(),
+            dateModified: Date(),
+            results: profile.results
+        )
+        
+        try await persistence.saveProfile(newProfile)
+        await loadProfiles()
+        
+        return newProfile
     }
 
-    /// Updates an existing profile with new results.
-    func updateProfile(_ profile: QuizProfile, newName: String? = nil, newResults: [String: Int]? = nil) {
-        if let index = profiles.firstIndex(where: { $0.id == profile.id }) {
+    // MARK: - Search and Filter
+    
+    func searchProfiles(query: String) async throws -> [QuizProfile] {
+        if query.isEmpty {
+            return profiles
+        }
+        return try await persistence.searchProfiles(query: query)
+    }
+    
+    func filterProfiles(by predicate: (QuizProfile) -> Bool) -> [QuizProfile] {
+        profiles.filter(predicate)
+    }
+    
+    // MARK: - Export/Import
+    
+    func exportProfile(_ profile: QuizProfile) throws -> URL {
+        return try fileStorage.exportProfile(profile)
+    }
+    
+    func importProfile(from url: URL) async throws {
+        let profile = try fileStorage.importProfile(from: url)
+        try await persistence.saveProfile(profile)
+        await loadProfiles()
+    }
+    
+    func exportAllProfiles() async throws -> URL {
+        return try await fileStorage.createBackup()
+    }
+    
+    func importFromBackup(url: URL) async throws {
+        try await fileStorage.restoreBackup(from: url)
+        await loadProfiles()
+    }
+    
+    // MARK: - Auto-save
+    
+    func enableAutoSave(for profile: QuizProfile, results: [String: Int]) {
+        Task {
             var updatedProfile = profile
-            if let newName = newName {
-                updatedProfile.name = newName
-            }
-            if let newResults = newResults {
-                updatedProfile.results = newResults
-            }
+            updatedProfile.results = results
             updatedProfile.dateModified = Date()
-            profiles[index] = updatedProfile
-            saveProfiles()
+            
+            if userDefaults.autoSaveEnabled {
+                try? await persistence.saveProfile(updatedProfile)
+            }
         }
     }
-
-    /// Deletes a profile.
-    func deleteProfile(_ profile: QuizProfile) {
-        profiles.removeAll { $0.id == profile.id }
-        saveProfiles()
-    }
-
-    // MARK: - Persistence
-
-    private func saveProfiles() {
-        if let encoded = try? JSONEncoder().encode(profiles) {
-            UserDefaults.standard.set(encoded, forKey: profilesKey)
-        }
-    }
-
-    private func loadProfiles() {
-        if let data = UserDefaults.standard.data(forKey: profilesKey),
-           let decoded = try? JSONDecoder().decode([QuizProfile].self, from: data) {
-            profiles = decoded
-        }
+    
+    // MARK: - Sort
+    
+    func changeSortOption(_ option: ProfileSortOption, ascending: Bool = false) async {
+        sortOption = option
+        sortAscending = ascending
+        await loadProfiles()
     }
 
     // MARK: - Profile Analysis
