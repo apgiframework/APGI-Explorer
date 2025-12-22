@@ -1,6 +1,183 @@
 import Foundation
 import Combine
 
+// MARK: - Validation Models
+
+struct ValidationResult {
+    let isValid: Bool
+    let warnings: [String]
+    let confidence: Double
+    let completionRate: Double
+    
+    var formattedConfidence: String {
+        "\(Int(confidence * 100))%"
+    }
+    
+    var formattedCompletionRate: String {
+        "\(Int(completionRate * 100))%"
+    }
+}
+
+// MARK: - Scoring System
+
+struct ScoringWeights {
+    static let parameterWeights: [String: Double] = [
+        "epsilon": 1.0,
+        "precision": 1.0,
+        "threshold": 1.0,
+        "somatic": 1.0,
+        "interactions": 0.5,  // Meta-questions have different weight
+        "temporal": 0.3,
+        "environment": 0.3
+    ]
+    
+    // Question-specific weights based on reliability
+    static let questionReliability: [Int: Double] = [
+        // Epsilon questions (1-5) - Core direct questions
+        1: 0.95,
+        2: 0.90,
+        3: 0.95,
+        4: 0.85,
+        5: 0.90,
+        
+        // Precision questions (6-10) - Direct questions
+        6: 0.90,
+        7: 0.85,
+        8: 0.80,
+        9: 0.85,
+        10: 0.80,
+        
+        // Threshold questions (11-15) - Direct questions
+        11: 0.90,
+        12: 0.85,
+        13: 0.80,
+        14: 0.85,
+        15: 0.90,
+        
+        // Somatic questions (16-20) - Direct questions
+        16: 0.90,
+        17: 0.85,
+        18: 0.95,
+        19: 0.90,
+        20: 0.85,
+        
+        // Interaction questions (21-25) - Less direct
+        21: 0.70,
+        22: 0.70,
+        23: 0.65,
+        24: 0.70,
+        25: 0.65,
+        
+        // Temporal questions (26-30) - Moderate reliability
+        26: 0.75,
+        27: 0.80,
+        28: 0.75,
+        29: 0.70,
+        30: 0.75,
+        
+        // Environmental questions (31-35) - Context-dependent
+        31: 0.60,
+        32: 0.60,
+        33: 0.65,
+        34: 0.60,
+        35: 0.55
+    ]
+}
+
+// MARK: - Profile Models
+
+enum EpsilonLevel: String, CaseIterable {
+    case veryLow = "Very Low"
+    case low = "Low"
+    case moderate = "Moderate"
+    case high = "High"
+    case veryHigh = "Very High"
+    
+    var description: String {
+        switch self {
+        case .veryLow: return "Hardly notice prediction errors"
+        case .low: return "Notice only major inconsistencies"
+        case .moderate: return "Moderately sensitive to errors"
+        case .high: return "Highly sensitive to mismatches"
+        case .veryHigh: return "Extremely sensitive to any inconsistency"
+        }
+    }
+}
+
+enum PrecisionLevel: String, CaseIterable {
+    case veryLow = "Very Low"
+    case low = "Low"
+    case moderate = "Moderate"
+    case high = "High"
+    case veryHigh = "Very High"
+}
+
+enum ThresholdLevel: String, CaseIterable {
+    case veryLow = "Very Low"
+    case low = "Low"
+    case moderate = "Moderate"
+    case high = "High"
+    case veryHigh = "Very High"
+}
+
+enum SomaticLevel: String, CaseIterable {
+    case veryLow = "Very Low"
+    case low = "Low"
+    case moderate = "Moderate"
+    case high = "High"
+    case veryHigh = "Very High"
+}
+
+struct APGIProfile: Codable {
+    var epsilon: Double          // 0-100 normalized
+    var precision: Double
+    var threshold: Double
+    var somaticBias: Double
+    var interactionScore: Double
+    var temporalStability: Double
+    var environmentalFit: Double
+    
+    var epsilonCategory: EpsilonLevel {
+        switch epsilon {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+    
+    var precisionCategory: PrecisionLevel {
+        switch precision {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+    
+    var thresholdCategory: ThresholdLevel {
+        switch threshold {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+    
+    var somaticCategory: SomaticLevel {
+        switch somaticBias {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+}
+
 class QuizModel: ObservableObject {
     @Published var questions: [QuizQuestion] = [
         // MARK: - Prediction Error Sensitivity (ε)
@@ -403,13 +580,239 @@ class QuizModel: ObservableObject {
         )
     ]
 
-    @Published var answers: [Int: Int] = [:]
+    @Published var answers: [Int: Int] = [:] {
+        didSet {
+            // Update validation state when answers change
+            _validationResult = nil
+        }
+    }
+    
+    // Cache for validation results
+    private var _validationResult: ValidationResult?
+    private let validationThreshold: Double = 0.7  // Minimum confidence threshold for valid responses
+    
+    var isComplete: Bool {
+        answers.count == questions.count
+    }
 
     func selectAnswer(for questionId: Int, answer: Int) {
         answers[questionId] = answer
+        // Invalidate cached validation result
+        _validationResult = nil
     }
 
-    func calculateScore() -> [String: Int] {
+    // MARK: - Validation & Response Analysis
+    
+    /// Validates response consistency and patterns
+    func validateResponses() -> ValidationResult {
+        if let cachedResult = _validationResult {
+            return cachedResult
+        }
+        
+        var warnings: [String] = []
+        var confidence = calculateResponseConfidence()
+        
+        // Check for straight-lining (all same answers)
+        if isStraightLining() {
+            warnings.append("Your responses show a pattern of straight-lining, which may indicate inattentive responding.")
+            confidence *= 0.8  // Reduce confidence for potential straight-lining
+        }
+        
+        // Check for inconsistent responses to similar questions
+        if hasInconsistentResponses() {
+            warnings.append("Some of your responses to similar questions appear inconsistent.")
+            confidence *= 0.85
+        }
+        
+        // Check for response patterns that might indicate random responding
+        if showsRandomResponsePattern() {
+            warnings.append("Your response pattern suggests potential random or inattentive responding.")
+            confidence *= 0.7
+        }
+        
+        // Check for completion rate
+        let completionRate = Double(answers.count) / Double(questions.count)
+        if completionRate < 0.9 {
+            warnings.append("You've completed \(Int(completionRate * 100))% of the questions. Completing all questions provides more accurate results.")
+            confidence *= 0.9
+        }
+        
+        // Check for extreme responding (all high or all low)
+        if isExtremeResponding() {
+            warnings.append("Your responses show a pattern of extreme responding (all high or all low).")
+            confidence *= 0.85
+        }
+        
+        let result = ValidationResult(
+            isValid: confidence >= validationThreshold,
+            warnings: warnings,
+            confidence: min(max(confidence, 0), 1),  // Ensure confidence is between 0 and 1
+            completionRate: completionRate
+        )
+        
+        _validationResult = result
+        return result
+    }
+    
+    /// Calculates the confidence score based on response patterns
+    private func calculateResponseConfidence() -> Double {
+        guard !answers.isEmpty else { return 0.0 }
+        
+        var confidence = 0.0
+        let completionRate = Double(answers.count) / Double(questions.count)
+        
+        // Base confidence on completion rate (50% weight)
+        confidence += completionRate * 0.5
+        
+        // Check response time consistency (if available)
+        // This is a placeholder - in a real app, you'd track response times
+        let timeConsistencyScore = 0.9  // Assume good time consistency by default
+        confidence += timeConsistencyScore * 0.3
+        
+        // Check for response variability (20% weight)
+        let responseVariability = calculateResponseVariability()
+        confidence += responseVariability * 0.2
+        
+        return min(max(confidence, 0), 1)  // Ensure between 0 and 1
+    }
+    
+    private func calculateResponseVariability() -> Double {
+        let answerValues = answers.values.map { Double($0) }
+        guard !answerValues.isEmpty else { return 0.0 }
+        
+        let mean = answerValues.reduce(0, +) / Double(answerValues.count)
+        let variance = answerValues.reduce(0) { $0 + pow($1 - mean, 2) } / Double(answerValues.count)
+        
+        // Normalize variance to 0-1 range (assuming 1-5 scale)
+        // A variance of around 2.0 is considered good (not too consistent, not too random)
+        let normalizedVariance = min(variance / 2.0, 1.0)
+        return normalizedVariance
+    }
+    
+    private func isStraightLining() -> Bool {
+        // If all answers are the same (except for unanswered questions)
+        let answerValues = Set(answers.values)
+        return answerValues.count <= 2 && answers.count > 3
+    }
+    
+    private func hasInconsistentResponses() -> Bool {
+        // Check for similar questions with opposite answers
+        // This is a simplified version - in a real app, you'd map related questions
+        
+        // Example: Check if questions about similar concepts have opposite answers
+        let epsilonQuestions = questions.filter { $0.parameter == "epsilon" }
+        var inconsistencyCount = 0
+        
+        for i in 0..<(epsilonQuestions.count - 1) {
+            for j in (i + 1)..<epsilonQuestions.count {
+                if let answer1 = answers[epsilonQuestions[i].id],
+                   let answer2 = answers[epsilonQuestions[j].id],
+                   abs(answer1 - answer2) >= 3 {  // Big difference in answers
+                    inconsistencyCount += 1
+                }
+            }
+        }
+        
+        return inconsistencyCount > epsilonQuestions.count / 2
+    }
+    
+    private func showsRandomResponsePattern() -> Bool {
+        // Check for patterns that might indicate random responding
+        // This is a simplified check - in practice, you'd use more sophisticated methods
+        
+        let answerValues = Array(answers.values)
+        guard answerValues.count > 5 else { return false }
+        
+        // Check for alternating patterns (e.g., 1, 5, 1, 5, 1, 5)
+        var alternatingPattern = true
+        for i in 2..<answerValues.count {
+            if answerValues[i] != answerValues[i - 2] {
+                alternatingPattern = false
+                break
+            }
+        }
+        
+        return alternatingPattern
+    }
+    
+    private func isExtremeResponding() -> Bool {
+        // Check if most answers are at the extremes (1 or 5)
+        let extremeCount = answers.values.filter { $0 == 1 || $0 == 5 }.count
+        return Double(extremeCount) / Double(answers.count) > 0.8  // More than 80% extreme responses
+    }
+    
+    // MARK: - Scoring
+    
+    func calculateScore() -> (profile: APGIProfile, validation: ValidationResult) {
+        var rawScores = [String: Double]()
+        var maxPossible = [String: Double]()
+        
+        // Calculate weighted raw scores
+        for question in questions {
+            guard let answer = answers[question.id] else { continue }
+            
+            let weight = ScoringWeights.questionReliability[question.id] ?? 0.8
+            let paramWeight = ScoringWeights.parameterWeights[question.parameter] ?? 1.0
+            
+            let weightedValue = Double(answer) * weight * paramWeight
+            rawScores[question.parameter, default: 0] += weightedValue
+            maxPossible[question.parameter, default: 0] += 4.0 * weight * paramWeight
+        }
+        
+        // Normalize to percentiles (0-100 scale)
+        var normalizedScores = [String: Double]()
+        for (param, raw) in rawScores {
+            guard let max = maxPossible[param], max > 0 else { continue }
+            normalizedScores[param] = (raw / max) * 100
+        }
+        
+        // Calculate derived metrics
+        let validation = validateResponses()
+        
+        // Adjust scores based on validation confidence
+        var adjustedScores = normalizedScores
+        if !validation.isValid {
+            // Apply penalty to scores if validation fails
+            for (param, score) in adjustedScores {
+                adjustedScores[param] = score * validation.confidence
+            }
+        }
+        
+        let profile = APGIProfile(
+            epsilon: adjustedScores["epsilon"] ?? 0,
+            precision: adjustedScores["precision"] ?? 0,
+            threshold: adjustedScores["threshold"] ?? 0,
+            somaticBias: adjustedScores["somatic"] ?? 0,
+            interactionScore: calculateInteractionScore(from: rawScores),
+            temporalStability: normalizedScores["temporal"] ?? 0,
+            environmentalFit: normalizedScores["environment"] ?? 0
+        )
+        
+        return (profile, validation)
+    }
+    
+    private func calculateInteractionScore(from rawScores: [String: Double]) -> Double {
+        // Complex interaction scoring based on parameter relationships
+        let epsilon = rawScores["epsilon"] ?? 0
+        let precision = rawScores["precision"] ?? 0
+        let threshold = rawScores["threshold"] ?? 0
+        let somatic = rawScores["somatic"] ?? 0
+        let interactions = rawScores["interactions"] ?? 0
+        
+        // Weighted interaction score
+        let interactionWeight = 0.6
+        let derivedWeight = 0.4
+        
+        let rawInteractionScore = (interactions * interactionWeight) + 
+            ((epsilon * precision * 0.3 + epsilon * somatic * 0.3 + threshold * (1 - epsilon/100) * 0.4) * derivedWeight)
+        
+        // Normalize (assuming max possible interaction score)
+        let maxInteractionScore = 20.0 // Approximate max based on question weights
+        return min(100, (rawInteractionScore / maxInteractionScore) * 100)
+    }
+    
+    // Legacy method for backward compatibility
+    func calculateRawScore() -> [String: Int] {
         var scores = [
             "epsilon": 0,
             "precision": 0,
