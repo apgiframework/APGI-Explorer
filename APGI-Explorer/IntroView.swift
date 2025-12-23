@@ -22,7 +22,7 @@ struct IntroView: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
 
-                    Text("Understand Your Mind's Signature")
+                    Text("Understand Your Mind's Explorer")
                         .font(.title2)
                         .foregroundColor(.secondary)
                 }
@@ -81,7 +81,7 @@ struct IntroView: View {
                     BenefitItem(symbol: "lightbulb.fill", text: "Understand your cognitive strengths and challenges")
                     BenefitItem(symbol: "chart.bar.fill", text: "Get personalized insights about your consciousness profile")
                     BenefitItem(symbol: "person.2.fill", text: "Learn how you process information differently from others")
-                    BenefitItem(symbol: "gearshape.fill", text: "Discover strategies tailored to your mind's signature")
+                    BenefitItem(symbol: "gearshape.fill", text: "Discover strategies tailored to your mind's explorer")
                 }
                 .padding()
                 .background(Color(.windowBackgroundColor))

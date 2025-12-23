@@ -25,7 +25,7 @@ class WindowManager: ObservableObject {
         
         var title: String {
             switch self {
-            case .main: return "APGI Signature"
+            case .main: return "APGI Explorer"
             case .stateExplorer: return "State Explorer"
             case .profileComparison: return "Profile Comparison"
             case .settings: return "Settings"

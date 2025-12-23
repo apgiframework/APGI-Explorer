@@ -301,9 +301,9 @@ struct MenuCommands: Commands {
         // MARK: - Help Menu
         
         CommandGroup(replacing: .help) {
-            Button("APGI Signature Help") {
+            Button("APGI Explorer Help") {
                 #if os(macOS)
-                NSWorkspace.shared.open(URL(string: "https://apgi-signature.com/help")!)
+                NSWorkspace.shared.open(URL(string: "https://apgi-explorer.com/help")!)
                 #endif
             }
             .keyboardShortcut("?", modifiers: .command)
@@ -322,7 +322,7 @@ struct MenuCommands: Commands {
             
             Button("Contact Support") {
                 #if os(macOS)
-                NSWorkspace.shared.open(URL(string: "mailto:support@apgi-signature.com")!)
+                NSWorkspace.shared.open(URL(string: "mailto:support@apgi-explorer.com")!)
                 #endif
             }
         }

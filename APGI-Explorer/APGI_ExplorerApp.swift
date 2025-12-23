@@ -9,19 +9,26 @@ extension Notification.Name {
 }
 
 @main
-struct APGISignatureApp: App {
+struct APGIExplorerApp: App {
     @StateObject private var profileManager = ProfileManager()
     @StateObject private var stateModel = StateModel()
+    @StateObject private var appState = AppState.shared
     
     let persistenceController = PersistenceController.shared
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(profileManager)
-                .environmentObject(stateModel)
-                .withGlobalKeyboardShortcuts(profileManager: profileManager)
+            if appState.hasCompletedOnboarding {
+                ContentView()
+                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                    .environmentObject(profileManager)
+                    .environmentObject(stateModel)
+                    .withGlobalKeyboardShortcuts(profileManager: profileManager)
+            } else {
+                OnboardingView()
+                    .environmentObject(appState)
+                    .frame(minWidth: 800, minHeight: 600)
+            }
         }
         .commands {
             MenuCommands(profileManager: profileManager, stateModel: stateModel)

@@ -34,14 +34,14 @@ class PersistenceController: ObservableObject {
     }()
     
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "APGISignature")
+        container = NSPersistentContainer(name: "APGIExplorer")
         
         if inMemory {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         } else {
             // Set up store location in Application Support
             let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            let storeURL = appSupportURL.appendingPathComponent("APGISignature.sqlite")
+            let storeURL = appSupportURL.appendingPathComponent("APGIExplorer.sqlite")
             
             let description = NSPersistentStoreDescription(url: storeURL)
             description.shouldMigrateStoreAutomatically = true
