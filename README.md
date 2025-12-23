@@ -78,11 +78,6 @@ Detailed analysis of 8 distinct cognitive profiles, each with unique characteris
 - **Keyboard Navigation**: Full keyboard support
 - **Touch Bar Support**: Quick actions on supported MacBooks
 
-### iOS
-- **Haptic Feedback**: Tactile responses for interactions
-- **Context Menus**: Quick actions with 3D Touch/Haptic Touch
-- **Widgets**: Home screen widgets for quick access
-
 ## 📊 Data & Privacy
 
 ### Data Collection
