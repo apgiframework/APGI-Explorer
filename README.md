@@ -1,11 +1,11 @@
 # APGI Explorer
 
-A comprehensive psychological assessment application that helps users understand their cognitive and emotional processing styles through the Active Predictive Guidance Integration (APGI) model. Built with SwiftUI for a seamless cross-platform experience on macOS and iOS.
+A comprehensive psychological assessment application that helps users understand their cognitive and emotional processing styles through the APGI model. Built with SwiftUI for a seamless cross-platform experience on macOS.
 
 ## 🌟 Key Features
 
 ### 🧠 Core Psychological Assessment
-- **29 scientifically-validated questions** across 7 key dimensions
+- **35 scientifically-validated questions** across 7 key dimensions
 - **Adaptive scoring algorithm** with reliability weighting for each question
 - **Real-time progress tracking** with visual feedback
 - **Response validation** to ensure result accuracy and consistency
