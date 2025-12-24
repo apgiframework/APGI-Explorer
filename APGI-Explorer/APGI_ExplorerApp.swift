@@ -19,10 +19,11 @@ struct APGIExplorerApp: App {
     var body: some Scene {
         WindowGroup {
             if appState.hasCompletedOnboarding {
-                ContentView()
+                MainTabView()
                     .environment(\.managedObjectContext, persistenceController.container.viewContext)
                     .environmentObject(profileManager)
                     .environmentObject(stateModel)
+                    .environmentObject(appState)
                     .withGlobalKeyboardShortcuts(profileManager: profileManager)
             } else {
                 OnboardingView()
@@ -32,17 +33,34 @@ struct APGIExplorerApp: App {
         }
         .commands {
             MenuCommands(profileManager: profileManager, stateModel: stateModel)
+            
+            // Add keyboard shortcuts for navigation
+            CommandGroup(after: .newItem) {
+                Button("Go to States") {
+                    NSApp.sendAction(Selector(("show" + "States")), to: nil, from: nil)
+                }
+                .keyboardShortcut("1", modifiers: .command)
+                
+                Button("Go to Compare") {
+                    NSApp.sendAction(Selector(("show" + "Compare")), to: nil, from: nil)
+                }
+                .keyboardShortcut("2", modifiers: .command)
+                
+                Button("Go to Settings") {
+                    NSApp.sendAction(Selector(("show" + "Settings")), to: nil, from: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
         
         #if os(macOS)
-        // Add dedicated window for state exploration
+        // Keep these windows available but they'll be accessible from the main window tabs by default
         WindowGroup("State Explorer", id: "state-explorer") {
             PsychologicalStatesView()
                 .environmentObject(stateModel)
         }
         .defaultSize(width: 1200, height: 800)
         
-        // Add window for profile comparison
         WindowGroup("Profile Comparison", id: "profile-comparison") {
             ProfileComparisonView()
                 .environmentObject(profileManager)
@@ -50,8 +68,8 @@ struct APGIExplorerApp: App {
         .defaultSize(width: 1000, height: 700)
         
         Settings {
-            SettingsView()
-                .environmentObject(profileManager)
+            AppSettingsView()
+                .environmentObject(AppState.shared)
         }
         #endif
     }

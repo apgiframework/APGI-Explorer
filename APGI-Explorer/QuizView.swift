@@ -10,6 +10,7 @@ struct QuizView: View {
     @State private var currentQuestionIndex = 0
     @State private var showExitAlert = false
     @State private var handoffActivity: NSUserActivity?
+    @Environment(\.presentationMode) private var presentationMode
     
     var body: some View {
         mainContent
@@ -24,9 +25,10 @@ struct QuizView: View {
             .alert("Exit Quiz?", isPresented: $showExitAlert) {
                 Button("Continue Quiz", role: .cancel) { }
                 Button("Exit", role: .destructive) {
-                    // Navigate back
+                    presentationMode.wrappedValue.dismiss()
                 }
             } message: {
+                Text("Your progress will be saved.")
                 Text("Your progress will be lost if you exit now.")
             }
             .onAppear {
