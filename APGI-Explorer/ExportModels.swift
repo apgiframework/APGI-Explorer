@@ -27,18 +27,18 @@ struct ProfileExport: Codable {
 
 // MARK: - Export Format
 
-enum ExportFormat {
-    case pdf
-    case json
-    case text
-    case html
+enum ExportFormat: String, CaseIterable {
+    case json = "JSON"
+    case csv = "CSV"
+    case pdf = "PDF"
+    case png = "PNG"
     
     var fileExtension: String {
         switch self {
         case .pdf: return "pdf"
         case .json: return "json"
-        case .text: return "txt"
-        case .html: return "html"
+        case .csv: return "csv"
+        case .png: return "png"
         }
     }
     
@@ -46,8 +46,8 @@ enum ExportFormat {
         switch self {
         case .pdf: return "application/pdf"
         case .json: return "application/json"
-        case .text: return "text/plain"
-        case .html: return "text/html"
+        case .csv: return "text/csv"
+        case .png: return "image/png"
         }
     }
 }

@@ -32,22 +32,7 @@ struct MainTabView: View {
 }
 
 struct AppSettingsView: View {
-    @EnvironmentObject var appState: AppState
-    
     var body: some View {
-        VStack {
-            Text("Settings")
-                .font(.largeTitle)
-                .padding()
-            
-            Button("Show Onboarding Again") {
-                appState.hasCompletedOnboarding = false
-            }
-            .padding()
-            .buttonStyle(.borderedProminent)
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SettingsView()
     }
 }

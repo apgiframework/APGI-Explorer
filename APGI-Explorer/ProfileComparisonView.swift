@@ -29,90 +29,88 @@ struct ProfileComparisonView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Text("Profile Comparison")
-                            .font(.largeTitle.bold())
-                            .foregroundColor(.primary)
-                        
-                        Text("Compare psychological profiles side by side")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 20)
-                    .padding(.bottom, 10)
+        ScrollView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("Profile Comparison")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.primary)
                     
-                    // Profile Selection Cards
-                    HStack(spacing: 20) {
-                        profileSelectionCard(profile: $selectedProfile1, title: "Profile 1")
-                        profileSelectionCard(profile: $selectedProfile2, title: "Profile 2")
-                    }
-                    .padding(.horizontal)
-                    
-                    // Comparison Mode Picker with Icons
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Visualization")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        Picker("Comparison Mode", selection: $comparisonMode) {
-                            ForEach(ComparisonMode.allCases) { mode in
-                                Label {
-                                    Text(mode.rawValue)
-                                } icon: {
-                                    Image(systemName: mode.icon)
-                                }
-                                .tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
+                    Text("Compare psychological profiles side by side")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 10)
+                
+                // Profile Selection Cards
+                HStack(spacing: 20) {
+                    profileSelectionCard(profile: $selectedProfile1, title: "Profile 1")
+                    profileSelectionCard(profile: $selectedProfile2, title: "Profile 2")
+                }
+                .padding(.horizontal)
+                
+                // Comparison Mode Picker with Icons
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Visualization")
+                        .font(.headline)
                         .padding(.horizontal)
-                    }
-                    .padding(.vertical, 10)
                     
-                    // Main Content Area
-                    if isLoading {
-                        loadingView
-                    } else if let error = error {
-                        errorView(error: error)
-                    } else if !selectedProfile1.isEmpty && !selectedProfile2.isEmpty {
-                        comparisonChart
-                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                        
-                        comparisonSummary
-                            .padding(.top, 10)
-                    } else {
-                        emptyStateView
+                    Picker("Comparison Mode", selection: $comparisonMode) {
+                        ForEach(ComparisonMode.allCases) { mode in
+                            Label {
+                                Text(mode.rawValue)
+                            } icon: {
+                                Image(systemName: mode.icon)
+                            }
+                            .tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                }
+                .padding(.vertical, 10)
+                
+                // Main Content Area
+                if isLoading {
+                    loadingView
+                } else if let error = error {
+                    errorView(error: error)
+                } else if !selectedProfile1.isEmpty && !selectedProfile2.isEmpty {
+                    comparisonChart
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    
+                    comparisonSummary
+                        .padding(.top, 10)
+                } else {
+                    emptyStateView
+                }
+                
+                Spacer()
+            }
+            .padding()
+        }
+        .background(Color.gray.opacity(0.1).edgesIgnoringSafeArea(.all))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button(action: exportComparison) {
+                        Label("Export as Image", systemImage: "square.and.arrow.up")
                     }
                     
-                    Spacer()
-                }
-                .padding()
-            }
-            .background(Color.gray.opacity(0.1).edgesIgnoringSafeArea(.all))
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: exportComparison) {
-                            Label("Export as Image", systemImage: "square.and.arrow.up")
-                        }
-                        
-                        Button(action: { showExportSheet = true }) {
-                            Label("Export as PDF", systemImage: "doc.text")
-                        }
-                    } label: {
-                        Label("Export", systemImage: "square.and.arrow.up")
+                    Button(action: { showExportSheet = true }) {
+                        Label("Export as PDF", systemImage: "doc.text")
                     }
-                    .disabled(selectedProfile1.isEmpty || selectedProfile2.isEmpty)
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
                 }
+                .disabled(selectedProfile1.isEmpty || selectedProfile2.isEmpty)
             }
-            .sheet(isPresented: $showExportSheet) {
-                if let exportData = exportData {
-                    ShareSheet(items: [exportData])
-                }
+        }
+        .sheet(isPresented: $showExportSheet) {
+            if let exportData = exportData {
+                ShareSheet(items: [exportData])
             }
         }
     }
@@ -355,7 +353,7 @@ struct ProfileComparisonView: View {
                     HStack(spacing: 0) {
                         Rectangle()
                             .fill(Color.blue.opacity(0.7))
-                            .frame(width: (geometry.size.width - 60) * CGFloat(value1) / 100, height: 8)
+                            .frame(width: max(0, min(geometry.size.width - 60, (geometry.size.width - 60) * CGFloat(max(0, min(100, value1))) / 100)), height: 8)
                             .cornerRadius(4)
                         
                         Spacer(minLength: 0)
@@ -377,7 +375,7 @@ struct ProfileComparisonView: View {
                     HStack(spacing: 0) {
                         Rectangle()
                             .fill(Color.orange.opacity(0.7))
-                            .frame(width: (geometry.size.width - 60) * CGFloat(value2) / 100, height: 8)
+                            .frame(width: max(0, min(geometry.size.width - 60, (geometry.size.width - 60) * CGFloat(max(0, min(100, value2))) / 100)), height: 8)
                             .cornerRadius(4)
                         
                         Spacer(minLength: 0)

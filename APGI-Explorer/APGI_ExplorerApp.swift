@@ -16,6 +16,15 @@ struct APGIExplorerApp: App {
     
     let persistenceController = PersistenceController.shared
     
+    init() {
+        // Run screenshot automation in debug mode
+        #if DEBUG
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 2.0) {
+            ScreenshotAutomationRunner.run()
+        }
+        #endif
+    }
+    
     var body: some Scene {
         WindowGroup {
             if appState.hasCompletedOnboarding {

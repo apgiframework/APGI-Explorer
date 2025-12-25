@@ -515,7 +515,7 @@ class ProfileManager: ObservableObject {
             return nil
         }
 
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .html)
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .csv)
         let tempDir = ExportUtilities.getTemporaryDirectory()
         let tempFile = tempDir.appendingPathComponent(filename)
 
@@ -534,7 +534,7 @@ class ProfileManager: ObservableObject {
         switch format {
         case .pdf:
             return generatePDFReport(for: profile)
-        case .json, .text:
+        case .json, .csv:
             if let data = exportToJSON(profile: profile) {
                 let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
                 let tempDir = ExportUtilities.getTemporaryDirectory()
@@ -549,8 +549,9 @@ class ProfileManager: ObservableObject {
                 }
             }
             return nil
-        case .html:
-            return generateHTMLReport(for: profile)
+        case .png:
+            // TODO: Implement PNG export functionality
+            return nil
         }
     }
 

@@ -4,6 +4,18 @@ import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 import Accessibility
+import ScreenCaptureKit
+
+// MARK: - Screen Recording Permission
+struct ScreenRecordingPermission {
+    static var hasPermission: Bool {
+        CGPreflightScreenCaptureAccess()
+    }
+    
+    static func requestPermission() {
+        CGRequestScreenCaptureAccess()
+    }
+}
 
 // MARK: - Configuration
 struct ScreenshotConfig {
@@ -834,14 +846,17 @@ class ScreenshotAutomationEngine {
         logger.log("Starting screenshot automation...")
         logger.log("Configuration: \(config)")
         
-        // Launch the app
-        guard launchApp() else {
-            logger.log("Failed to launch app")
+        // Check screen recording permission
+        guard ScreenRecordingPermission.hasPermission else {
+            logger.log("ERROR: Screen recording permission not granted. Please grant permission in System Preferences > Security & Privacy > Privacy > Screen Recording")
             return
         }
         
+        // Skip launching app since we're already running inside it
+        logger.log("App is already running, skipping launch...")
+        
         // Wait for app to fully load
-        Thread.sleep(forTimeInterval: 5.0)
+        Thread.sleep(forTimeInterval: 3.0)
         
         // Discover all screens
         let allScreens = navigator.discoverAllScreens()
@@ -1216,10 +1231,44 @@ class ScreenshotManager {
     
     /// Capture a specific area of the screen
     private func captureArea(_ rect: CGRect) -> NSImage? {
-        // TODO: Replace CGWindowListCreateImage with ScreenCaptureKit
-        // For now, return a placeholder to avoid build errors
-        logger.log("Screenshot capture temporarily disabled due to API deprecation")
-        return nil
+        // Use ScreenCaptureKit for modern screen capture
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultImage: NSImage?
+        
+        Task {
+            do {
+                // Get available content filters
+                let availableContent = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+                
+                // Find the main display
+                guard let mainDisplay = availableContent.displays.first(where: { $0.displayID == CGMainDisplayID() }) else {
+                    logger.log("Failed to find main display")
+                    semaphore.signal()
+                    return
+                }
+                
+                // Create a filter for the main display
+                let filter = SCContentFilter(display: mainDisplay, excludingWindows: [])
+                
+                // Capture the content
+                let configuration = SCStreamConfiguration()
+                configuration.width = Int(rect.width)
+                configuration.height = Int(rect.height)
+                configuration.sourceRect = CGRect(x: 0, y: 0, width: rect.width, height: rect.height)
+                
+                let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+                resultImage = NSImage(cgImage: image, size: rect.size)
+                
+            } catch {
+                logger.log("Failed to capture screen: \(error)")
+            }
+            
+            semaphore.signal()
+        }
+        
+        // Wait for async capture to complete
+        semaphore.wait()
+        return resultImage
     }
     
     /// Save the screenshot to disk

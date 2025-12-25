@@ -16,8 +16,8 @@ struct ExportView: View {
                     Picker("Format", selection: $exportFormat) {
                         Text("PDF").tag(ExportFormat.pdf)
                         Text("JSON").tag(ExportFormat.json)
-                        Text("Text").tag(ExportFormat.text)
-                        Text("HTML").tag(ExportFormat.html)
+                        Text("CSV").tag(ExportFormat.csv)
+                        Text("PNG").tag(ExportFormat.png)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
