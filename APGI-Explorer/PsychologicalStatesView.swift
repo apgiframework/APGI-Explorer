@@ -211,7 +211,7 @@ struct PsychologicalStatesView: View {
         .onAppear {
             stateModel.states.sort { $0.name < $1.name }
         }
-        .onChange(of: selectedParameter) { _ in
+        .onChange(of: selectedParameter) {
             showParameterSummary = selectedParameter != "All"
         }
     }
@@ -323,7 +323,7 @@ struct PsychologicalStatesView: View {
     
     private func parameterRow(state: PsychologicalState, key: String) -> some View {
         let value = getValue(for: state, key: key)
-        let numericValue = extractNumericValue(from: value)
+        _ = extractNumericValue(from: value) // Extract numeric value for potential future use
         
         return HStack(spacing: 8) {
             // Parameter indicator

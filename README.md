@@ -78,6 +78,37 @@ Detailed analysis of 8 distinct cognitive profiles, each with unique characteris
 - **Keyboard Navigation**: Full keyboard support
 - **Touch Bar Support**: Quick actions on supported MacBooks
 
+### 📸 Screenshot Automation
+The ScreenshotAutomation provides a robust solution for generating app screenshots across multiple configurations.
+
+#### Key Features
+- **Multi-configuration Support**:
+  - Multiple appearance modes (light/dark)
+  - Various screen resolutions
+  - Custom navigation paths
+  - Interactive state capture
+- **Advanced Features**:
+  - Automated UI element interaction
+  - Scrollable content capture
+  - Accessibility information inclusion
+  - Configurable output formats and quality
+
+### 🚀 Onboarding Tour
+The OnboardingTour implements an engaging onboarding experience that helps users understand the app's features and the APGI framework.
+
+#### Interactive Tutorial
+- Step-by-step guidance through key features
+- Visual highlights of important UI elements
+- Interactive elements for hands-on learning
+- Customizable appearance to match user preferences
+
+#### Educational Content
+- Comprehensive APGI framework explanation
+- Detailed profile interpretation guides
+- Practical usage tips and best practices
+- Visual aids and examples for better understanding
+
+
 ## 📊 Data & Privacy
 
 ### Data Collection
