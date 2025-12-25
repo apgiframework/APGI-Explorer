@@ -17,6 +17,11 @@ struct MainTabView: View {
                     Label("States", systemImage: "brain.head.profile")
                 }
             
+            PsychologicalStatesVisualizationView()
+                .tabItem {
+                    Label("Visualization", systemImage: "chart.scatter")
+                }
+            
             ProfileComparisonView()
                 .tabItem {
                     Label("Compare", systemImage: "person.2.fill")

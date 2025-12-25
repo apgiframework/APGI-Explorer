@@ -56,6 +56,7 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
     @State private var showingClearDataAlert = false
     @State private var showingOnboardingView = false
+    @State private var selectedTab: Int = 0
     @Environment(\.dismiss) private var dismiss
     
     private enum ExportQuality: String, CaseIterable {
@@ -116,73 +117,76 @@ struct SettingsView: View {
                 .fontWeight(.bold)
                 .padding()
             
-            // Tab content
-            TabView {
-                // General Settings
-                generalSettingsTab
-                    .tabItem {
-                        Label("General", systemImage: "gear")
+            // Tab content with sidebar layout
+            HSplitView {
+                // Sidebar with navigation
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Settings")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+                    
+                    List(selection: $selectedTab) {
+                        Section("Basic") {
+                            Label("General", systemImage: "gear")
+                                .tag(0)
+                            Label("Appearance", systemImage: "paintpalette")
+                                .tag(1)
+                            Label("Charts", systemImage: "chart.bar")
+                                .tag(2)
+                        }
+                        
+                        Section("Data & Privacy") {
+                            Label("Privacy", systemImage: "hand.raised")
+                                .tag(3)
+                            Label("Backup", systemImage: "arrow.down.doc")
+                                .tag(4)
+                        }
+                        
+                        Section("Advanced") {
+                            Label("Notifications", systemImage: "bell")
+                                .tag(5)
+                            Label("Windows", systemImage: "square.3.layers.3d")
+                                .tag(6)
+                            Label("States", systemImage: "brain.head.profile")
+                                .tag(7)
+                            Label("Advanced", systemImage: "gearshape.2")
+                                .tag(8)
+                        }
                     }
-                    .tag(0)
+                    .listStyle(SidebarListStyle())
+                }
+                .frame(minWidth: 200, idealWidth: 250, maxWidth: 300)
                 
-                // Appearance Settings
-                appearanceSettingsTab
-                    .tabItem {
-                        Label("Appearance", systemImage: "paintpalette")
+                // Content area
+                Group {
+                    switch selectedTab {
+                    case 0:
+                        generalSettingsTab
+                    case 1:
+                        appearanceSettingsTab
+                    case 2:
+                        chartsSettingsTab
+                    case 3:
+                        dataPrivacySettingsTab
+                    case 4:
+                        exportBackupSettingsTab
+                    case 5:
+                        notificationsSettingsTab
+                    case 6:
+                        windowSettingsTab
+                    case 7:
+                        psychologicalStatesSettingsTab
+                    case 8:
+                        advancedSettingsTab
+                    default:
+                        generalSettingsTab
                     }
-                    .tag(1)
-                
-                // Charts & Visualization Settings
-                chartsSettingsTab
-                    .tabItem {
-                        Label("Charts", systemImage: "chart.bar")
-                    }
-                    .tag(2)
-                
-                // Data & Privacy Settings
-                dataPrivacySettingsTab
-                    .tabItem {
-                        Label("Privacy", systemImage: "hand.raised")
-                    }
-                    .tag(3)
-                
-                // Export & Backup Settings
-                exportBackupSettingsTab
-                    .tabItem {
-                        Label("Backup", systemImage: "arrow.down.doc")
-                    }
-                    .tag(4)
-                
-                // Notifications Settings
-                notificationsSettingsTab
-                    .tabItem {
-                        Label("Notifications", systemImage: "bell")
-                    }
-                    .tag(5)
-                
-                // Window Management Settings
-                windowSettingsTab
-                    .tabItem {
-                        Label("Windows", systemImage: "square.3.layers.3d")
-                    }
-                    .tag(6)
-                
-                // Psychological States Settings
-                psychologicalStatesSettingsTab
-                    .tabItem {
-                        Label("States", systemImage: "brain.head.profile")
-                    }
-                    .tag(7)
-                
-                // Advanced Settings
-                advancedSettingsTab
-                    .tabItem {
-                        Label("Advanced", systemImage: "gearshape.2")
-                    }
-                    .tag(8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .tabViewStyle(DefaultTabViewStyle())
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 800, minHeight: 600)
         .sheet(isPresented: $showingOnboardingView) {
