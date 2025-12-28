@@ -21,6 +21,11 @@ class UserDefaultsManager {
         static let analyticsEnabled = "analyticsEnabled"
         static let soundEffectsEnabled = "soundEffectsEnabled"
         static let hapticsEnabled = "hapticsEnabled"
+        static let backupFrequency = "backupFrequency"
+        static let lastBackupDate = "lastBackupDate"
+        static let windowArrangementPreference = "windowArrangementPreference"
+        static let statesDisplayMode = "statesDisplayMode"
+        static let defaultComparisonMode = "defaultComparisonMode"
     }
     
     // MARK: - Onboarding
@@ -103,6 +108,57 @@ class UserDefaultsManager {
         set { defaults.set(newValue, forKey: Keys.hapticsEnabled) }
     }
     
+    // MARK: - Backup Settings
+    
+    var backupFrequency: BackupFrequency {
+        get {
+            guard let rawValue = defaults.string(forKey: Keys.backupFrequency),
+                  let frequency = BackupFrequency(rawValue: rawValue) else {
+                return .weekly
+            }
+            return frequency
+        }
+        set { defaults.set(newValue.rawValue, forKey: Keys.backupFrequency) }
+    }
+    
+    var lastBackupDate: Date? {
+        get { defaults.object(forKey: Keys.lastBackupDate) as? Date }
+        set { defaults.set(newValue, forKey: Keys.lastBackupDate) }
+    }
+    
+    var windowArrangementPreference: WindowArrangement {
+        get {
+            guard let rawValue = defaults.string(forKey: Keys.windowArrangementPreference),
+                  let arrangement = WindowArrangement(rawValue: rawValue) else {
+                return .cascade
+            }
+            return arrangement
+        }
+        set { defaults.set(newValue.rawValue, forKey: Keys.windowArrangementPreference) }
+    }
+    
+    var statesDisplayMode: DisplayMode {
+        get {
+            guard let rawValue = defaults.string(forKey: Keys.statesDisplayMode),
+                  let mode = DisplayMode(rawValue: rawValue) else {
+                return .list
+            }
+            return mode
+        }
+        set { defaults.set(newValue.rawValue, forKey: Keys.statesDisplayMode) }
+    }
+    
+    var defaultComparisonMode: ComparisonMode {
+        get {
+            guard let rawValue = defaults.string(forKey: Keys.defaultComparisonMode),
+                  let mode = ComparisonMode(rawValue: rawValue) else {
+                return .radar
+            }
+            return mode
+        }
+        set { defaults.set(newValue.rawValue, forKey: Keys.defaultComparisonMode) }
+    }
+    
     // MARK: - Statistics
     
     var lastQuizDate: Date? {
@@ -135,4 +191,54 @@ enum AppTheme: String, CaseIterable {
     case system = "system"
     case light = "light"
     case dark = "dark"
+}
+
+enum BackupFrequency: String, CaseIterable {
+    case daily = "Daily"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+    case manual = "Manual Only"
+    
+    var timeInterval: TimeInterval {
+        switch self {
+        case .daily: return 24 * 60 * 60 // 1 day
+        case .weekly: return 7 * 24 * 60 * 60 // 7 days
+        case .monthly: return 30 * 24 * 60 * 60 // 30 days
+        case .manual: return 0 // No automatic backup
+        }
+    }
+}
+
+enum WindowArrangement: String, CaseIterable {
+    case cascade = "Cascade"
+    case tile = "Tile"
+    case sideBySide = "Side by Side"
+}
+
+enum DisplayMode: String, CaseIterable, Identifiable {
+    case list = "List"
+    case grid = "Grid"
+    var id: Self { self }
+    var icon: String {
+        switch self {
+        case .list: return "list.bullet"
+        case .grid: return "square.grid.2x2"
+        }
+    }
+}
+
+enum ComparisonMode: String, CaseIterable, Identifiable {
+    case radar = "Radar"
+    case bar = "Bar"
+    case line = "Line"
+    
+    var id: String { self.rawValue }
+    
+    var icon: String {
+        switch self {
+        case .radar: return "chart.radar"
+        case .bar: return "chart.bar"
+        case .line: return "chart.line.uptrend.xyaxis"
+        }
+    }
 }

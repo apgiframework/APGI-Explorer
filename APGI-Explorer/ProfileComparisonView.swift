@@ -6,27 +6,11 @@ struct ProfileComparisonView: View {
     @Environment(\.appDependencies) private var dependencies
     @State private var selectedProfile1: String = ""
     @State private var selectedProfile2: String = ""
-    @State private var comparisonMode: ComparisonMode = .radar
+    @AppStorage("defaultComparisonMode") private var comparisonMode: ComparisonMode = .radar
     @State private var isLoading = false
     @State private var error: Error?
     @State private var showExportSheet = false
     @State private var exportData: Data?
-    
-    private enum ComparisonMode: String, CaseIterable, Identifiable {
-        case radar = "Radar"
-        case bar = "Bar"
-        case line = "Line"
-        
-        var id: String { self.rawValue }
-        
-        var icon: String {
-            switch self {
-            case .radar: return "chart.radar"
-            case .bar: return "chart.bar"
-            case .line: return "chart.line.uptrend.xyaxis"
-            }
-        }
-    }
     
     var body: some View {
         ScrollView {

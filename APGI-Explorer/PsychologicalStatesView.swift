@@ -5,23 +5,14 @@ import UIKit
 import AppKit
 #endif
 
-enum DisplayMode: String, CaseIterable, Identifiable {
-    case list, grid
-    var id: Self { self }
-    var icon: String {
-        switch self {
-        case .list: return "list.bullet"
-        case .grid: return "square.grid.2x2"
-        }
-    }
-}
+// DisplayMode is defined in UserDefaultsManager.swift
 
 struct PsychologicalStatesView: View {
     @StateObject private var stateModel = StateModel()
     @Environment(\.appDependencies) private var dependencies
     @State private var searchText = ""
     @State private var selectedParameter = "All"
-    @State private var displayMode: DisplayMode = .list
+    @AppStorage("statesDisplayMode") private var displayMode: DisplayMode = .list
     @State private var showParameterSummary = true
     
     private var searchService: StateSearchService {

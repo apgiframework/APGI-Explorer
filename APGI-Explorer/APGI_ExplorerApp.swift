@@ -13,6 +13,7 @@ struct APGIExplorerApp: App {
     @StateObject private var profileManager = ProfileManager()
     @StateObject private var stateModel = StateModel()
     @StateObject private var appState = AppState.shared
+    @StateObject private var themeManager = ThemeManager.shared
     
     let persistenceController = PersistenceController.shared
     
@@ -23,6 +24,11 @@ struct APGIExplorerApp: App {
             ScreenshotAutomationRunner.run()
         }
         #endif
+        
+        // Start automatic backup scheduling
+        DispatchQueue.main.async {
+            FileStorageManager.shared.scheduleAutomaticBackups()
+        }
     }
     
     var body: some Scene {
@@ -33,11 +39,17 @@ struct APGIExplorerApp: App {
                     .environmentObject(profileManager)
                     .environmentObject(stateModel)
                     .environmentObject(appState)
+                    .environmentObject(themeManager)
                     .withGlobalKeyboardShortcuts(profileManager: profileManager)
+                    .preferredColorScheme(themeManager.currentTheme.getColorScheme())
+                    .environment(\.currentTheme, themeManager.currentTheme)
             } else {
                 OnboardingView()
                     .environmentObject(appState)
+                    .environmentObject(themeManager)
                     .frame(minWidth: 800, minHeight: 600)
+                    .preferredColorScheme(themeManager.currentTheme.getColorScheme())
+                    .environment(\.currentTheme, themeManager.currentTheme)
             }
         }
         .commands {
@@ -67,18 +79,27 @@ struct APGIExplorerApp: App {
         WindowGroup("State Explorer", id: "state-explorer") {
             PsychologicalStatesView()
                 .environmentObject(stateModel)
+                .environmentObject(themeManager)
+                .preferredColorScheme(themeManager.currentTheme.getColorScheme())
+                .environment(\.currentTheme, themeManager.currentTheme)
         }
         .defaultSize(width: 1200, height: 800)
         
         WindowGroup("Profile Comparison", id: "profile-comparison") {
             ProfileComparisonView()
                 .environmentObject(profileManager)
+                .environmentObject(themeManager)
+                .preferredColorScheme(themeManager.currentTheme.getColorScheme())
+                .environment(\.currentTheme, themeManager.currentTheme)
         }
         .defaultSize(width: 1000, height: 700)
         
         Settings {
             AppSettingsView()
                 .environmentObject(AppState.shared)
+                .environmentObject(themeManager)
+                .preferredColorScheme(themeManager.currentTheme.getColorScheme())
+                .environment(\.currentTheme, themeManager.currentTheme)
         }
         #endif
     }

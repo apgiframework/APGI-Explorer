@@ -4,7 +4,7 @@ struct ExportView: View {
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject var profileManager: ProfileManager
     private(set) var profile: QuizProfile
-    @State private var exportFormat: ExportFormat = .pdf
+    @AppStorage("exportFormat") private var exportFormat: ExportFormat = .json
     @State private var isExporting = false
     @State private var showShareSheet = false
     @State private var exportFileURL: URL?

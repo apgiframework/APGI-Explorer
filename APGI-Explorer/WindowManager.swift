@@ -115,6 +115,11 @@ class WindowManager: ObservableObject {
         }
     }
     
+    func arrangeWindowsWithUserPreference() {
+        let preference = UserDefaultsManager.shared.windowArrangementPreference
+        arrangeWindows(preference)
+    }
+    
     private func arrangeCascade(in frame: CGRect) {
         var offset: CGFloat = 0
         for window in activeWindows.values {
@@ -181,11 +186,7 @@ class WindowManager: ObservableObject {
     }
 }
 
-enum WindowArrangement {
-    case cascade
-    case tile
-    case sideBySide
-}
+// WindowArrangement is defined in UserDefaultsManager.swift
 
 // MARK: - Window Delegate
 

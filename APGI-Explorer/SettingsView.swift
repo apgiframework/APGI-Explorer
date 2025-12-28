@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     // AppStorage bindings for all settings
-    @AppStorage("defaultChartStyle") private var defaultChartStyle: ChartStyle = .radar
+    @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
     @AppStorage("autoSaveProfiles") private var autoSaveProfiles: Bool = true
     @AppStorage("showTooltips") private var showTooltips: Bool = true
     @AppStorage("animationSpeed") private var animationSpeed: Double = 1.0
@@ -13,8 +13,10 @@ struct SettingsView: View {
     @AppStorage("exportQuality") private var exportQuality: ExportQuality = .high
     @AppStorage("enableAnalytics") private var enableAnalytics: Bool = false
     
+    // Theme manager integration
+    @StateObject private var themeManager = ThemeManager.shared
+    
     // Additional app settings from UserDefaultsManager
-    @AppStorage("theme") private var theme: AppTheme = .system
     @AppStorage("showConfidenceIndicators") private var showConfidenceIndicators: Bool = true
     @AppStorage("quizReminderEnabled") private var quizReminderEnabled: Bool = false
     @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled: Bool = true
@@ -66,48 +68,7 @@ struct SettingsView: View {
         case ultra = "Ultra"
     }
     
-    private enum BackupFrequency: String, CaseIterable {
-        case daily = "Daily"
-        case weekly = "Weekly"
-        case monthly = "Monthly"
-        case manual = "Manual Only"
-    }
-    
-    private enum WindowArrangement: String, CaseIterable {
-        case cascade = "Cascade"
-        case tile = "Tile"
-        case sideBySide = "Side by Side"
-    }
-    
-    // Import DisplayMode from PsychologicalStatesView
-    enum DisplayMode: String, CaseIterable, Identifiable {
-        case list = "List"
-        case grid = "Grid"
-        var id: Self { self }
-        var icon: String {
-            switch self {
-            case .list: return "list.bullet"
-            case .grid: return "square.grid.2x2"
-            }
-        }
-    }
-    
-    // Import ComparisonMode from ProfileComparisonView
-    enum ComparisonMode: String, CaseIterable, Identifiable {
-        case radar = "Radar"
-        case bar = "Bar"
-        case line = "Line"
-        
-        var id: String { self.rawValue }
-        
-        var icon: String {
-            switch self {
-            case .radar: return "chart.radar"
-            case .bar: return "chart.bar"
-            case .line: return "chart.line.uptrend.xyaxis"
-            }
-        }
-    }
+    // Use enums from UserDefaultsManager instead of duplicating them
     
     var body: some View {
         VStack(spacing: 0) {
@@ -154,6 +115,8 @@ struct SettingsView: View {
                                 .tag(7)
                             Label("Advanced", systemImage: "gearshape.2")
                                 .tag(8)
+                            Label("Comparison", systemImage: "chart.bar.doc.horizontal")
+                                .tag(9)
                         }
                     }
                     .listStyle(SidebarListStyle())
@@ -181,6 +144,8 @@ struct SettingsView: View {
                         psychologicalStatesSettingsTab
                     case 8:
                         advancedSettingsTab
+                    case 9:
+                        profileComparisonSettingsTab
                     default:
                         generalSettingsTab
                     }
@@ -382,6 +347,7 @@ struct SettingsView: View {
             }
             .padding()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .tabItem {
             Label("Notifications", systemImage: "bell")
         }
@@ -398,13 +364,16 @@ struct SettingsView: View {
                         .padding(.horizontal)
                     
                     Form {
-                        Picker("App theme", selection: $theme) {
+                        Picker("App theme", selection: $themeManager.currentTheme) {
                             ForEach(AppTheme.allCases, id: \.self) { theme in
                                 Text(themeName(for: theme)).tag(theme)
                             }
                         }
                         .pickerStyle(RadioGroupPickerStyle())
                         .padding(.vertical, 8)
+                        .onChange(of: themeManager.currentTheme) {
+                            // Theme change is handled automatically by ThemeManager
+                        }
                     }
                     .padding()
                     .background(Color(NSColor.controlBackgroundColor))
@@ -442,6 +411,7 @@ struct SettingsView: View {
             }
             .padding()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .tabItem {
             Label("Appearance", systemImage: "paintpalette")
         }
@@ -500,32 +470,6 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-            .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
-                
-                // Chart Interaction Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Interaction")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    Form {
-                        Toggle("Show data points", isOn: .constant(true))
-                            .help("Show individual data points on line and radar charts")
-                            .padding(.vertical, 4)
-                        
-                        Toggle("Show values on bars", isOn: .constant(true))
-                            .help("Display values on top of bar chart elements")
-                            .padding(.vertical, 4)
-                        
-                        Toggle("Allow zooming", isOn: .constant(true))
-                            .help("Allow zooming in on charts")
-                            .padding(.vertical, 4)
-                    }
-                    .padding()
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
@@ -533,6 +477,7 @@ struct SettingsView: View {
             }
             .padding()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .tabItem {
             Label("Charts", systemImage: "chart.bar")
         }
@@ -571,6 +516,27 @@ struct SettingsView: View {
                         Toggle("Crash reporting", isOn: $crashReportingEnabled)
                             .help("Automatically send crash reports to help fix bugs")
                             .padding(.vertical, 4)
+                        
+                        Toggle("Auto-refresh data", isOn: $autoRefreshData)
+                            .help("Automatically refresh data throughout the app")
+                            .padding(.vertical, 4)
+                        
+                        if autoRefreshData {
+                            HStack {
+                                Text("Refresh interval")
+                                Spacer()
+                                Picker("Minutes", selection: $refreshInterval) {
+                                    Text("1 min").tag(60.0)
+                                    Text("5 min").tag(300.0)
+                                    Text("10 min").tag(600.0)
+                                    Text("30 min").tag(1800.0)
+                                    Text("1 hour").tag(3600.0)
+                                }
+                                .frame(width: 120)
+                            }
+                            .help("How often to refresh data throughout the app")
+                            .padding(.vertical, 4)
+                        }
                     }
                     .padding()
                     .background(Color(NSColor.controlBackgroundColor))
@@ -700,10 +666,10 @@ struct SettingsView: View {
                     VStack(spacing: 12) {
                         Button("Arrange Windows in Cascade") {
                             #if os(macOS)
-                            WindowManager.shared.arrangeWindows(.cascade)
+                            WindowManager.shared.arrangeWindowsWithUserPreference()
                             #endif
                         }
-                        .help("Arrange all windows in a cascade pattern")
+                        .help("Arrange all windows using your preferred layout")
                         
                         Button("Tile Windows") {
                             #if os(macOS)
@@ -743,55 +709,66 @@ struct SettingsView: View {
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    Form {
-                        Toggle("Automatic Backups", isOn: $autoBackupEnabled)
-                            .help("Enable automatic backups of your data")
-                            .padding(.vertical, 4)
-                        
-                        if autoBackupEnabled {
-                            Picker("Backup Frequency", selection: $backupFrequency) {
-                                ForEach(BackupFrequency.allCases, id: \.self) { frequency in
-                                    Text(frequency.rawValue).tag(frequency)
-                                }
-                            }
-                            .padding(.vertical, 4)
+                    VStack(spacing: 16) {
+                        // Backup Controls Card
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Backups")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
                             
-                            HStack {
-                                Text("Max Backups")
-                                Spacer()
-                                Picker("", selection: $maxBackupFiles) {
-                                    Text("5").tag(5)
-                                    Text("10").tag(10)
-                                    Text("20").tag(20)
-                                    Text("50").tag(50)
-                                    Text("Unlimited").tag(1000)
+                            VStack(spacing: 12) {
+                                Toggle("Automatic", isOn: $autoBackupEnabled)
+                                    .help("Enable automatic backups of your data")
+                                
+                                if autoBackupEnabled {
+                                    HStack {
+                                        Text("Backup Frequency")
+                                        Spacer()
+                                        Picker("", selection: $backupFrequency) {
+                                            ForEach(BackupFrequency.allCases, id: \.self) { frequency in
+                                                Text(frequency.rawValue).tag(frequency)
+                                            }
+                                        }
+                                        .frame(width: 120)
+                                    }
+                                    
+                                    HStack {
+                                        Text("Max Backups")
+                                        Spacer()
+                                        Picker("", selection: $maxBackupFiles) {
+                                            Text("5").tag(5)
+                                            Text("10").tag(10)
+                                            Text("20").tag(20)
+                                            Text("50").tag(50)
+                                            Text("Unlimited").tag(1000)
+                                        }
+                                        .frame(width: 120)
+                                    }
                                 }
-                                .frame(width: 120)
+                                
+                                HStack {
+                                    Button("Create Backup Now") {
+                                        Task {
+                                            let _ = try? await FileStorageManager.shared.createBackup()
+                                        }
+                                    }
+                                    .help("Manually create a backup now")
+                                    
+                                    Spacer()
+                                    
+                                    Button("Restore Backup...") {
+                                        // Show file picker for backup restoration
+                                    }
+                                    .help("Restore from a previous backup")
+                                }
                             }
-                            .padding(.vertical, 4)
                         }
-                        
-                        HStack {
-                            Button("Create Backup Now") {
-                                Task {
-                                    let _ = try? await FileStorageManager.shared.createBackup()
-                                }
-                            }
-                            .help("Manually create a backup now")
-                            
-                            Spacer()
-                            
-                            Button("Restore Backup...") {
-                                // Show file picker for backup restoration
-                            }
-                            .help("Restore from a previous backup")
-                        }
-                        .padding(.vertical, 4)
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(8)
+                        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
                 
                 // Export Section
@@ -951,6 +928,13 @@ struct SettingsView: View {
                     .help("Display performance statistics")
             }
             
+            Section(header: Text("Interface")) {
+                Toggle("Show advanced options", isOn: $showAdvancedOptions)
+                    .help("Display advanced options throughout the app")
+                Toggle("Compact mode", isOn: $compactModeEnabled)
+                    .help("Use a more compact interface layout")
+            }
+            
             Section(header: Text("Experimental")) {
                 Toggle("Enable experimental features", isOn: .constant(false))
                     .help("Try out new features in development")
@@ -998,6 +982,96 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .tabItem {
             Label("Advanced", systemImage: "gearshape.2")
+        }
+    }
+    
+    // MARK: - Profile Comparison Settings Tab
+    private var profileComparisonSettingsTab: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Comparison Display Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Comparison Display")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    Form {
+                        Picker("Default comparison mode", selection: $defaultComparisonMode) {
+                            ForEach(ComparisonMode.allCases) { mode in
+                                Label(mode.rawValue, systemImage: mode.icon)
+                                    .tag(mode)
+                            }
+                        }
+                        .help("Default chart type for profile comparisons")
+                        .padding(.vertical, 4)
+                        
+                        Toggle("Show similarity score", isOn: $showComparisonSimilarity)
+                            .help("Display similarity percentage between profiles")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Comparison animations", isOn: $comparisonAnimationEnabled)
+                            .help("Enable animations for comparison transitions")
+                            .padding(.vertical, 4)
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
+                
+                // Comparison Options Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Comparison Options")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    Form {
+                        Toggle("Show differences only", isOn: .constant(false))
+                            .help("Highlight only the differences between profiles")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Normalize values", isOn: .constant(true))
+                            .help("Normalize values for better comparison")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show average profile", isOn: .constant(false))
+                            .help("Display average profile in comparisons")
+                            .padding(.vertical, 4)
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
+                
+                // Export Comparison Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Export Comparison")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    VStack(spacing: 12) {
+                        Button("Export Current Comparison") {
+                            // Export current comparison
+                        }
+                        .help("Export the current profile comparison")
+                        
+                        Button("Save Comparison Template") {
+                            // Save comparison template
+                        }
+                        .help("Save current comparison settings as template")
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
+            }
+            .padding()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .tabItem {
+            Label("Comparison", systemImage: "chart.bar.doc.horizontal")
         }
     }
     
@@ -1062,9 +1136,7 @@ struct SettingsView: View {
     }
     
     private func resetColorScheme() {
-        UserDefaults.standard.removeObject(forKey: "theme")
-        UserDefaults.standard.synchronize()
-        theme = .system
+        themeManager.setTheme(.system)
     }
     
     private func resetWindowLayouts() {
@@ -1105,7 +1177,7 @@ struct SettingsView: View {
         dataRetentionDays = 365
         exportQuality = .high
         enableAnalytics = false
-        theme = .system
+        themeManager.setTheme(.system)
         showConfidenceIndicators = true
         quizReminderEnabled = false
         soundEffectsEnabled = true
@@ -1122,6 +1194,26 @@ struct SettingsView: View {
         defaultComparisonMode = .radar
         showComparisonSimilarity = true
         comparisonAnimationEnabled = true
+        
+        // Reset additional settings
+        autoBackupEnabled = true
+        backupFrequency = .weekly
+        maxBackupFiles = 10
+        windowArrangementPreference = .cascade
+        showWelcomeScreen = true
+        crashReportingEnabled = true
+        debugModeEnabled = false
+        exportFormat = .json
+        includeMetadataInExports = true
+        autoRefreshData = true
+        refreshInterval = 300.0
+        showAdvancedOptions = false
+        compactModeEnabled = false
+        sidebarWidth = 250.0
+        showGridLines = true
+        chartAnimationEnabled = true
+        notificationSoundEnabled = true
+        notificationBadgeEnabled = true
     }
     
     private func viewLicense() {

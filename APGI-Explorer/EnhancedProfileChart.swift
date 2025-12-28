@@ -65,6 +65,8 @@ struct EnhancedProfileChart: View {
     let profile: APGIProfile
     let comparisonProfiles: [APGIProfile]
     
+    @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
+    
     // Sample historical data (replace with actual data from your data store)
     private var historicalData: [HistoricalDataPoint] {
         // Generate sample data for the last 7 days
@@ -119,6 +121,12 @@ struct EnhancedProfileChart: View {
     
     var body: some View {
         TabView {
+            // Default Chart Style (based on user preference)
+            defaultChartView
+                .tabItem {
+                    Label(defaultChartStyleName, systemImage: defaultChartStyleIcon)
+                }
+            
             // Radar Chart Tab
             radarChartView
                 .tabItem {
@@ -148,6 +156,39 @@ struct EnhancedProfileChart: View {
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     #endif
+    }
+    
+    // MARK: - Default Chart View
+    
+    private var defaultChartView: some View {
+        switch defaultChartStyle {
+        case .radar:
+            return AnyView(radarChartView)
+        case .bar:
+            return AnyView(barChartView)
+        case .line:
+            return AnyView(lineChartView)
+        case .area:
+            return AnyView(areaChartView)
+        }
+    }
+    
+    private var defaultChartStyleName: String {
+        switch defaultChartStyle {
+        case .radar: return "Radar"
+        case .bar: return "Bar"
+        case .line: return "Line"
+        case .area: return "Area"
+        }
+    }
+    
+    private var defaultChartStyleIcon: String {
+        switch defaultChartStyle {
+        case .radar: return "circle.hexagonpath"
+        case .bar: return "chart.bar"
+        case .line: return "chart.line.uptrend.xyaxis"
+        case .area: return "chart.area.stack"
+        }
     }
     
     // MARK: - Tab Views
@@ -382,6 +423,151 @@ struct EnhancedProfileChart: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding()
+        }
+    }
+    
+    // MARK: - Additional Chart Views
+    
+    private var barChartView: some View {
+        VStack {
+            Text("Parameter Bar Chart")
+                .font(.headline)
+                .padding(.bottom)
+            
+            Chart(profileDataPoints) { point in
+                BarMark(
+                    x: .value("Parameter", point.parameter),
+                    y: .value("Score", point.value)
+                )
+                .foregroundStyle(colorForParameter(point.parameter))
+                .opacity(0.8)
+            }
+            .chartYScale(domain: 0...100)
+            .chartLegend(.hidden)
+            .frame(height: 300)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(NSColor.controlBackgroundColor).opacity(0.2))
+                    .shadow(radius: 5)
+            )
+            .padding()
+            
+            Spacer()
+            
+            VStack(alignment: .leading) {
+                ForEach(profileDataPoints) { point in
+                    HStack {
+                        Circle()
+                            .fill(colorForParameter(point.parameter))
+                            .frame(width: 12, height: 12)
+                        Text(point.parameter)
+                        Spacer()
+                        Text("\(Int(point.value))")
+                            .font(.system(.body, design: .monospaced))
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+    
+    private var lineChartView: some View {
+        VStack {
+            Text("Parameter Line Chart")
+                .font(.headline)
+                .padding(.bottom)
+            
+            Chart(profileDataPoints) { point in
+                LineMark(
+                    x: .value("Parameter", point.parameter),
+                    y: .value("Score", point.value)
+                )
+                .foregroundStyle(colorForParameter(point.parameter))
+                .lineStyle(StrokeStyle(lineWidth: 3))
+                .symbol {
+                    Circle()
+                        .fill(colorForParameter(point.parameter))
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .chartYScale(domain: 0...100)
+            .chartLegend(.hidden)
+            .frame(height: 300)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(NSColor.controlBackgroundColor).opacity(0.2))
+                    .shadow(radius: 5)
+            )
+            .padding()
+            
+            Spacer()
+            
+            VStack(alignment: .leading) {
+                ForEach(profileDataPoints) { point in
+                    HStack {
+                        Circle()
+                            .fill(colorForParameter(point.parameter))
+                            .frame(width: 12, height: 12)
+                        Text(point.parameter)
+                        Spacer()
+                        Text("\(Int(point.value))")
+                            .font(.system(.body, design: .monospaced))
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+    
+    private var areaChartView: some View {
+        VStack {
+            Text("Parameter Area Chart")
+                .font(.headline)
+                .padding(.bottom)
+            
+            Chart(profileDataPoints) { point in
+                AreaMark(
+                    x: .value("Parameter", point.parameter),
+                    y: .value("Score", point.value)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [colorForParameter(point.parameter).opacity(0.6), colorForParameter(point.parameter).opacity(0.1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .lineStyle(StrokeStyle(lineWidth: 2))
+            }
+            .chartYScale(domain: 0...100)
+            .chartLegend(.hidden)
+            .frame(height: 300)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(NSColor.controlBackgroundColor).opacity(0.2))
+                    .shadow(radius: 5)
+            )
+            .padding()
+            
+            Spacer()
+            
+            VStack(alignment: .leading) {
+                ForEach(profileDataPoints) { point in
+                    HStack {
+                        Circle()
+                            .fill(colorForParameter(point.parameter))
+                            .frame(width: 12, height: 12)
+                        Text(point.parameter)
+                        Spacer()
+                        Text("\(Int(point.value))")
+                            .font(.system(.body, design: .monospaced))
+                    }
+                }
+            }
+            .padding()
         }
     }
     

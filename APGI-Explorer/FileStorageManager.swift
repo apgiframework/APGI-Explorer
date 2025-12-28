@@ -1,11 +1,13 @@
 // FileStorageManager.swift
 
 import Foundation
+import Combine
 
-class FileStorageManager {
+class FileStorageManager: ObservableObject {
     static let shared = FileStorageManager()
     
     private let fileManager = FileManager.default
+    private var backupTimer: Timer?
     
     private lazy var documentsDirectory: URL = {
         fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -114,6 +116,59 @@ class FileStorageManager {
     
     func deleteBackup(at url: URL) throws {
         try fileManager.removeItem(at: url)
+    }
+    
+    // MARK: - Automatic Backup Scheduling
+    
+    func scheduleAutomaticBackups() {
+        // Stop existing timer
+        backupTimer?.invalidate()
+        
+        let frequency = UserDefaultsManager.shared.backupFrequency
+        
+        // Don't schedule if manual backup is selected
+        guard frequency != .manual else { return }
+        
+        let interval = frequency.timeInterval
+        guard interval > 0 else { return }
+        
+        // Check if backup is needed
+        checkAndPerformBackup()
+        
+        // Schedule recurring backups
+        backupTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            self.checkAndPerformBackup()
+        }
+    }
+    
+    func stopAutomaticBackups() {
+        backupTimer?.invalidate()
+        backupTimer = nil
+    }
+    
+    private func checkAndPerformBackup() {
+        let userDefaults = UserDefaultsManager.shared
+        let frequency = userDefaults.backupFrequency
+        
+        // Skip if manual backup
+        guard frequency != .manual else { return }
+        
+        // Check if enough time has passed since last backup
+        if let lastBackupDate = userDefaults.lastBackupDate {
+            let timeSinceLastBackup = Date().timeIntervalSince(lastBackupDate)
+            guard timeSinceLastBackup >= frequency.timeInterval else { return }
+        }
+        
+        // Perform backup
+        Task {
+            do {
+                _ = try await createBackup()
+                userDefaults.lastBackupDate = Date()
+                print("Automatic backup completed successfully")
+            } catch {
+                print("Automatic backup failed: \(error)")
+            }
+        }
     }
     
     // MARK: - Helper Methods
