@@ -6,6 +6,13 @@ import UniformTypeIdentifiers
 import Accessibility
 import ScreenCaptureKit
 
+
+// run the script
+// xcodebuild -scheme APGI-Explorer build
+// xcodebuild -scheme APGI-Explorer run -arguments --screenshot-mode
+// xcodebuild -scheme APGI-Explorer -configuration Debug -allowProvisioningUpdates -destination 'platform=macOS' RUN_DESTINATION_OPTIONS=--screenshot-mode
+
+
 // MARK: - Screen Recording Permission
 struct ScreenRecordingPermission {
     static var hasPermission: Bool {
@@ -33,7 +40,7 @@ struct ScreenshotConfig {
     let customScreenPaths: [CustomScreenPath]
     
     static let `default` = ScreenshotConfig(
-        outputDirectory: "./screenshots",
+        outputDirectory: (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/Screenshots",
         imageFormat: .png,
         quality: 0.9,
         appearanceModes: [.light, .dark],
@@ -116,6 +123,7 @@ enum NavigationType {
     case longPress(String)
 }
 
+// MARK: - Direction
 enum Direction {
     case up, down, left, right
 }
@@ -125,6 +133,24 @@ struct InteractionStep {
     let target: String
     let value: String?
     let delay: TimeInterval
+}
+
+// MARK: - Interaction Types
+enum InteractionType {
+    case tapElement(String)
+    case typeText(String, String)
+    case setSlider(String, Double)
+    case scrollArea(String, Double)
+    case toggleSwitch(String)
+    case selectTab(String)
+    case completeQuiz
+    case swipe(Direction)
+    case longPress(String)
+    case buttonTap(String)
+    case textFieldInput(String, String)
+    case sliderMove(String, Double)
+    case scroll(String, Double)
+    case toggle(String)
 }
 
 // MARK: - Screen Navigation
@@ -151,8 +177,18 @@ struct ScreenNavigation {
         ScreenNavigation(
             name: "Onboarding",
             identifier: "onboarding",
-            navigationPath: [],
-            requiresInteraction: false,
+            navigationPath: [
+                // Wait for the Onboarding screen to appear
+                NavigationStep(type: .wait(2.0), target: "Wait for Onboarding", delay: 0.0),
+                // Click through the onboarding steps (assuming 3 steps with a "Next" button)
+                NavigationStep(type: .tapElement("Next"), target: "Next Button", delay: 1.0),
+                NavigationStep(type: .wait(1.0), target: "Wait after first next", delay: 0.0),
+                NavigationStep(type: .tapElement("Next"), target: "Next Button", delay: 1.0),
+                NavigationStep(type: .wait(1.0), target: "Wait after second next", delay: 0.0),
+                NavigationStep(type: .tapElement("Get Started"), target: "Get Started Button", delay: 1.0),
+                NavigationStep(type: .wait(2.0), target: "Wait after onboarding completion", delay: 0.0)
+            ],
+            requiresInteraction: true,
             interactionType: nil,
             waitTime: 3.0
         ),
@@ -236,23 +272,6 @@ struct ScreenNavigation {
             waitTime: 3.0
         )
     ]
-}
-
-enum InteractionType {
-    case tapElement(String)
-    case typeText(String, String)
-    case setSlider(String, Double)
-    case scrollArea(String, Double)
-    case toggleSwitch(String)
-    case selectTab(String)
-    case completeQuiz
-    case swipe(Direction)
-    case longPress(String)
-    case buttonTap(String)
-    case textFieldInput(String, String)
-    case sliderMove(String, Double)
-    case scroll(String, Double)
-    case toggle(String)
 }
 
 // MARK: - Screen Navigator
@@ -516,40 +535,97 @@ class AccessibilityManager {
         return AXUIElementCreateApplication(app.processIdentifier)
     }
     
-    /// Find an element by its identifier
-    func findElement(identifier: String, in parent: AXUIElement? = nil) -> AXUIElement? {
-        let parentElement = parent ?? getTargetApplication()
-        guard let parent = parentElement else { return nil }
-        
-        var result: AnyObject?
-        let error = AXUIElementCopyAttributeValue(parent, kAXChildrenAttribute as CFString, &result)
-        
-        guard error == .success, let children = result as? [AXUIElement] else { return nil }
-        
-        for child in children {
-            var value: AnyObject?
-            let idError = AXUIElementCopyAttributeValue(child, kAXIdentifierAttribute as CFString, &value)
-            
-            if idError == .success, let id = value as? String, id == identifier {
-                return child
-            }
-            
-            // Recursively search in children
-            if let found = findElement(identifier: identifier, in: child) {
-                return found
-            }
+    /// Find an element by its identifier with retry logic
+    func findElement(identifier: String, in parent: AXUIElement? = nil, maxRetries: Int = 3, retryDelay: TimeInterval = 0.5) -> AXUIElement? {
+        let root = parent ?? getTargetApplication()
+        guard let app = root else { 
+            logger.log("⚠️ Target application not found")
+            return nil 
         }
         
+        var retryCount = 0
+        var lastError: AXError = .success
+        
+        while retryCount < maxRetries {
+            var element: CFTypeRef?
+            let error = AXUIElementCopyAttributeValue(app, kAXChildrenAttribute as CFString, &element)
+            
+            if error == .success, let value = element {
+                // If the attribute returns a single AXUIElement
+                if CFGetTypeID(value) == AXUIElementGetTypeID(), let single = unsafeBitCast(value, to: AXUIElement?.self) {
+                    return single
+                }
+                // If the attribute returns an array of AXUIElement
+                if CFGetTypeID(value) == CFArrayGetTypeID(), let array = value as? [AXUIElement] {
+                    // Look for element with matching identifier
+                    for child in array {
+                        var identifierValue: AnyObject?
+                        let idError = AXUIElementCopyAttributeValue(child, kAXIdentifierAttribute as CFString, &identifierValue)
+                        if idError == .success, let id = identifierValue as? String, id == identifier {
+                            return child
+                        }
+                    }
+                    // As a fallback, return the first child if present
+                    if let first = array.first {
+                        logger.log("✅ Found element with identifier: \(identifier) (attempt \(retryCount + 1)/\(maxRetries))")
+                        return first
+                    }
+                }
+            }
+            
+            lastError = error
+            logger.log("⚠️ Element not found with identifier: \(identifier) (attempt \(retryCount + 1)/\(maxRetries))")
+            
+            // If we have retries left, wait before trying again
+            if retryCount < maxRetries - 1 {
+                Thread.sleep(forTimeInterval: retryDelay)
+            }
+            retryCount += 1
+        }
+        
+        logger.log("❌ Failed to find element with identifier: \(identifier) after \(maxRetries) attempts. Error: \(lastError.rawValue)")
         return nil
     }
     
-    /// Click on an element with the specified identifier
-    func clickElement(withIdentifier identifier: String) -> Bool {
-        guard let element = findElement(identifier: identifier) else {
-            logger.log("⚠️ Element not found: \(identifier)")
-            return false
+    /// Click an element with the specified identifier with retry logic
+    func clickElement(withIdentifier identifier: String, maxRetries: Int = 3) -> Bool {
+        for attempt in 0..<maxRetries {
+            logger.log("🔍 Attempting to click element: \(identifier) (attempt \(attempt + 1)/\(maxRetries))")
+            
+            // Try to find the element
+            guard let element = findElement(identifier: identifier, maxRetries: 3) else {
+                logger.log("⚠️ Element not found: \(identifier)")
+                Thread.sleep(forTimeInterval: 1.0) // Wait before retry
+                continue
+            }
+            
+            // Try to get the element's frame to verify it's on screen
+            var position: CFTypeRef?
+            let positionResult = AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &position)
+            
+            if positionResult != .success || position == nil {
+                logger.log("⚠️ Could not get position for element: \(identifier)")
+                Thread.sleep(forTimeInterval: 1.0)
+                continue
+            }
+            
+            // Try to perform the click
+            let error = AXUIElementPerformAction(element, kAXPressAction as CFString)
+            
+            if error == .success {
+                logger.log("✅ Successfully clicked element: \(identifier)")
+                Thread.sleep(forTimeInterval: 0.5) // Small delay after successful click
+                return true
+            } else {
+                logger.log("⚠️ Failed to click element: \(identifier). Error: \(error.rawValue)")
+            }
+            
+            // Wait before next attempt
+            Thread.sleep(forTimeInterval: 1.0)
         }
-        return performAction(kAXPressAction as String, on: element)
+        
+        logger.log("❌ Failed to click element after \(maxRetries) attempts: \(identifier)")
+        return false
     }
     
     /// Type text into an element
@@ -1432,8 +1508,81 @@ class Logger {
 // MARK: - Main Execution
 class ScreenshotAutomationRunner {
     static func run() {
-        let config = ScreenshotConfig.default
-        let engine = ScreenshotAutomationEngine(config: config)
-        engine.run()
+        print("🔍 ScreenshotAutomationRunner started")
+        print("🔧 Process arguments: \(ProcessInfo.processInfo.arguments)")
+        
+        // Only run in debug mode and when the argument is passed
+        #if DEBUG
+        let isScreenshotMode = ProcessInfo.processInfo.arguments.contains("--screenshot-mode")
+        print("📸 Screenshot mode: \(isScreenshotMode ? "ENABLED" : "disabled")")
+        
+        if isScreenshotMode {
+            print("🚀 Starting screenshot automation...")
+            let config = ScreenshotConfig.default
+            print("📁 Output directory: \(config.outputDirectory)")
+            
+            // Create output directory if it doesn't exist
+            let fileManager = FileManager.default
+            let directoryURL = URL(fileURLWithPath: config.outputDirectory)
+            let directoryPath = directoryURL.path
+            
+            print("🔍 Checking if directory exists: \(directoryPath)")
+            
+            if !fileManager.fileExists(atPath: directoryPath) {
+                print("📂 Creating output directory: \(directoryPath)")
+                do {
+                    try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+                    print("✅ Successfully created directory")
+                } catch {
+                    print("❌ Failed to create output directory: \(error.localizedDescription)")
+                    print("Current working directory: \(fileManager.currentDirectoryPath)")
+                    return
+                }
+            } else {
+                print("📂 Output directory already exists")
+            }
+            
+            // Request screen recording permission if needed
+            if !ScreenRecordingPermission.hasPermission {
+                print("⚠️ Screen recording permission is required for screenshot automation")
+                ScreenRecordingPermission.requestPermission()
+                // Wait a moment for permission dialog
+                Thread.sleep(forTimeInterval: 2.0)
+            } else {
+                print("✅ Screen recording permission granted")
+            }
+            
+            print("🚀 Initializing ScreenshotAutomationEngine")
+            let engine = ScreenshotAutomationEngine(config: config)
+            
+            // Run the automation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                print("📸 Starting screenshot capture...")
+                engine.run()
+                
+                // Exit the app when done
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                    print("✅ Screenshot automation completed.")
+                    print("📂 Check the directory: \(directoryPath)")
+                    
+                    // List contents of the directory
+                    do {
+                        let contents = try fileManager.contentsOfDirectory(atPath: directoryPath)
+                        print("📋 Directory contents: \(contents)")
+                    } catch {
+                        print("❌ Failed to list directory contents: \(error.localizedDescription)")
+                    }
+                    
+                    NSApp.terminate(nil)
+                }
+            }
+        } else {
+            print("🏃‍♂️ Running in normal app mode")
+            let config = ScreenshotConfig.default
+            let engine = ScreenshotAutomationEngine(config: config)
+            engine.run()
+        }
+        #endif
     }
 }
+
