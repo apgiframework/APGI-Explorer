@@ -55,6 +55,25 @@ struct SettingsView: View {
     @AppStorage("showComparisonSimilarity") private var showComparisonSimilarity: Bool = true
     @AppStorage("comparisonAnimationEnabled") private var comparisonAnimationEnabled: Bool = true
     
+    // Chart & Visualization settings
+    @AppStorage("showDataPoints") private var showDataPoints: Bool = true
+    @AppStorage("showValuesOnBars") private var showValuesOnBars: Bool = true
+    @AppStorage("allowZooming") private var allowZooming: Bool = true
+    @AppStorage("normalizeValues") private var normalizeValues: Bool = true
+    @AppStorage("showAverageProfile") private var showAverageProfile: Bool = false
+    @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
+    
+    // Search & Performance settings
+    @AppStorage("enableLiveSearch") private var enableLiveSearch: Bool = true
+    @AppStorage("showSearchHints") private var showSearchHints: Bool = true
+    @AppStorage("lazyLoading") private var lazyLoading: Bool = true
+    @AppStorage("cacheSearchResults") private var cacheSearchResults: Bool = true
+    @AppStorage("showPerformanceMetrics") private var showPerformanceMetrics: Bool = false
+    
+    // Advanced & Experimental settings
+    @AppStorage("enableExperimentalFeatures") private var enableExperimentalFeatures: Bool = false
+    @AppStorage("betaUpdates") private var betaUpdates: Bool = false
+    
     @State private var showingResetAlert = false
     @State private var showingClearDataAlert = false
     @State private var showingOnboardingView = false
@@ -457,16 +476,28 @@ struct SettingsView: View {
                         .padding(.horizontal)
                     
                     Form {
-                        Toggle("Show data points", isOn: .constant(true))
+                        Toggle("Show data points", isOn: $showDataPoints)
                             .help("Show individual data points on line and radar charts")
                             .padding(.vertical, 4)
                         
-                        Toggle("Show values on bars", isOn: .constant(true))
+                        Toggle("Show values on bars", isOn: $showValuesOnBars)
                             .help("Display values on top of bar chart elements")
                             .padding(.vertical, 4)
                         
-                        Toggle("Allow zooming", isOn: .constant(true))
+                        Toggle("Allow zooming", isOn: $allowZooming)
                             .help("Allow zooming in on charts")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Normalize values", isOn: $normalizeValues)
+                            .help("Normalize chart values to 0-100 scale for comparison")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show average profile", isOn: $showAverageProfile)
+                            .help("Display average profile as reference in comparisons")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show differences only", isOn: $showDifferencesOnly)
+                            .help("Highlight only differences when comparing profiles")
                             .padding(.vertical, 4)
                     }
                     .padding()
@@ -562,15 +593,6 @@ struct SettingsView: View {
                             Spacer()
                         }
                         
-                        HStack {
-                            Button("Request Data Deletion") {
-                                // Start data deletion process
-                            }
-                            .foregroundColor(.red)
-                            .help("Request permanent deletion of all your data")
-                            
-                            Spacer()
-                        }
                         
                         Divider()
                             .padding(.vertical, 4)
@@ -757,10 +779,6 @@ struct SettingsView: View {
                                     
                                     Spacer()
                                     
-                                    Button("Restore Backup...") {
-                                        // Show file picker for backup restoration
-                                    }
-                                    .help("Restore from a previous backup")
                                 }
                             }
                         }
@@ -884,22 +902,22 @@ struct SettingsView: View {
                         .padding(.horizontal)
                     
                     Form {
-                        Toggle("Enable live search", isOn: .constant(true))
+                        Toggle("Enable live search", isOn: $enableLiveSearch)
                             .help("Search results update as you type")
                             .padding(.vertical, 4)
                         
-                        Toggle("Show search hints", isOn: .constant(true))
+                        Toggle("Show search hints", isOn: $showSearchHints)
                             .help("Display helpful hints for searching states")
                             .padding(.vertical, 4)
                         
                         Divider()
                             .padding(.vertical, 4)
                         
-                        Toggle("Lazy loading", isOn: .constant(true))
+                        Toggle("Lazy loading", isOn: $lazyLoading)
                             .help("Load states data progressively for better performance")
                             .padding(.vertical, 4)
                         
-                        Toggle("Cache search results", isOn: .constant(true))
+                        Toggle("Cache search results", isOn: $cacheSearchResults)
                             .help("Cache search results for faster repeated searches")
                             .padding(.vertical, 4)
                     }
@@ -920,63 +938,109 @@ struct SettingsView: View {
     // MARK: - Advanced Settings Tab
     private var advancedSettingsTab: some View {
         ScrollView {
-            Form {
-            Section(header: Text("Debug")) {
-                Toggle("Enable debug mode", isOn: $debugModeEnabled)
-                    .help("Show additional debugging information")
-                Toggle("Show performance metrics", isOn: .constant(false))
-                    .help("Display performance statistics")
-            }
-            
-            Section(header: Text("Interface")) {
-                Toggle("Show advanced options", isOn: $showAdvancedOptions)
-                    .help("Display advanced options throughout the app")
-                Toggle("Compact mode", isOn: $compactModeEnabled)
-                    .help("Use a more compact interface layout")
-            }
-            
-            Section(header: Text("Experimental")) {
-                Toggle("Enable experimental features", isOn: .constant(false))
-                    .help("Try out new features in development")
-                Toggle("Beta updates", isOn: .constant(false))
-                    .help("Receive beta versions of the app")
-            }
-            
-            Section(header: Text("Reset Options")) {
-                Button("Reset All Settings") {
-                    showingResetAlert = true
-                }
-                .foregroundColor(.orange)
-                .help("Restore all settings to their default values")
-                
-                Button("Clear Cache") {
-                    clearCache()
-                }
-                .help("Clear temporary files and cache")
-                
-                Button("Reset Window Layouts") {
-                    resetWindowLayouts()
-                }
-                .help("Reset window positions and sizes")
-            }
-            
-            Section(header: Text("System")) {
-                Button("Open Application Support Folder") {
-                    #if os(macOS)
-                    if let supportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-                        let appSupportURL = supportURL.appendingPathComponent(Bundle.main.bundleIdentifier ?? "APGI-Explorer")
-                        NSWorkspace.shared.open(appSupportURL)
+            VStack(spacing: 20) {
+                // Search Settings Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Search & Performance")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    Form {
+                        Toggle("Enable live search", isOn: $enableLiveSearch)
+                            .help("Search results update as you type")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show search hints", isOn: $showSearchHints)
+                            .help("Display helpful hints for searching")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Lazy loading", isOn: $lazyLoading)
+                            .help("Load content progressively for better performance")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Cache search results", isOn: $cacheSearchResults)
+                            .help("Store search results for faster repeat searches")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show performance metrics", isOn: $showPerformanceMetrics)
+                            .help("Display performance statistics overlay")
+                            .padding(.vertical, 4)
                     }
-                    #endif
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
                 }
-                .help("Open the app's support folder")
-                
-                Button("View System Information") {
-                    // Show system info dialog
-                }
-                .help("Display system and app information")
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             }
-        }
+            
+            // Debug Settings Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Debug")
+                    .font(.headline)
+                    .padding(.horizontal)
+                
+                Form {
+                    Toggle("Enable debug mode", isOn: $debugModeEnabled)
+                        .help("Show additional debugging information")
+                        .padding(.vertical, 4)
+                }
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            }
+            
+            // Experimental Features Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Experimental")
+                    .font(.headline)
+                    .padding(.horizontal)
+                
+                Form {
+                    Toggle("Enable experimental features", isOn: $enableExperimentalFeatures)
+                        .help("Try out new features in development")
+                        .padding(.vertical, 4)
+                    
+                    Toggle("Beta updates", isOn: $betaUpdates)
+                        .help("Receive beta versions of the app")
+                        .padding(.vertical, 4)
+                }
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            }
+            
+            // Reset Options Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Reset Options")
+                    .font(.headline)
+                    .padding(.horizontal)
+                
+                Form {
+                    Button("Reset All Settings") {
+                        showingResetAlert = true
+                    }
+                    .foregroundColor(.orange)
+                    .help("Restore all settings to their default values")
+                    
+                    Button("Clear Cache") {
+                        clearCache()
+                    }
+                    .help("Clear temporary files and cache")
+                    
+                    Button("Reset Window Layouts") {
+                        resetWindowLayouts()
+                    }
+                    .help("Reset window positions and sizes")
+                }
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1026,15 +1090,15 @@ struct SettingsView: View {
                         .padding(.horizontal)
                     
                     Form {
-                        Toggle("Show differences only", isOn: .constant(false))
+                        Toggle("Show differences only", isOn: $showDifferencesOnly)
                             .help("Highlight only the differences between profiles")
                             .padding(.vertical, 4)
                         
-                        Toggle("Normalize values", isOn: .constant(true))
+                        Toggle("Normalize values", isOn: $normalizeValues)
                             .help("Normalize values for better comparison")
                             .padding(.vertical, 4)
                         
-                        Toggle("Show average profile", isOn: .constant(false))
+                        Toggle("Show average profile", isOn: $showAverageProfile)
                             .help("Display average profile in comparisons")
                             .padding(.vertical, 4)
                     }
@@ -1044,28 +1108,6 @@ struct SettingsView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
                 
-                // Export Comparison Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Export Comparison")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    VStack(spacing: 12) {
-                        Button("Export Current Comparison") {
-                            // Export current comparison
-                        }
-                        .help("Export the current profile comparison")
-                        
-                        Button("Save Comparison Template") {
-                            // Save comparison template
-                        }
-                        .help("Save current comparison settings as template")
-                    }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
             }
             .padding()
         }
@@ -1127,6 +1169,14 @@ struct SettingsView: View {
         } catch {
             print("Failed to clear cache: \(error)")
         }
+        
+        // Clear StateSearchService cache
+        let searchService = StateSearchService()
+        searchService.clearCache()
+        
+        // Clear StateModel cache
+        let stateModel = StateModel()
+        stateModel.clearCache()
     }
     
     private func resetNotificationPreferences() {
@@ -1216,12 +1266,50 @@ struct SettingsView: View {
         notificationBadgeEnabled = true
     }
     
-    private func viewLicense() {
-        if let licenseURL = Bundle.main.url(forResource: "LICENSE", withExtension: "txt") {
-            NSWorkspace.shared.open(licenseURL)
-        } else {
-            // Open default license or show in-app
-            print("No license file found")
+    private func viewSystemInformation() {
+        let appVersion = getAppVersion()
+        let buildNumber = getBuildNumber()
+        let systemVersion = ProcessInfo.processInfo.operatingSystemVersionString
+        let deviceModel = "Mac" // macOS
+        
+        let systemInfo = """
+        APGI Explorer System Information
+        ==============================
+        
+        Application:
+        Version: \(appVersion) (\(buildNumber))
+        Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")
+        
+        System:
+        macOS: \(systemVersion)
+        Device: \(deviceModel)
+        
+        Performance:
+        Processors: \(ProcessInfo.processInfo.processorCount)
+        Physical Memory: \(ProcessInfo.processInfo.physicalMemory / (1024*1024*1024)) GB
+        
+        Storage:
+        Documents Directory: \(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.path ?? "Unknown")
+        App Support Directory: \(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.path ?? "Unknown")
+        
+        Settings:
+        Debug Mode: \(debugModeEnabled ? "Enabled" : "Disabled")
+        Analytics: \(enableAnalytics ? "Enabled" : "Disabled")
+        Crash Reporting: \(crashReportingEnabled ? "Enabled" : "Disabled")
+        """
+        
+        let alert = NSAlert()
+        alert.messageText = "System Information"
+        alert.informativeText = systemInfo
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Copy to Clipboard")
+        
+        let response = alert.runModal()
+        if response == .alertSecondButtonReturn {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(systemInfo, forType: .string)
         }
     }
     

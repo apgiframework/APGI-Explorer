@@ -13,7 +13,11 @@ struct PsychologicalStatesView: View {
     @State private var searchText = ""
     @State private var selectedParameter = "All"
     @AppStorage("statesDisplayMode") private var displayMode: DisplayMode = .list
-    @State private var showParameterSummary = true
+    @AppStorage("showParameterSummary") private var showParameterSummary: Bool = true
+    @AppStorage("enableLiveSearch") private var enableLiveSearch: Bool = true
+    @AppStorage("showSearchHints") private var showSearchHints: Bool = true
+    @AppStorage("lazyLoading") private var lazyLoading: Bool = true
+    @AppStorage("cacheSearchResults") private var cacheSearchResults: Bool = true
     
     private var searchService: StateSearchService {
         dependencies.getStateSearchService()
@@ -69,7 +73,8 @@ struct PsychologicalStatesView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 0) {
             // Search and filter bar
             VStack(spacing: 0) {
                 HStack {
@@ -85,6 +90,21 @@ struct PsychologicalStatesView: View {
                             .padding(.trailing, 8)
                             .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
                             .cornerRadius(8)
+                            .overlay(
+                                // Search hints
+                                Group {
+                                    if showSearchHints && searchText.isEmpty {
+                                        HStack {
+                                            Text("Try: anxiety, focus, creativity...")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 12)
+                                    }
+                                }
+                                .animation(.easeInOut(duration: 0.3), value: searchText.isEmpty)
+                            )
                     }
                     .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
                     .cornerRadius(8)
@@ -204,6 +224,22 @@ struct PsychologicalStatesView: View {
         }
         .onChange(of: selectedParameter) {
             showParameterSummary = selectedParameter != "All"
+        }
+        .overlay(
+            // Performance metrics overlay
+            VStack {
+                HStack {
+                    Spacer()
+                    PerformanceMetricsView(
+                        frameRate: 60.0, // Placeholder - would need actual monitoring
+                        memoryUsage: 128 * 1024 * 1024, // Placeholder - 128MB
+                        cpuUsage: 15.0 // Placeholder - 15%
+                    )
+                }
+                Spacer()
+            }
+            .allowsHitTesting(false) // Don't block interactions
+        )
         }
     }
 

@@ -66,6 +66,12 @@ struct EnhancedProfileChart: View {
     let comparisonProfiles: [APGIProfile]
     
     @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
+    @AppStorage("showDataPoints") private var showDataPoints: Bool = true
+    @AppStorage("showValuesOnBars") private var showValuesOnBars: Bool = true
+    @AppStorage("allowZooming") private var allowZooming: Bool = true
+    @AppStorage("normalizeValues") private var normalizeValues: Bool = true
+    @AppStorage("showAverageProfile") private var showAverageProfile: Bool = false
+    @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
     
     // Sample historical data (replace with actual data from your data store)
     private var historicalData: [HistoricalDataPoint] {
@@ -393,15 +399,11 @@ struct EnhancedProfileChart: View {
                 .foregroundStyle(by: .value("Value", dataPoint.value))
                 .cornerRadius(4)
                 .annotation(position: .overlay) {
-                    Text("\(Int(dataPoint.value))")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(dataPoint.value > 70 ? .white : .primary)
-                }
-            }
-            .chartXAxis {
-                AxisMarks(preset: .aligned, position: .bottom) { _ in
-                    AxisValueLabel()
-                        .font(.caption2)
+                    if showValuesOnBars {
+                        Text("\(Int(dataPoint.value))")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(dataPoint.value > 70 ? .white : .primary)
+                    }
                 }
             }
             .chartYAxis {
@@ -534,12 +536,11 @@ struct EnhancedProfileChart: View {
                 )
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [colorForParameter(point.parameter).opacity(0.6), colorForParameter(point.parameter).opacity(0.1)],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        colors: [Color.red, Color.yellow, Color.green],
+                        startPoint: .bottom,
+                        endPoint: .top
                     )
                 )
-                .lineStyle(StrokeStyle(lineWidth: 2))
             }
             .chartYScale(domain: 0...100)
             .chartLegend(.hidden)
@@ -584,15 +585,66 @@ struct EnhancedProfileChart: View {
     }
     
     private func createStateComparisonRadar() -> StateComparisonRadar? {
-        // Check if StateComparisonRadar exists and can be initialized with the current data
-        // This is a placeholder - you'll need to adapt this to work with your actual StateComparisonRadar implementation
-        return nil
+        // Create a primary psychological state from the current profile
+        let primaryState = createPsychologicalState(from: profile)
+        
+        // Create comparison states from other profiles
+        let comparisonStates = comparisonProfiles.prefix(3).map { otherProfile in
+            createPsychologicalState(from: otherProfile)
+        }
+        
+        return StateComparisonRadar(primary: primaryState, comparisons: comparisonStates)
+    }
+    
+    private func createPsychologicalState(from profile: APGIProfile) -> PsychologicalState {
+        // Map APGIProfile to PsychologicalState parameters
+        return PsychologicalState(
+            id: Int(abs(profile.epsilon.hashValue)), // Convert to positive Int
+            name: "APGI Profile",
+            description: "Profile created from APGI parameters",
+            parameters: PsychologicalState.APGIParameters(
+                predictionError: PsychologicalState.PredictionErrorSpec(
+                    accuracy: ParameterRange(
+                        min: Double(100 - profile.epsilon),
+                        max: Double(100 - profile.epsilon + 10),
+                        unit: .percentage,
+                        description: "Prediction accuracy range"
+                    ),
+                    context: .taskAligned,
+                    description: "Prediction error based on epsilon parameter"
+                ),
+                precision: PrecisionProfile(
+                    task: .veryHigh(Double(profile.precision) / 20.0),
+                    distractor: .low(0.2),
+                    description: "Precision level from APGI profile"
+                ),
+                threshold: ThresholdRange(
+                    adjustment: Double(profile.threshold - 50) / 50.0,
+                    variance: 0.1,
+                    unit: .sigma,
+                    stability: .normal,
+                    description: "Threshold based on APGI parameter"
+                ),
+                somaticBias: BiasRange(
+                    min: Double(profile.somaticBias) * 0.8,
+                    max: Double(profile.somaticBias) * 1.2,
+                    description: "Somatic bias from APGI profile",
+                    dominance: .balanced
+                )
+            ),
+            metadata: PsychologicalState.StateMetadata(
+                duration: .medium,
+                metabolicCost: .moderate,
+                neurologicalBasis: ["cortical", "subcortical"],
+                adaptiveValue: .adaptive
+            )
+        )
     }
 }
 
 // MARK: - Supporting Views
 
-private struct LegendItem: View {
+struct LegendItem: View {
     let color: Color
     let label: String
     
@@ -607,31 +659,29 @@ private struct LegendItem: View {
     }
 }
 
-// MARK: - Shape Extensions for Chart Symbols
-
 // MARK: - Preview
 
 struct EnhancedProfileChart_Previews: PreviewProvider {
     static var previews: some View {
         let previewProfile = APGIProfile(
             epsilon: 65.0,
-            precision: 45.0,
-            threshold: 55.0,
-            somaticBias: 60.0,
-            interactionScore: 70.0,
-            temporalStability: 0.7,
-            environmentalFit: 0.8
+            precision: 78.0,
+            threshold: 42.0,
+            somaticBias: 55.0,
+            interactionScore: 50.0,
+            temporalStability: 60.0,
+            environmentalFit: 70.0
         )
         
         let comparisonProfiles = [
             APGIProfile(
-                epsilon: 65.0,
-                precision: 70.0,
-                threshold: 50.0,
-                somaticBias: 60.0,
-                interactionScore: 70.0,
-                temporalStability: 0.7,
-                environmentalFit: 0.8
+                epsilon: 45.0,
+                precision: 88.0,
+                threshold: 67.0,
+                somaticBias: 72.0,
+                interactionScore: 55.0,
+                temporalStability: 65.0,
+                environmentalFit: 75.0
             )
         ]
         

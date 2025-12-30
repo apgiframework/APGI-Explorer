@@ -1,12 +1,36 @@
 import Foundation
+import SwiftUI
 
 final class StateSearchService {
+    @AppStorage("cacheSearchResults") private var cacheSearchResults: Bool = true
+    
+    private var searchCache: [String: [PsychologicalState]] = [:]
+    
     func search(query: String, in states: [PsychologicalState]) -> [PsychologicalState] {
         let lowercasedQuery = query.lowercased()
-        return states.filter { state in
+        
+        // Check cache first if enabled
+        if cacheSearchResults && !query.isEmpty {
+            if let cachedResults = searchCache[query] {
+                return cachedResults
+            }
+        }
+        
+        let results = states.filter { state in
             state.name.lowercased().contains(lowercasedQuery) ||
             state.description.lowercased().contains(lowercasedQuery)
         }
+        
+        // Cache results if enabled
+        if cacheSearchResults && !query.isEmpty {
+            searchCache[query] = results
+        }
+        
+        return results
+    }
+    
+    func clearCache() {
+        searchCache.removeAll()
     }
     
     func searchByParameters(

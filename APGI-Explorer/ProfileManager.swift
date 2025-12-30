@@ -12,6 +12,12 @@ class ProfileManager: ObservableObject {
     @Published var sortOption: ProfileSortOption = .dateModified
     @Published var sortAscending = false
     
+    // Settings integration
+    @AppStorage("lazyLoading") private var lazyLoading: Bool = true
+    @AppStorage("showAverageProfile") private var showAverageProfile: Bool = false
+    @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
+    @AppStorage("normalizeValues") private var normalizeValues: Bool = true
+    
     private let persistence = PersistenceController.shared
     private let userDefaults = UserDefaultsManager.shared
     private let fileStorage = FileStorageManager.shared
@@ -550,8 +556,8 @@ class ProfileManager: ObservableObject {
             }
             return nil
         case .png:
-            // TODO: Implement PNG export functionality
-            return nil
+            let apgiScores = self.profile(from: profile.results)
+            return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
         }
     }
 
@@ -660,6 +666,116 @@ extension ProfileManager {
         
         return Double(numericString)
     }
+    
+    private func exportProfileAsPNG(profile: QuizProfile, apgiScores: APGIProfile) -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .png)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let tempFile = tempDir.appendingPathComponent(filename)
+        
+        // Create a SwiftUI view for the chart
+        let chartView = ProfileChartView(profile: profile, apgiScores: apgiScores)
+        
+        // Convert SwiftUI view to NSImage
+        if let nsImage = createNSImage(from: chartView) {
+            // Convert NSImage to PNG data
+            if let tiffData = nsImage.tiffRepresentation,
+               let bitmapImage = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmapImage.representation(using: .png, properties: [:]) {
+                
+                do {
+                    try pngData.write(to: tempFile)
+                    return tempFile
+                } catch {
+                    print("Failed to write PNG file: \(error)")
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    private func createNSImage(from view: some View) -> NSImage? {
+        let hostingView = NSHostingView(rootView: view)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
+        hostingView.layoutSubtreeIfNeeded()
+        
+        let rep = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)
+        hostingView.cacheDisplay(in: hostingView.bounds, to: rep!)
+        
+        let nsImage = NSImage(size: hostingView.bounds.size)
+        nsImage.addRepresentation(rep!)
+        
+        return nsImage
+    }
+}
+
+// MARK: - Profile Chart View for PNG Export
+
+struct ProfileChartView: View {
+    let profile: QuizProfile
+    let apgiScores: APGIProfile
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(profile.name)
+                .font(.title)
+                .fontWeight(.bold)
+                .padding(.top)
+            
+            Text("APGI Profile")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            VStack(alignment: .leading, spacing: 10) {
+                ParameterRow(name: "Epsilon (ε)", value: apgiScores.epsilon, color: .blue)
+                ParameterRow(name: "Precision (π)", value: apgiScores.precision, color: .green)
+                ParameterRow(name: "Threshold (θₜ)", value: apgiScores.threshold, color: .orange)
+                ParameterRow(name: "Somatic Bias (β)", value: apgiScores.somaticBias, color: .red)
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            Text("Created: \(profile.dateCreated, formatter: DateFormatter.shortDate)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.bottom)
+        }
+        .frame(width: 800, height: 600)
+        .background(Color.white)
+    }
+}
+
+struct ParameterRow: View {
+    let name: String
+    let value: Double
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            Text(name)
+                .font(.body)
+                .frame(width: 150, alignment: .leading)
+            
+            ProgressView(value: value, total: 5.0)
+                .progressViewStyle(LinearProgressViewStyle(tint: color))
+                .frame(width: 400)
+            
+            Text(String(format: "%.2f", value))
+                .font(.body)
+                .fontWeight(.medium)
+                .frame(width: 50, alignment: .trailing)
+        }
+    }
+}
+
+extension DateFormatter {
+    static let shortDate: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
+        return formatter
+    }()
 }
 
 struct StateParameters {
