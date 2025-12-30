@@ -28,7 +28,6 @@ struct SettingsView: View {
     @AppStorage("autoBackupEnabled") private var autoBackupEnabled: Bool = true
     @AppStorage("backupFrequency") private var backupFrequency: BackupFrequency = .weekly
     @AppStorage("maxBackupFiles") private var maxBackupFiles: Int = 10
-    @AppStorage("windowArrangementPreference") private var windowArrangementPreference: WindowArrangement = .cascade
     @AppStorage("showWelcomeScreen") private var showWelcomeScreen: Bool = true
     @AppStorage("crashReportingEnabled") private var crashReportingEnabled: Bool = true
     @AppStorage("debugModeEnabled") private var debugModeEnabled: Bool = false
@@ -38,7 +37,6 @@ struct SettingsView: View {
     @AppStorage("refreshInterval") private var refreshInterval: Double = 300.0 // 5 minutes
     @AppStorage("showAdvancedOptions") private var showAdvancedOptions: Bool = false
     @AppStorage("compactModeEnabled") private var compactModeEnabled: Bool = false
-    @AppStorage("sidebarWidth") private var sidebarWidth: Double = 250.0
     @AppStorage("showGridLines") private var showGridLines: Bool = true
     @AppStorage("chartAnimationEnabled") private var chartAnimationEnabled: Bool = true
     @AppStorage("notificationSoundEnabled") private var notificationSoundEnabled: Bool = true
@@ -128,14 +126,12 @@ struct SettingsView: View {
                         Section("Advanced") {
                             Label("Notifications", systemImage: "bell")
                                 .tag(5)
-                            Label("Windows", systemImage: "square.3.layers.3d")
-                                .tag(6)
                             Label("States", systemImage: "brain.head.profile")
-                                .tag(7)
+                                .tag(6)
                             Label("Advanced", systemImage: "gearshape.2")
-                                .tag(8)
+                                .tag(7)
                             Label("Comparison", systemImage: "chart.bar.doc.horizontal")
-                                .tag(9)
+                                .tag(8)
                         }
                     }
                     .listStyle(SidebarListStyle())
@@ -158,12 +154,10 @@ struct SettingsView: View {
                     case 5:
                         notificationsSettingsTab
                     case 6:
-                        windowSettingsTab
-                    case 7:
                         psychologicalStatesSettingsTab
-                    case 8:
+                    case 7:
                         advancedSettingsTab
-                    case 9:
+                    case 8:
                         profileComparisonSettingsTab
                     default:
                         generalSettingsTab
@@ -332,6 +326,23 @@ struct SettingsView: View {
                         Toggle("Notification badges", isOn: $notificationBadgeEnabled)
                             .help("Show badge notifications on app icon")
                             .padding(.vertical, 4)
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
+                
+                // Window Behavior Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Window Behavior")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    VStack(spacing: 12) {
+                        Toggle("Show welcome screen", isOn: $showWelcomeScreen)
+                            .help("Show welcome screen on app launch")
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding()
                     .background(Color(NSColor.controlBackgroundColor))
@@ -517,16 +528,17 @@ struct SettingsView: View {
     // MARK: - Data & Privacy Settings Tab
     private var dataPrivacySettingsTab: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            LazyVStack(spacing: 20) {
                 // Data Management Section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Data Management")
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    Form {
+                    VStack(spacing: 12) {
                         HStack {
                             Text("Data retention")
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             Spacer()
                             Picker("Days", selection: $dataRetentionDays) {
                                 Text("30 days").tag(30)
@@ -538,23 +550,23 @@ struct SettingsView: View {
                             .frame(width: 120)
                         }
                         .help("How long to keep quiz and profile data")
-                        .padding(.vertical, 4)
                         
                         Toggle("Enable analytics", isOn: $enableAnalytics)
                             .help("Help improve the app by sharing anonymous usage data")
-                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Toggle("Crash reporting", isOn: $crashReportingEnabled)
                             .help("Automatically send crash reports to help fix bugs")
-                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Toggle("Auto-refresh data", isOn: $autoRefreshData)
                             .help("Automatically refresh data throughout the app")
-                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         if autoRefreshData {
                             HStack {
                                 Text("Refresh interval")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 Spacer()
                                 Picker("Minutes", selection: $refreshInterval) {
                                     Text("1 min").tag(60.0)
@@ -566,7 +578,6 @@ struct SettingsView: View {
                                 .frame(width: 120)
                             }
                             .help("How often to refresh data throughout the app")
-                            .padding(.vertical, 4)
                         }
                     }
                     .padding()
@@ -582,30 +593,24 @@ struct SettingsView: View {
                         .padding(.horizontal)
                     
                     VStack(spacing: 12) {
-                        HStack {
-                            Button("Export My Data") {
-                                Task {
-                                    let _ = try? await ProfileManager().exportAllProfiles()
-                                }
+                        Button("Export My Data") {
+                            Task {
+                                let _ = try? await ProfileManager().exportAllProfiles()
                             }
-                            .help("Download a copy of all your data")
-                            
-                            Spacer()
                         }
-                        
+                        .help("Download a copy of all your data")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 8)
                         
                         Divider()
-                            .padding(.vertical, 4)
                         
-                        HStack {
-                            Button("Clear All Data") {
-                                showingClearDataAlert = true
-                            }
-                            .foregroundColor(.red)
-                            .help("Permanently delete all app data")
-                            
-                            Spacer()
+                        Button("Clear All Data") {
+                            showingClearDataAlert = true
                         }
+                        .foregroundColor(.red)
+                        .help("Permanently delete all app data")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 8)
                     }
                     .padding()
                     .background(Color(NSColor.controlBackgroundColor))
@@ -616,109 +621,6 @@ struct SettingsView: View {
             .padding()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .tabItem {
-            Label("Privacy", systemImage: "hand.raised")
-        }
-    }
-    
-    // MARK: - Window Management Settings Tab
-    private var windowSettingsTab: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Window Behavior Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Window Behavior")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    Form {
-                        Toggle("Show welcome screen", isOn: $showWelcomeScreen)
-                            .help("Show welcome screen on app launch")
-                            .padding(.vertical, 4)
-                    }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
-                
-                // Window Arrangement Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Window Arrangement")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    Form {
-                        Picker("Default arrangement", selection: $windowArrangementPreference) {
-                            ForEach(WindowArrangement.allCases, id: \.self) { arrangement in
-                                Text(arrangement.rawValue).tag(arrangement)
-                            }
-                        }
-                        .help("Default window arrangement when opening multiple windows")
-                        .padding(.vertical, 4)
-                        
-                        HStack {
-                            Text("Sidebar width")
-                            Spacer()
-                            Slider(value: $sidebarWidth, in: 150...400, step: 10)
-                            Text("\(Int(sidebarWidth))px")
-                                .frame(width: 50)
-                        }
-                        .help("Default width for the sidebar in pixels")
-                        .padding(.vertical, 4)
-                        
-                        Button("Reset Window Layouts") {
-                            resetWindowLayouts()
-                        }
-                        .help("Reset window positions and sizes to defaults")
-                        .padding(.vertical, 4)
-                    }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
-                
-                // Window Actions Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Window Actions")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    VStack(spacing: 12) {
-                        Button("Arrange Windows in Cascade") {
-                            #if os(macOS)
-                            WindowManager.shared.arrangeWindowsWithUserPreference()
-                            #endif
-                        }
-                        .help("Arrange all windows using your preferred layout")
-                        
-                        Button("Tile Windows") {
-                            #if os(macOS)
-                            WindowManager.shared.arrangeWindows(.tile)
-                            #endif
-                        }
-                        .help("Arrange all windows in a grid pattern")
-                        
-                        Button("Arrange Side by Side") {
-                            #if os(macOS)
-                            WindowManager.shared.arrangeWindows(.sideBySide)
-                            #endif
-                        }
-                        .help("Arrange windows side by side")
-                    }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
-            }
-            .padding()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .tabItem {
-            Label("Windows", systemImage: "square.3.layers.3d")
-        }
     }
     
     // MARK: - Export & Backup Settings Tab
@@ -1030,11 +932,6 @@ struct SettingsView: View {
                         clearCache()
                     }
                     .help("Clear temporary files and cache")
-                    
-                    Button("Reset Window Layouts") {
-                        resetWindowLayouts()
-                    }
-                    .help("Reset window positions and sizes")
                 }
                 .padding()
                 .background(Color(NSColor.controlBackgroundColor))
@@ -1189,11 +1086,6 @@ struct SettingsView: View {
         themeManager.setTheme(.system)
     }
     
-    private func resetWindowLayouts() {
-        UserDefaults.standard.removeObject(forKey: "windowFrame")
-        UserDefaults.standard.removeObject(forKey: "windowState")
-        UserDefaults.standard.synchronize()
-    }
     
     private func clearAllData() {
         // Clear Core Data
@@ -1249,7 +1141,6 @@ struct SettingsView: View {
         autoBackupEnabled = true
         backupFrequency = .weekly
         maxBackupFiles = 10
-        windowArrangementPreference = .cascade
         showWelcomeScreen = true
         crashReportingEnabled = true
         debugModeEnabled = false
@@ -1259,7 +1150,6 @@ struct SettingsView: View {
         refreshInterval = 300.0
         showAdvancedOptions = false
         compactModeEnabled = false
-        sidebarWidth = 250.0
         showGridLines = true
         chartAnimationEnabled = true
         notificationSoundEnabled = true

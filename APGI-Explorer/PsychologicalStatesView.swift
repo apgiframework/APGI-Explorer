@@ -225,21 +225,6 @@ struct PsychologicalStatesView: View {
         .onChange(of: selectedParameter) {
             showParameterSummary = selectedParameter != "All"
         }
-        .overlay(
-            // Performance metrics overlay
-            VStack {
-                HStack {
-                    Spacer()
-                    PerformanceMetricsView(
-                        frameRate: 60.0, // Placeholder - would need actual monitoring
-                        memoryUsage: 128 * 1024 * 1024, // Placeholder - 128MB
-                        cpuUsage: 15.0 // Placeholder - 15%
-                    )
-                }
-                Spacer()
-            }
-            .allowsHitTesting(false) // Don't block interactions
-        )
         }
     }
 

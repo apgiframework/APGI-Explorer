@@ -262,27 +262,6 @@ struct MenuCommands: Commands {
             
             Divider()
             
-            Button("Arrange Windows in Cascade") {
-                #if os(macOS)
-                WindowManager.shared.arrangeWindows(.cascade)
-                #endif
-            }
-            
-            Button("Tile Windows") {
-                #if os(macOS)
-                WindowManager.shared.arrangeWindows(.tile)
-                #endif
-            }
-            
-            Button("Arrange Side by Side") {
-                #if os(macOS)
-                WindowManager.shared.arrangeWindows(.sideBySide)
-                #endif
-            }
-            .keyboardShortcut("=", modifiers: [.command, .option])
-            
-            Divider()
-            
             Button("Close Window") {
                 #if os(macOS)
                 NSApp.keyWindow?.close()

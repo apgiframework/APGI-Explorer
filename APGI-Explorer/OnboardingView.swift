@@ -49,6 +49,7 @@ struct OnboardingStepView: View {
     let step: OnboardingStep
     let isLastStep: Bool
     let action: () -> Void
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         VStack(spacing: 20) {
@@ -108,17 +109,40 @@ struct OnboardingStepView: View {
             
             Spacer()
             
-            // Continue Button
-            Button(action: action) {
-                Text(isLastStep ? "Get Started" : "Continue")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: 200)
-                    .padding()
-                    .background(step.highlightColor)
-                    .cornerRadius(10)
+            // Buttons
+            HStack(spacing: 16) {
+                // Close button (only on last step)
+                if isLastStep {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Text("Close")
+                            .font(.headline)
+                            .foregroundColor(step.highlightColor)
+                            .frame(maxWidth: 120)
+                            .padding()
+                            .background(Color.clear)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(step.highlightColor, lineWidth: 2)
+                            )
+                            .cornerRadius(10)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Continue/Get Started Button
+                Button(action: action) {
+                    Text(isLastStep ? "Get Started" : "Continue")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: isLastStep ? 120 : 200)
+                        .padding()
+                        .background(step.highlightColor)
+                        .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
             .padding(.bottom, 40)
         }
         .padding()

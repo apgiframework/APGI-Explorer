@@ -445,128 +445,168 @@ struct RadarComparisonChart: View {
     
     var body: some View {
         VStack {
-            // Simple radar chart implementation
+            // Improved radar chart implementation
             ZStack {
-                // Background grid
-                ForEach(0..<5) { i in
-                    Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                        .frame(width: CGFloat(i + 1) * 50, height: CGFloat(i + 1) * 50)
-                }
-                
-                // Axis lines
-                ForEach(0..<5) { i in
-                    let angle = Double(i) * (2 * .pi / 5)
-                    Path { path in
-                        path.move(to: .zero)
-                        path.addLine(to: CGPoint(x: 150 * cos(angle), y: 150 * sin(angle)))
-                    }
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                }
-                
-                // Data points and lines
-                ForEach(Array(data.enumerated()), id: \.offset) { index, item in
-                    let angle = Double(index) * (2 * .pi / 5) - .pi / 2
-                    let radius1 = item.value1 * 1.2
-                    let radius2 = item.value2 * 1.2
-                    
-                    // Profile 1 line
-                    Path { path in
-                        path.move(to: .zero)
-                        path.addLine(to: CGPoint(
-                            x: radius1 * cos(angle),
-                            y: radius1 * sin(angle)
-                        ))
-                    }
-                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                    
-                    // Profile 2 line
-                    Path { path in
-                        path.move(to: .zero)
-                        path.addLine(to: CGPoint(
-                            x: radius2 * cos(angle),
-                            y: radius2 * sin(angle)
-                        ))
-                    }
-                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                    
-                    // Data points
-                    Circle()
-                        .fill(Color.blue)
-                        .frame(width: 8, height: 8)
-                        .position(x: radius1 * cos(angle), y: radius1 * sin(angle))
-                    
-                    Circle()
-                        .fill(Color.orange)
-                        .frame(width: 8, height: 8)
-                        .position(x: radius2 * cos(angle), y: radius2 * sin(angle))
-                    
-                    // Category labels
-                    Text(item.category)
-                        .font(.caption2)
-                        .position(
-                            x: 170 * cos(angle),
-                            y: 170 * sin(angle)
-                        )
-                }
-                
-                // Connect the dots for profile 1
-                Path { path in
-                    for (index, item) in data.enumerated() {
-                        let angle = Double(index) * (2 * .pi / 5) - .pi / 2
-                        let radius = item.value1 * 1.2
-                        let point = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
-                        
-                        if index == 0 {
-                            path.move(to: point)
-                        } else {
-                            path.addLine(to: point)
-                        }
-                    }
-                    path.closeSubpath()
-                }
-                .stroke(Color.blue, lineWidth: 2)
-                .opacity(0.7)
-                
-                // Connect the dots for profile 2
-                Path { path in
-                    for (index, item) in data.enumerated() {
-                        let angle = Double(index) * (2 * .pi / 5) - .pi / 2
-                        let radius = item.value2 * 1.2
-                        let point = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
-                        
-                        if index == 0 {
-                            path.move(to: point)
-                        } else {
-                            path.addLine(to: point)
-                        }
-                    }
-                    path.closeSubpath()
-                }
-                .stroke(Color.orange, lineWidth: 2)
-                .opacity(0.7)
+                backgroundGrid
+                axisLines
+                dataPolygons
+                dataPoints
+                categoryLabels
             }
-            .frame(width: 400, height: 400)
+            .frame(width: 420, height: 420)
             
-            // Legend
-            HStack(spacing: 20) {
-                legendItem(color: .blue, label: profile1)
-                legendItem(color: .orange, label: profile2)
+            // Legend with improved styling
+            legendView
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var backgroundGrid: some View {
+        ForEach(1...5, id: \.self) { i in
+            Circle()
+                .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                .frame(width: CGFloat(i) * 60, height: CGFloat(i) * 60)
+        }
+    }
+    
+    private var axisLines: some View {
+        ForEach(Array(data.enumerated()), id: \.offset) { index, item in
+            let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+            Path { path in
+                path.move(to: .zero)
+                path.addLine(to: CGPoint(x: 150 * cos(angle), y: 150 * sin(angle)))
             }
-            .padding(.top, 10)
+            .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+        }
+    }
+    
+    private var dataPolygons: some View {
+        ZStack {
+            // Profile 1 filled area
+            filledProfilePolygon(for: data.map(\.value1), color: Color.blue.opacity(0.15))
+            
+            // Profile 2 filled area
+            filledProfilePolygon(for: data.map(\.value2), color: Color.orange.opacity(0.15))
+            
+            // Profile 1 outline
+            outlinedProfilePolygon(for: data.map(\.value1), color: Color.blue, lineWidth: 2.5, opacity: 0.8)
+            
+            // Profile 2 outline
+            outlinedProfilePolygon(for: data.map(\.value2), color: Color.orange, lineWidth: 2.5, opacity: 0.8)
+        }
+    }
+    
+    private func filledProfilePolygon(for values: [Double], color: Color) -> some View {
+        Path { path in
+            for (index, value) in values.enumerated() {
+                let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+                let radius = value * 1.2
+                let point = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
+                
+                if index == 0 {
+                    path.move(to: point)
+                } else {
+                    path.addLine(to: point)
+                }
+            }
+            path.closeSubpath()
+        }
+        .fill(color)
+    }
+    
+    private func outlinedProfilePolygon(for values: [Double], color: Color, lineWidth: CGFloat, opacity: Double) -> some View {
+        Path { path in
+            for (index, value) in values.enumerated() {
+                let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+                let radius = value * 1.2
+                let point = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
+                
+                if index == 0 {
+                    path.move(to: point)
+                } else {
+                    path.addLine(to: point)
+                }
+            }
+            path.closeSubpath()
+        }
+        .stroke(color, lineWidth: lineWidth)
+        .opacity(opacity)
+    }
+    
+    private var dataPoints: some View {
+        ForEach(Array(data.enumerated()), id: \.offset) { index, item in
+            let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+            let radius1 = item.value1 * 1.2
+            let radius2 = item.value2 * 1.2
+            
+            // Data points for profile 1
+            Circle()
+                .fill(Color.blue)
+                .frame(width: 8, height: 8)
+                .position(x: radius1 * cos(angle), y: radius1 * sin(angle))
+                .shadow(color: .blue.opacity(0.3), radius: 2)
+            
+            // Data points for profile 2
+            Circle()
+                .fill(Color.orange)
+                .frame(width: 8, height: 8)
+                .position(x: radius2 * cos(angle), y: radius2 * sin(angle))
+                .shadow(color: .orange.opacity(0.3), radius: 2)
+        }
+    }
+    
+    private var categoryLabels: some View {
+        ForEach(Array(data.enumerated()), id: \.offset) { index, item in
+            categoryLabelForItem(index: index, item: item)
         }
     }
     
     @ViewBuilder
+    private func categoryLabelForItem(index: Int, item: RadarData) -> some View {
+        let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+        let labelRadius: CGFloat = 180
+        
+        let textWidth = CGFloat(item.category.count * 8 + 8)
+        let offsetX: CGFloat = labelRadius * cos(angle) > 0 ? 20 : -20
+        let offsetY: CGFloat = labelRadius * sin(angle) > 0 ? 10 : -10
+        
+        Text(item.category)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.primary)
+            .position(
+                x: labelRadius * cos(angle),
+                y: labelRadius * sin(angle)
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.white.opacity(0.9))
+                    .frame(width: textWidth, height: 20)
+            )
+            .offset(x: offsetX, y: offsetY)
+    }
+    
+    private var legendView: some View {
+        HStack(spacing: 30) {
+            legendItem(color: .blue, label: profile1)
+            legendItem(color: .orange, label: profile2)
+        }
+        .padding(.top, 15)
+        .padding(.horizontal, 20)
+    }
+    
+    @ViewBuilder
     private func legendItem(color: Color, label: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Circle()
                 .fill(color)
                 .frame(width: 12, height: 12)
+                .shadow(color: color.opacity(0.3), radius: 1)
             
             Text(label)
-                .font(.caption)
+                .font(.system(size: 13, weight: .medium))
                 .lineLimit(1)
+                .foregroundColor(.primary)
         }
     }
 }

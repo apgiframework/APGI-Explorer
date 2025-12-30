@@ -23,7 +23,6 @@ class UserDefaultsManager {
         static let hapticsEnabled = "hapticsEnabled"
         static let backupFrequency = "backupFrequency"
         static let lastBackupDate = "lastBackupDate"
-        static let windowArrangementPreference = "windowArrangementPreference"
         static let statesDisplayMode = "statesDisplayMode"
         static let defaultComparisonMode = "defaultComparisonMode"
     }
@@ -126,16 +125,6 @@ class UserDefaultsManager {
         set { defaults.set(newValue, forKey: Keys.lastBackupDate) }
     }
     
-    var windowArrangementPreference: WindowArrangement {
-        get {
-            guard let rawValue = defaults.string(forKey: Keys.windowArrangementPreference),
-                  let arrangement = WindowArrangement(rawValue: rawValue) else {
-                return .cascade
-            }
-            return arrangement
-        }
-        set { defaults.set(newValue.rawValue, forKey: Keys.windowArrangementPreference) }
-    }
     
     var statesDisplayMode: DisplayMode {
         get {
@@ -209,11 +198,6 @@ enum BackupFrequency: String, CaseIterable {
     }
 }
 
-enum WindowArrangement: String, CaseIterable {
-    case cascade = "Cascade"
-    case tile = "Tile"
-    case sideBySide = "Side by Side"
-}
 
 enum DisplayMode: String, CaseIterable, Identifiable {
     case list = "List"

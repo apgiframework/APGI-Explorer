@@ -99,85 +99,6 @@ class WindowManager: ObservableObject {
         activeWindows.removeAll()
     }
     
-    // MARK: - Window Arrangement
-    
-    func arrangeWindows(_ arrangement: WindowArrangement) {
-        guard let screen = NSScreen.main else { return }
-        let screenFrame = screen.visibleFrame
-        
-        switch arrangement {
-        case .cascade:
-            arrangeCascade(in: screenFrame)
-        case .tile:
-            arrangeTile(in: screenFrame)
-        case .sideBySide:
-            arrangeSideBySide(in: screenFrame)
-        }
-    }
-    
-    func arrangeWindowsWithUserPreference() {
-        let preference = UserDefaultsManager.shared.windowArrangementPreference
-        arrangeWindows(preference)
-    }
-    
-    private func arrangeCascade(in frame: CGRect) {
-        var offset: CGFloat = 0
-        for window in activeWindows.values {
-            let size = window.frame.size
-            let origin = CGPoint(
-                x: frame.origin.x + offset,
-                y: frame.origin.y + frame.height - size.height - offset
-            )
-            window.setFrame(CGRect(origin: origin, size: size), display: true, animate: true)
-            offset += 30
-        }
-    }
-    
-    private func arrangeTile(in frame: CGRect) {
-        let windows = Array(activeWindows.values)
-        let count = windows.count
-        
-        guard count > 0 else { return }
-        
-        let cols = Int(ceil(sqrt(Double(count))))
-        let rows = Int(ceil(Double(count) / Double(cols)))
-        
-        let tileWidth = frame.width / CGFloat(cols)
-        let tileHeight = frame.height / CGFloat(rows)
-        
-        for (index, window) in windows.enumerated() {
-            let col = index % cols
-            let row = index / cols
-            
-            let origin = CGPoint(
-                x: frame.origin.x + CGFloat(col) * tileWidth,
-                y: frame.origin.y + frame.height - CGFloat(row + 1) * tileHeight
-            )
-            let size = CGSize(width: tileWidth, height: tileHeight)
-            
-            window.setFrame(CGRect(origin: origin, size: size), display: true, animate: true)
-        }
-    }
-    
-    private func arrangeSideBySide(in frame: CGRect) {
-        let windows = Array(activeWindows.values)
-        guard windows.count >= 2 else { return }
-        
-        let halfWidth = frame.width / 2
-        
-        windows[0].setFrame(
-            CGRect(x: frame.origin.x, y: frame.origin.y, width: halfWidth, height: frame.height),
-            display: true,
-            animate: true
-        )
-        
-        windows[1].setFrame(
-            CGRect(x: frame.origin.x + halfWidth, y: frame.origin.y, width: halfWidth, height: frame.height),
-            display: true,
-            animate: true
-        )
-    }
-    
     // MARK: - Fullscreen
     
     func toggleFullscreen(type: WindowType) {
@@ -185,8 +106,6 @@ class WindowManager: ObservableObject {
         window.toggleFullScreen(nil)
     }
 }
-
-// WindowArrangement is defined in UserDefaultsManager.swift
 
 // MARK: - Window Delegate
 
