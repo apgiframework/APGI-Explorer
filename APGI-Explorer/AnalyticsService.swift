@@ -433,6 +433,7 @@ enum AnalyticsEvent {
 
 final class ConsoleAnalyticsService: AnalyticsService {
     private var userProperties: [String: String] = [:]
+    static let shared = ConsoleAnalyticsService()
 
     func track(event: AnalyticsEvent) {
         let propertiesDescription = userProperties

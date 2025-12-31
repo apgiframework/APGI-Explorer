@@ -34,6 +34,10 @@ struct QuizView: View {
             .onAppear {
                 setupHandoffActivity()
             }
+            .onDisappear {
+                handoffActivity?.invalidate()
+                handoffActivity = nil
+            }
             .onChange(of: currentQuestionIndex) { oldValue, newValue in
                 updateHandoffActivity()
             }
@@ -43,6 +47,7 @@ struct QuizView: View {
             .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
                 if let restoredAnswers = HandoffActivity.restoreUserActivity(userActivity, currentQuestionIndex: $currentQuestionIndex) {
                     quizModel.restoreAnswers(restoredAnswers)
+                    ConsoleAnalyticsService.shared.track(event: .handoffActivityRestored)
                 }
             }
             .userActivity(HandoffActivity.activityType) { activity in
@@ -137,13 +142,16 @@ struct QuizView: View {
             quizModel: quizModel,
             currentQuestionIndex: currentQuestionIndex
         )
+        handoffActivity?.becomeCurrent()
     }
     
     private func updateHandoffActivity() {
+        handoffActivity?.invalidate()
         handoffActivity = HandoffActivity.createUserActivity(
             quizModel: quizModel,
             currentQuestionIndex: currentQuestionIndex
         )
+        handoffActivity?.becomeCurrent()
     }
     
     private func sectionName(for question: QuizQuestion) -> String {

@@ -1474,7 +1474,11 @@ class Logger {
     init(enabled: Bool) {
         self.enabled = enabled
         if enabled {
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                print("Warning: Unable to access Documents directory for logging")
+                self.logFile = nil
+                return
+            }
             self.logFile = documentsPath.appendingPathComponent("screenshot_automation.log")
         } else {
             self.logFile = nil
@@ -1505,84 +1509,369 @@ class Logger {
     }
 }
 
+// MARK: - Production-Safe Screenshot Automation Engine
+class ProductionScreenshotAutomationEngine {
+    private let config: ProductionScreenshotConfig
+    private let logger: Logger
+    private let screenshotManager: ScreenshotManager
+    private var screenshotCount = 0
+    
+    init(config: ProductionScreenshotConfig) {
+        self.config = config
+        self.logger = Logger(enabled: config.enableLogging)
+        self.screenshotManager = ScreenshotManager(
+            config: ScreenshotConfig(
+                outputDirectory: config.outputDirectory,
+                imageFormat: config.imageFormat,
+                quality: config.quality,
+                appearanceModes: [.light],  // Only light mode in production
+                resolutions: [.default],    // Only default resolution in production
+                delayBetweenScreens: 1.0,
+                maxRetries: 2,
+                enableLogging: config.enableLogging,
+                captureScrollableContent: false,  // Disabled for safety
+                captureInteractiveStates: false,  // Disabled for safety
+                includeAccessibilityInfo: false,  // Disabled for privacy
+                customScreenPaths: []
+            ),
+            logger: logger
+        )
+        
+        createOutputDirectory()
+    }
+    
+    func run() {
+        logger.log("🏭 Starting production-safe screenshot automation...")
+        logger.log("📸 Max screenshots allowed: \(config.maxScreenshotsPerSession)")
+        logger.log("📋 Allowed screens: \(config.allowedScreens)")
+        
+        // Get only allowed screens
+        let allowedScreens = ScreenNavigation.allScreens.filter { screen in
+            config.allowedScreens.contains(screen.identifier)
+        }
+        
+        logger.log("📱 Found \(allowedScreens.count) allowed screens to capture")
+        
+        // Process each allowed screen
+        for screen in allowedScreens {
+            guard screenshotCount < config.maxScreenshotsPerSession else {
+                logger.log("⚠️ Reached maximum screenshot limit (\(config.maxScreenshotsPerSession))")
+                break
+            }
+            
+            logger.log("📸 Capturing screen: \(screen.name)")
+            
+            if navigateToScreen(screen) {
+                Thread.sleep(forTimeInterval: 1.0)  // Short wait for screen to stabilize
+                
+                // Capture screenshot
+                if captureScreenshot(screenName: screen.name) {
+                    screenshotCount += 1
+                    logger.log("✅ Successfully captured screenshot \(screenshotCount)/\(config.maxScreenshotsPerSession)")
+                } else {
+                    logger.log("❌ Failed to capture screenshot for screen: \(screen.name)")
+                }
+                
+                Thread.sleep(forTimeInterval: 0.5)  // Brief delay between screens
+            } else {
+                logger.log("❌ Failed to navigate to screen: \(screen.name)")
+            }
+        }
+        
+        logger.log("🎉 Production screenshot automation completed")
+        logger.log("📸 Total screenshots captured: \(screenshotCount)")
+        
+        // Show completion alert in production
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Screenshot Automation Complete"
+            alert.informativeText = "Successfully captured \(self.screenshotCount) screenshots.\nScreenshots saved to: \(self.config.outputDirectory)"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
+    }
+    
+    private func createOutputDirectory() {
+        let fileManager = FileManager.default
+        let directoryURL = URL(fileURLWithPath: config.outputDirectory)
+        
+        if !fileManager.fileExists(atPath: config.outputDirectory) {
+            do {
+                try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+                logger.log("✅ Created output directory: \(config.outputDirectory)")
+            } catch {
+                logger.log("❌ Failed to create output directory: \(error)")
+            }
+        }
+    }
+    
+    private func navigateToScreen(_ screen: ScreenNavigation) -> Bool {
+        // Simple navigation for production - only basic keyboard shortcuts
+        switch screen.identifier {
+        case "home":
+            simulateKeyPress(key: "1", modifiers: .command)
+        case "states":
+            simulateKeyPress(key: "2", modifiers: .command)
+        case "compare":
+            simulateKeyPress(key: "3", modifiers: .command)
+        case "settings":
+            simulateKeyPress(key: ",", modifiers: .command)
+        default:
+            logger.log("⚠️ Screen '\(screen.identifier)' not supported in production mode")
+            return false
+        }
+        
+        Thread.sleep(forTimeInterval: 0.5)
+        return true
+    }
+    
+    private func captureScreenshot(screenName: String) -> Bool {
+        guard let window = NSApp.keyWindow else {
+            logger.log("❌ No key window found for screenshot")
+            return false
+        }
+        
+        // Use a simple view-based screenshot approach
+        guard let view = window.contentView else {
+            logger.log("❌ No content view found")
+            return false
+        }
+        
+        // Create a bitmap representation of the view
+        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
+            logger.log("❌ Failed to create bitmap representation")
+            return false
+        }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        
+        // Convert to CGImage
+        guard let image = rep.cgImage else {
+            logger.log("❌ Failed to create CGImage from view")
+            return false
+        }
+        
+        // Save the image
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let timestamp = formatter.string(from: Date())
+        let filename = "\(screenName)_\(timestamp).\(config.imageFormat.rawValue)"
+        let fileURL = URL(fileURLWithPath: config.outputDirectory).appendingPathComponent(filename)
+        
+        guard let data = imageToData(image: image, format: config.imageFormat, quality: config.quality) else {
+            logger.log("❌ Failed to convert image to data")
+            return false
+        }
+        
+        do {
+            try data.write(to: fileURL)
+            logger.log("✅ Screenshot saved: \(filename)")
+            return true
+        } catch {
+            logger.log("❌ Failed to save screenshot: \(error)")
+            return false
+        }
+    }
+    
+    private func imageToData(image: CGImage, format: ImageFormat, quality: Double) -> Data? {
+        let bitmapRep = NSBitmapImageRep(cgImage: image)
+        
+        switch format {
+        case .png:
+            return bitmapRep.representation(using: .png, properties: [:])
+        case .jpg:
+            return bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: quality])
+        case .heic:
+            // HEIC not available in NSBitmapImageRep, fall back to PNG
+            return bitmapRep.representation(using: .png, properties: [:])
+        }
+    }
+    
+    private func simulateKeyPress(key: String, modifiers: NSEvent.ModifierFlags) {
+        let source = CGEventSource(stateID: .hidSystemState)
+        let keyCode = key.utf16.first?.hashValue ?? 0
+        
+        // Key down
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true)
+        keyDown?.flags = CGEventFlags(rawValue: UInt64(modifiers.rawValue))
+        keyDown?.post(tap: .cghidEventTap)
+        
+        // Key up
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: false)
+        keyUp?.flags = CGEventFlags(rawValue: UInt64(modifiers.rawValue))
+        keyUp?.post(tap: .cghidEventTap)
+    }
+}
+
+// MARK: - Production-Safe Screenshot Configuration
+struct ProductionScreenshotConfig {
+    let isEnabled: Bool
+    let requiresAuthentication: Bool
+    let allowedScreens: [String]
+    let maxScreenshotsPerSession: Int
+    let outputDirectory: String
+    let imageFormat: ImageFormat
+    let quality: Double
+    let enableLogging: Bool
+    
+    static let `default` = ProductionScreenshotConfig(
+        isEnabled: false,  // Disabled by default for security
+        requiresAuthentication: true,
+        allowedScreens: ["home", "states", "compare", "settings"],  // Whitelist of allowed screens
+        maxScreenshotsPerSession: 10,  // Limit to prevent abuse
+        outputDirectory: (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/Screenshots",
+        imageFormat: .png,
+        quality: 0.9,
+        enableLogging: true
+    )
+    
+    static let debug = ProductionScreenshotConfig(
+        isEnabled: true,
+        requiresAuthentication: false,
+        allowedScreens: ScreenNavigation.allScreens.map { $0.identifier },
+        maxScreenshotsPerSession: 100,
+        outputDirectory: (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/Screenshots",
+        imageFormat: .png,
+        quality: 0.9,
+        enableLogging: true
+    )
+}
+
 // MARK: - Main Execution
 class ScreenshotAutomationRunner {
     static func run() {
         print("🔍 ScreenshotAutomationRunner started")
         print("🔧 Process arguments: \(ProcessInfo.processInfo.arguments)")
         
-        // Only run in debug mode and when the argument is passed
-        #if DEBUG
+        // Check if screenshot mode is enabled via arguments
         let isScreenshotMode = ProcessInfo.processInfo.arguments.contains("--screenshot-mode")
         print("📸 Screenshot mode: \(isScreenshotMode ? "ENABLED" : "disabled")")
         
         if isScreenshotMode {
-            print("🚀 Starting screenshot automation...")
-            let config = ScreenshotConfig.default
-            print("📁 Output directory: \(config.outputDirectory)")
-            
-            // Create output directory if it doesn't exist
-            let fileManager = FileManager.default
-            let directoryURL = URL(fileURLWithPath: config.outputDirectory)
-            let directoryPath = directoryURL.path
-            
-            print("🔍 Checking if directory exists: \(directoryPath)")
-            
-            if !fileManager.fileExists(atPath: directoryPath) {
-                print("📂 Creating output directory: \(directoryPath)")
-                do {
-                    try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-                    print("✅ Successfully created directory")
-                } catch {
-                    print("❌ Failed to create output directory: \(error.localizedDescription)")
-                    print("Current working directory: \(fileManager.currentDirectoryPath)")
-                    return
-                }
-            } else {
-                print("📂 Output directory already exists")
-            }
-            
-            // Request screen recording permission if needed
-            if !ScreenRecordingPermission.hasPermission {
-                print("⚠️ Screen recording permission is required for screenshot automation")
-                ScreenRecordingPermission.requestPermission()
-                // Wait a moment for permission dialog
-                Thread.sleep(forTimeInterval: 2.0)
-            } else {
-                print("✅ Screen recording permission granted")
-            }
-            
-            print("🚀 Initializing ScreenshotAutomationEngine")
-            let engine = ScreenshotAutomationEngine(config: config)
-            
-            // Run the automation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                print("📸 Starting screenshot capture...")
-                engine.run()
-                
-                // Exit the app when done
-                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                    print("✅ Screenshot automation completed.")
-                    print("📂 Check the directory: \(directoryPath)")
-                    
-                    // List contents of the directory
-                    do {
-                        let contents = try fileManager.contentsOfDirectory(atPath: directoryPath)
-                        print("📋 Directory contents: \(contents)")
-                    } catch {
-                        print("❌ Failed to list directory contents: \(error.localizedDescription)")
-                    }
-                    
-                    NSApp.terminate(nil)
-                }
+            #if DEBUG
+            runDebugMode()
+            #else
+            runProductionMode()
+            #endif
+        }
+    }
+    
+    private static func runDebugMode() {
+        print("🐞 Running in DEBUG mode with full capabilities")
+        let config = ScreenshotConfig.default
+        print("📁 Output directory: \(config.outputDirectory)")
+        
+        // Create output directory if it doesn't exist
+        let fileManager = FileManager.default
+        let directoryURL = URL(fileURLWithPath: config.outputDirectory)
+        let directoryPath = directoryURL.path
+        
+        print("🔍 Checking if directory exists: \(directoryPath)")
+        
+        if !fileManager.fileExists(atPath: directoryPath) {
+            print("📂 Creating output directory: \(directoryPath)")
+            do {
+                try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+                print("✅ Successfully created directory")
+            } catch {
+                print("❌ Failed to create output directory: \(error.localizedDescription)")
+                print("Current working directory: \(fileManager.currentDirectoryPath)")
+                return
             }
         } else {
-            print("🏃‍♂️ Running in normal app mode")
-            let config = ScreenshotConfig.default
-            let engine = ScreenshotAutomationEngine(config: config)
+            print("📂 Output directory already exists")
+        }
+        
+        // Request screen recording permission if needed
+        if !ScreenRecordingPermission.hasPermission {
+            print("⚠️ Screen recording permission is required for screenshot automation")
+            ScreenRecordingPermission.requestPermission()
+            // Wait a moment for permission dialog
+            Thread.sleep(forTimeInterval: 2.0)
+        } else {
+            print("✅ Screen recording permission granted")
+        }
+        
+        print("🚀 Initializing ScreenshotAutomationEngine")
+        let engine = ScreenshotAutomationEngine(config: config)
+        
+        // Run the automation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            print("📸 Starting screenshot capture...")
+            engine.run()
+            
+            // Exit the app when done
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                print("✅ Screenshot automation completed.")
+                print("📂 Check the directory: \(directoryPath)")
+                
+                // List contents of the directory
+                do {
+                    let contents = try fileManager.contentsOfDirectory(atPath: directoryPath)
+                    print("📋 Directory contents: \(contents)")
+                } catch {
+                    print("❌ Failed to list directory contents: \(error.localizedDescription)")
+                }
+                
+                NSApp.terminate(nil)
+            }
+        }
+    }
+    
+    private static func runProductionMode() {
+        print("🏭 Running in PRODUCTION mode with safety restrictions")
+        
+        let config = ProductionScreenshotConfig.default
+        
+        // Check if screenshot automation is enabled
+        guard config.isEnabled else {
+            print("❌ Screenshot automation is disabled in production configuration")
+            print("💡 To enable, set ProductionScreenshotConfig.default.isEnabled = true")
+            return
+        }
+        
+        // Check authentication if required
+        if config.requiresAuthentication {
+            print("🔐 Authentication required for screenshot automation in production")
+            guard authenticateUser() else {
+                print("❌ Authentication failed - aborting screenshot automation")
+                return
+            }
+        }
+        
+        // Request screen recording permission
+        guard ScreenRecordingPermission.hasPermission else {
+            print("❌ Screen recording permission not granted")
+            ScreenRecordingPermission.requestPermission()
+            print("💡 Please grant permission in System Preferences and try again")
+            return
+        }
+        
+        print("✅ Production screenshot automation starting with safety restrictions")
+        print("📸 Max screenshots per session: \(config.maxScreenshotsPerSession)")
+        print("📋 Allowed screens: \(config.allowedScreens)")
+        
+        // Create production-safe engine
+        let engine = ProductionScreenshotAutomationEngine(config: config)
+        
+        // Run on main thread for safety
+        DispatchQueue.main.async {
             engine.run()
         }
-        #endif
+    }
+    
+    private static func authenticateUser() -> Bool {
+        // Simple authentication check - in production this would be more robust
+        // For now, check for a special environment variable or user defaults flag
+        let authToken = ProcessInfo.processInfo.environment["SCREENSHOT_AUTH_TOKEN"]
+        let isValidToken = authToken == "APGI-Screenshot-2024"
+        
+        if !isValidToken {
+            print("🔐 Invalid or missing authentication token")
+            print("💡 Set environment variable SCREENSHOT_AUTH_TOKEN=APGI-Screenshot-2024")
+        }
+        
+        return isValidToken
     }
 }
 

@@ -4,8 +4,8 @@ import Charts
 struct ProfileComparisonView: View {
     @EnvironmentObject private var profileManager: ProfileManager
     @Environment(\.appDependencies) private var dependencies
-    @State private var selectedProfile1: String = ""
-    @State private var selectedProfile2: String = ""
+    @State private var selectedProfile1: QuizProfile?
+    @State private var selectedProfile2: QuizProfile?
     @AppStorage("defaultComparisonMode") private var comparisonMode: ComparisonMode = .radar
     @State private var isLoading = false
     @State private var error: Error?
@@ -61,7 +61,7 @@ struct ProfileComparisonView: View {
                     loadingView
                 } else if let error = error {
                     errorView(error: error)
-                } else if !selectedProfile1.isEmpty && !selectedProfile2.isEmpty {
+                } else if selectedProfile1 != nil && selectedProfile2 != nil {
                     comparisonChart
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                     
@@ -89,7 +89,7 @@ struct ProfileComparisonView: View {
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
                 }
-                .disabled(selectedProfile1.isEmpty || selectedProfile2.isEmpty)
+                .disabled(selectedProfile1 == nil || selectedProfile2 == nil)
             }
         }
         .sheet(isPresented: $showExportSheet) {
@@ -103,7 +103,7 @@ struct ProfileComparisonView: View {
     private var comparisonChart: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Comparison: \(selectedProfile1) vs \(selectedProfile2)")
+                Text("Comparison: \(selectedProfile1?.name ?? "Unknown") vs \(selectedProfile2?.name ?? "Unknown")")
                     .font(.headline)
                 
                 Spacer()
@@ -122,17 +122,23 @@ struct ProfileComparisonView: View {
                 VStack {
                     switch comparisonMode {
                     case .radar:
-                        RadarComparisonChart(profile1: selectedProfile1, profile2: selectedProfile2)
-                            .frame(height: 350)
-                            .padding()
+                        if let profile1 = selectedProfile1, let profile2 = selectedProfile2 {
+                            RadarComparisonChart(profile1: profile1, profile2: profile2)
+                                .frame(height: 350)
+                                .padding()
+                        }
                     case .bar:
-                        BarComparisonChart(profile1: selectedProfile1, profile2: selectedProfile2)
-                            .frame(height: 350)
-                            .padding()
+                        if let profile1 = selectedProfile1, let profile2 = selectedProfile2 {
+                            BarComparisonChart(profile1: profile1, profile2: profile2)
+                                .frame(height: 350)
+                                .padding()
+                        }
                     case .line:
-                        LineComparisonChart(profile1: selectedProfile1, profile2: selectedProfile2)
-                            .frame(height: 350)
-                            .padding()
+                        if let profile1 = selectedProfile1, let profile2 = selectedProfile2 {
+                            LineComparisonChart(profile1: profile1, profile2: profile2)
+                                .frame(height: 350)
+                                .padding()
+                        }
                     }
                 }
             }
@@ -229,27 +235,38 @@ struct ProfileComparisonView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 2)
                 
                 VStack(spacing: 16) {
-                    // Example key differences - replace with real data
-                    differenceItem(
-                        title: "Emotional Stability",
-                        value1: 75,
-                        value2: 45,
-                        isHigherBetter: true
-                    )
-                    
-                    differenceItem(
-                        title: "Openness to Experience",
-                        value1: 60,
-                        value2: 80,
-                        isHigherBetter: true
-                    )
-                    
-                    differenceItem(
-                        title: "Anxiety Level",
-                        value1: 30,
-                        value2: 65,
-                        isHigherBetter: false
-                    )
+                    if let profile1 = selectedProfile1, let profile2 = selectedProfile2 {
+                        let apgiProfile1 = QuizModel.calculateAPGIProfile(from: profile1.results)
+                        let apgiProfile2 = QuizModel.calculateAPGIProfile(from: profile2.results)
+                        
+                        differenceItem(
+                            title: "Epsilon (Prediction Error)",
+                            value1: Int(apgiProfile1.epsilon),
+                            value2: Int(apgiProfile2.epsilon),
+                            isHigherBetter: false
+                        )
+                        
+                        differenceItem(
+                            title: "Precision",
+                            value1: Int(apgiProfile1.precision),
+                            value2: Int(apgiProfile2.precision),
+                            isHigherBetter: true
+                        )
+                        
+                        differenceItem(
+                            title: "Threshold",
+                            value1: Int(apgiProfile1.threshold),
+                            value2: Int(apgiProfile2.threshold),
+                            isHigherBetter: true
+                        )
+                        
+                        differenceItem(
+                            title: "Somatic Bias",
+                            value1: Int(apgiProfile1.somaticBias),
+                            value2: Int(apgiProfile2.somaticBias),
+                            isHigherBetter: false
+                        )
+                    }
                 }
                 .padding()
             }
@@ -258,24 +275,24 @@ struct ProfileComparisonView: View {
     }
     
     @ViewBuilder
-    private func profileSelectionCard(profile: Binding<String>, title: String) -> some View {
+    private func profileSelectionCard(profile: Binding<QuizProfile?>, title: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.secondary)
             
             Menu {
-                Button(action: { profile.wrappedValue = "" }) {
+                Button(action: { profile.wrappedValue = nil }) {
                     Label("Select Profile...", systemImage: "person.crop.circle")
                 }
                 
                 Divider()
                 
-                ForEach(getAvailableProfiles(), id: \.self) { profileName in
-                    Button(action: { profile.wrappedValue = profileName }) {
+                ForEach(getAvailableProfiles(), id: \.id) { quizProfile in
+                    Button(action: { profile.wrappedValue = quizProfile }) {
                         HStack {
-                            Text(profileName)
-                            if profile.wrappedValue == profileName {
+                            Text(quizProfile.name)
+                            if profile.wrappedValue?.id == quizProfile.id {
                                 Image(systemName: "checkmark")
                             }
                         }
@@ -283,8 +300,8 @@ struct ProfileComparisonView: View {
                 }
             } label: {
                 HStack {
-                    Text(profile.wrappedValue.isEmpty ? "Select Profile..." : profile.wrappedValue)
-                        .foregroundColor(profile.wrappedValue.isEmpty ? .secondary : .primary)
+                    Text(profile.wrappedValue?.name ?? "Select Profile...")
+                        .foregroundColor(profile.wrappedValue == nil ? .secondary : .primary)
                     
                     Spacer()
                     
@@ -329,7 +346,7 @@ struct ProfileComparisonView: View {
             }
             
             HStack(spacing: 16) {
-                Text(selectedProfile1)
+                Text(selectedProfile1?.name ?? "Profile 1")
                     .font(.caption)
                     .frame(width: 80, alignment: .leading)
                 
@@ -351,7 +368,7 @@ struct ProfileComparisonView: View {
             }
             
             HStack(spacing: 16) {
-                Text(selectedProfile2)
+                Text(selectedProfile2?.name ?? "Profile 2")
                     .font(.caption)
                     .frame(width: 80, alignment: .leading)
                 
@@ -374,8 +391,8 @@ struct ProfileComparisonView: View {
         }
     }
     
-    private func getAvailableProfiles() -> [String] {
-        return profileManager.profiles.map { $0.name }.sorted()
+    private func getAvailableProfiles() -> [QuizProfile] {
+        return profileManager.profiles.sorted { $0.name < $1.name }
     }
     
     private func performComparison() {
@@ -387,11 +404,13 @@ struct ProfileComparisonView: View {
         let workItem = DispatchWorkItem {
             self.isLoading = false
             
-            // Log analytics
-            dependencies.getAnalyticsService().track(event: .comparisonStarted(profileTypes: [
-                APGIProfileType(rawValue: self.selectedProfile1) ?? .openExplorer,
-                APGIProfileType(rawValue: self.selectedProfile2) ?? .openExplorer
-            ]))
+            // Log analytics if profiles are selected
+            if let profile1 = self.selectedProfile1, let profile2 = self.selectedProfile2 {
+                let profileType1 = APGIProfileType(rawValue: profile1.name) ?? .openExplorer
+                let profileType2 = APGIProfileType(rawValue: profile2.name) ?? .openExplorer
+                
+                self.dependencies.getAnalyticsService().track(event: .comparisonStarted(profileTypes: [profileType1, profileType2]))
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
     }
@@ -426,19 +445,47 @@ struct ProfileComparisonView: View {
 
 // MARK: - Comparison Chart Views
 struct RadarComparisonChart: View {
-    let profile1: String
-    let profile2: String
+    let profile1: QuizProfile
+    let profile2: QuizProfile
     
-    // Sample data - replace with real profile data
+    private var apgiProfile1: APGIProfile {
+        QuizModel.calculateAPGIProfile(from: profile1.results)
+    }
+    
+    private var apgiProfile2: APGIProfile {
+        QuizModel.calculateAPGIProfile(from: profile2.results)
+    }
+    
+    // Real data from profiles
     private var data: [RadarData] {
-        let categories = ["Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism"]
+        let categories = ["Epsilon", "Precision", "Threshold", "Somatic Bias"]
         
-        // Generate random data for demo
-        return categories.map { category in
-            RadarData(
+        return categories.enumerated().map { index, category in
+            let value1: Double
+            let value2: Double
+            
+            switch index {
+            case 0: // Epsilon
+                value1 = apgiProfile1.epsilon
+                value2 = apgiProfile2.epsilon
+            case 1: // Precision
+                value1 = apgiProfile1.precision
+                value2 = apgiProfile2.precision
+            case 2: // Threshold
+                value1 = apgiProfile1.threshold
+                value2 = apgiProfile2.threshold
+            case 3: // Somatic Bias
+                value1 = apgiProfile1.somaticBias
+                value2 = apgiProfile2.somaticBias
+            default:
+                value1 = 50
+                value2 = 50
+            }
+            
+            return RadarData(
                 category: category,
-                value1: Double.random(in: 30...100),
-                value2: Double.random(in: 30...100)
+                value1: value1,
+                value2: value2
             )
         }
     }
@@ -472,7 +519,7 @@ struct RadarComparisonChart: View {
     
     private var axisLines: some View {
         ForEach(Array(data.enumerated()), id: \.offset) { index, item in
-            let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+            let angle = Double(index) * (2 * .pi / 4) - .pi / 2
             Path { path in
                 path.move(to: .zero)
                 path.addLine(to: CGPoint(x: 150 * cos(angle), y: 150 * sin(angle)))
@@ -500,7 +547,7 @@ struct RadarComparisonChart: View {
     private func filledProfilePolygon(for values: [Double], color: Color) -> some View {
         Path { path in
             for (index, value) in values.enumerated() {
-                let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+                let angle = Double(index) * (2 * .pi / 4) - .pi / 2
                 let radius = value * 1.2
                 let point = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
                 
@@ -518,7 +565,7 @@ struct RadarComparisonChart: View {
     private func outlinedProfilePolygon(for values: [Double], color: Color, lineWidth: CGFloat, opacity: Double) -> some View {
         Path { path in
             for (index, value) in values.enumerated() {
-                let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+                let angle = Double(index) * (2 * .pi / 4) - .pi / 2
                 let radius = value * 1.2
                 let point = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
                 
@@ -536,7 +583,7 @@ struct RadarComparisonChart: View {
     
     private var dataPoints: some View {
         ForEach(Array(data.enumerated()), id: \.offset) { index, item in
-            let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+            let angle = Double(index) * (2 * .pi / 4) - .pi / 2
             let radius1 = item.value1 * 1.2
             let radius2 = item.value2 * 1.2
             
@@ -564,7 +611,7 @@ struct RadarComparisonChart: View {
     
     @ViewBuilder
     private func categoryLabelForItem(index: Int, item: RadarData) -> some View {
-        let angle = Double(index) * (2 * .pi / 5) - .pi / 2
+        let angle = Double(index) * (2 * .pi / 4) - .pi / 2
         let labelRadius: CGFloat = 180
         
         let textWidth = CGFloat(item.category.count * 8 + 8)
@@ -588,8 +635,8 @@ struct RadarComparisonChart: View {
     
     private var legendView: some View {
         HStack(spacing: 30) {
-            legendItem(color: .blue, label: profile1)
-            legendItem(color: .orange, label: profile2)
+            legendItem(color: .blue, label: profile1.name)
+            legendItem(color: .orange, label: profile2.name)
         }
         .padding(.top, 15)
         .padding(.horizontal, 20)
@@ -612,17 +659,24 @@ struct RadarComparisonChart: View {
 }
 
 struct BarComparisonChart: View {
-    let profile1: String
-    let profile2: String
+    let profile1: QuizProfile
+    let profile2: QuizProfile
     
-    // Sample data - replace with real profile data
+    private var apgiProfile1: APGIProfile {
+        QuizModel.calculateAPGIProfile(from: profile1.results)
+    }
+    
+    private var apgiProfile2: APGIProfile {
+        QuizModel.calculateAPGIProfile(from: profile2.results)
+    }
+    
+    // Real data from profiles
     private var data: [BarData] {
         [
-            ("Openness", 75, 60),
-            ("Conscientiousness", 65, 80),
-            ("Extraversion", 50, 70),
-            ("Agreeableness", 80, 65),
-            ("Neuroticism", 40, 55)
+            ("Epsilon", Int(apgiProfile1.epsilon), Int(apgiProfile2.epsilon)),
+            ("Precision", Int(apgiProfile1.precision), Int(apgiProfile2.precision)),
+            ("Threshold", Int(apgiProfile1.threshold), Int(apgiProfile2.threshold)),
+            ("Somatic Bias", Int(apgiProfile1.somaticBias), Int(apgiProfile2.somaticBias))
         ].map { BarData(category: $0.0, value1: $0.1, value2: $0.2) }
     }
     
@@ -636,7 +690,7 @@ struct BarComparisonChart: View {
                         y: .value("Value", item.value1)
                     )
                     .foregroundStyle(Color.blue.gradient)
-                    .position(by: .value("Profile", profile1))
+                    .position(by: .value("Profile", profile1.name))
                     .cornerRadius(4)
                     
                     // Profile 2 bars
@@ -645,7 +699,7 @@ struct BarComparisonChart: View {
                         y: .value("Value", item.value2)
                     )
                     .foregroundStyle(Color.orange.gradient)
-                    .position(by: .value("Profile", profile2))
+                    .position(by: .value("Profile", profile2.name))
                     .cornerRadius(4)
                 }
             }
@@ -663,7 +717,7 @@ struct BarComparisonChart: View {
             }
             .chartLegend(position: .top, alignment: .center) {
                 HStack(spacing: 20) {
-                    ForEach([(Color.blue, profile1), (Color.orange, profile2)], id: \.1) { color, label in
+                    ForEach([(Color.blue, profile1.name), (Color.orange, profile2.name)], id: \.1) { color, label in
                         HStack(spacing: 6) {
                             Rectangle()
                                 .fill(color)
@@ -685,19 +739,30 @@ struct BarComparisonChart: View {
 }
 
 struct LineComparisonChart: View {
-    let profile1: String
-    let profile2: String
+    let profile1: QuizProfile
+    let profile2: QuizProfile
     
-    // Sample data - replace with real profile data
+    private var apgiProfile1: APGIProfile {
+        QuizModel.calculateAPGIProfile(from: profile1.results)
+    }
+    
+    private var apgiProfile2: APGIProfile {
+        QuizModel.calculateAPGIProfile(from: profile2.results)
+    }
+    
+    // Real data from profiles - showing parameter progression
     private var data: [LineData] {
-        [
-            ("Week 1", 60, 40),
-            ("Week 2", 55, 45),
-            ("Week 3", 70, 50),
-            ("Week 4", 65, 60),
-            ("Week 5", 75, 55),
-            ("Week 6", 80, 70)
-        ].map { LineData(period: $0.0, value1: $0.1, value2: $0.2) }
+        let parameters = ["Epsilon", "Precision", "Threshold", "Somatic Bias"]
+        let values1 = [apgiProfile1.epsilon, apgiProfile1.precision, apgiProfile1.threshold, apgiProfile1.somaticBias]
+        let values2 = [apgiProfile2.epsilon, apgiProfile2.precision, apgiProfile2.threshold, apgiProfile2.somaticBias]
+        
+        return parameters.enumerated().map { index, parameter in
+            LineData(
+                period: parameter,
+                value1: Int(values1[index]),
+                value2: Int(values2[index])
+            )
+        }
     }
     
     var body: some View {
@@ -713,7 +778,7 @@ struct LineComparisonChart: View {
                     .symbol(Circle().strokeBorder(lineWidth: 1))
                     .interpolationMethod(.catmullRom)
                 }
-                .foregroundStyle(by: .value("Profile", profile1))
+                .foregroundStyle(by: .value("Profile", profile1.name))
                 .lineStyle(StrokeStyle(lineWidth: 3))
                 
                 // Profile 2 line
@@ -726,7 +791,7 @@ struct LineComparisonChart: View {
                     .symbol(Circle().strokeBorder(lineWidth: 1))
                     .interpolationMethod(.catmullRom)
                 }
-                .foregroundStyle(by: .value("Profile", profile2))
+                .foregroundStyle(by: .value("Profile", profile2.name))
                 .lineStyle(StrokeStyle(lineWidth: 3))
             }
             .chartXAxis {
@@ -745,7 +810,7 @@ struct LineComparisonChart: View {
             }
             .chartLegend(position: .top, alignment: .center) {
                 HStack(spacing: 20) {
-                    ForEach([(Color.blue, profile1), (Color.orange, profile2)], id: \.1) { color, label in
+                    ForEach([(Color.blue, profile1.name), (Color.orange, profile2.name)], id: \.1) { color, label in
                         HStack(spacing: 6) {
                             Rectangle()
                                 .fill(color)

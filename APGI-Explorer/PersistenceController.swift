@@ -40,7 +40,9 @@ class PersistenceController: ObservableObject {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         } else {
             // Set up store location in Application Support
-            let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            guard let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+                fatalError("Unable to access Application Support directory")
+            }
             let storeURL = appSupportURL.appendingPathComponent("APGIExplorer.sqlite")
             
             let description = NSPersistentStoreDescription(url: storeURL)

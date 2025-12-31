@@ -1,21 +1,39 @@
 import SwiftUI
+import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
-struct ShareSheet: View {
+#if os(macOS)
+struct ShareSheet: NSViewRepresentable {
     var items: [Any]
     
-    var body: some View {
-        if let url = items.first as? URL {
-            ShareLink(item: url) {
-                Label("Share", systemImage: "square.and.arrow.up")
-            }
-            .presentationDetents([.medium, .large])
-        } else if let string = items.first as? String {
-            ShareLink(item: string) {
-                Label("Share", systemImage: "square.and.arrow.up")
-            }
-            .presentationDetents([.medium, .large])
-        } else {
-            Text("Sharing not available for this item")
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            let sharingPicker = NSSharingServicePicker(items: items)
+            sharingPicker.show(relativeTo: .zero, of: view, preferredEdge: .minY)
         }
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // No updates needed
     }
 }
+#else
+struct ShareSheet: UIViewControllerRepresentable {
+    var items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return activityViewController
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // No updates needed
+    }
+}
+#endif

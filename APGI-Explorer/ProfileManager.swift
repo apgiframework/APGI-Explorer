@@ -274,6 +274,20 @@ class ProfileManager: ObservableObject {
 
     /// Enhanced profile calculation using APGIScorer
     private func enhancedProfile(from results: [String: Int]) -> APGIProfile {
+        // Validate input results
+        guard !results.isEmpty else {
+            print("Warning: Empty results dictionary provided to enhancedProfile")
+            return APGIProfile(
+                epsilon: 50.0,
+                precision: 50.0,
+                threshold: 50.0,
+                somaticBias: 50.0,
+                interactionScore: 0,
+                temporalStability: 0,
+                environmentalFit: 0
+            )
+        }
+        
         // Convert [String: Int] results to [Int: Int] for the scorer
         let answerMapping: [String: Int] = [
             "epsilon": 1, "precision": 2, "threshold": 3, "somatic": 4,
@@ -282,7 +296,11 @@ class ProfileManager: ObservableObject {
         
         var answers: [Int: Int] = [:]
         for (parameter, value) in results {
-            guard answerMapping[parameter] != nil else { continue }
+            guard answerMapping[parameter] != nil,
+                  value >= 0 && value <= 100 else {
+                print("Warning: Invalid parameter '\(parameter)' or value '\(value)' in results")
+                continue
+            }
 
             // Map the parameter value to question IDs
             let questionIds = getQuestionIdsForParameter(parameter)
@@ -291,6 +309,20 @@ class ProfileManager: ObservableObject {
                 // This is a simplified approach - in practice, you'd want actual individual answers
                 answers[questionId] = value
             }
+        }
+        
+        // Ensure we have enough data for scoring
+        guard !answers.isEmpty else {
+            print("Warning: No valid answers could be mapped from results")
+            return APGIProfile(
+                epsilon: 50.0,
+                precision: 50.0,
+                threshold: 50.0,
+                somaticBias: 50.0,
+                interactionScore: 0,
+                temporalStability: 0,
+                environmentalFit: 0
+            )
         }
         
         return scorer.calculateRobustScore(answers: answers)
@@ -318,7 +350,21 @@ class ProfileManager: ObservableObject {
     }
 
     internal func profile(from results: [String: Int]) -> APGIProfile {
-        APGIProfile(
+        // Validate input
+        guard !results.isEmpty else {
+            print("Warning: Empty results dictionary provided to profile")
+            return APGIProfile(
+                epsilon: 0.0,
+                precision: 0.0,
+                threshold: 0.0,
+                somaticBias: 0.0,
+                interactionScore: 0,
+                temporalStability: 0,
+                environmentalFit: 0
+            )
+        }
+        
+        return APGIProfile(
             epsilon: Double(results["epsilon"] ?? 0),
             precision: Double(results["precision"] ?? 0),
             threshold: Double(results["threshold"] ?? 0),
@@ -503,6 +549,62 @@ class ProfileManager: ObservableObject {
         }
     }
     
+    /// Exports the profile to CSV format
+    func exportToCSV(profile: QuizProfile) -> Data? {
+        let apgiScores = enhancedProfile(from: profile.results)
+        let profileType = determineProfileType(for: apgiScores)
+        
+        // CSV header
+        var csvContent = [
+            "Profile Name",
+            "Date Created",
+            "Profile Type",
+            "Epsilon (ε)",
+            "Precision (π)",
+            "Threshold (θₜ)",
+            "Somatic Bias (β)",
+            "Interaction Score",
+            "Temporal Stability",
+            "Environmental Fit",
+            "Epsilon Category",
+            "Precision Category",
+            "Threshold Category",
+            "Somatic Bias Category",
+            "Interaction Category",
+            "Temporal Category",
+            "Environmental Category"
+        ].joined(separator: ",")
+        
+        // CSV data row
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        
+        let dataRow = [
+            "\"\(profile.name)\"",
+            "\"\(formatter.string(from: profile.dateCreated))\"",
+            "\"\(profileType.rawValue)\"",
+            String(format: "%.2f", apgiScores.epsilon),
+            String(format: "%.2f", apgiScores.precision),
+            String(format: "%.2f", apgiScores.threshold),
+            String(format: "%.2f", apgiScores.somaticBias),
+            String(format: "%.2f", apgiScores.interactionScore),
+            String(format: "%.2f", apgiScores.temporalStability),
+            String(format: "%.2f", apgiScores.environmentalFit),
+            "\"\(apgiScores.epsilonCategory.rawValue)\"",
+            "\"\(apgiScores.precisionCategory.rawValue)\"",
+            "\"\(apgiScores.thresholdCategory.rawValue)\"",
+            "\"\(apgiScores.somaticCategory.rawValue)\"",
+            "\"\(apgiScores.interactionCategory.rawValue)\"",
+            "\"\(apgiScores.temporalCategory.rawValue)\"",
+            "\"\(apgiScores.environmentalCategory.rawValue)\""
+        ].joined(separator: ",")
+        
+        csvContent += "\n" + dataRow
+        
+        return csvContent.data(using: .utf8)
+    }
+    
     /// Generates an interactive HTML report for sharing
     func generateHTMLReport(for profile: QuizProfile) -> URL? {
         let apgiProfile = enhancedProfile(from: profile.results)
@@ -540,7 +642,7 @@ class ProfileManager: ObservableObject {
         switch format {
         case .pdf:
             return generatePDFReport(for: profile)
-        case .json, .csv:
+        case .json:
             if let data = exportToJSON(profile: profile) {
                 let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
                 let tempDir = ExportUtilities.getTemporaryDirectory()
@@ -550,7 +652,22 @@ class ProfileManager: ObservableObject {
                     try data.write(to: tempFile)
                     return tempFile
                 } catch {
-                    print("Failed to write export file: \(error)")
+                    print("Failed to write JSON export file: \(error)")
+                    return nil
+                }
+            }
+            return nil
+        case .csv:
+            if let data = exportToCSV(profile: profile) {
+                let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
+                let tempDir = ExportUtilities.getTemporaryDirectory()
+                let tempFile = tempDir.appendingPathComponent(filename)
+                
+                do {
+                    try data.write(to: tempFile)
+                    return tempFile
+                } catch {
+                    print("Failed to write CSV export file: \(error)")
                     return nil
                 }
             }

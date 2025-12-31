@@ -2,6 +2,11 @@ import SwiftUI
 import Foundation
 import CoreData
 import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 struct SettingsView: View {
     // AppStorage bindings for all settings
@@ -28,7 +33,6 @@ struct SettingsView: View {
     @AppStorage("autoBackupEnabled") private var autoBackupEnabled: Bool = true
     @AppStorage("backupFrequency") private var backupFrequency: BackupFrequency = .weekly
     @AppStorage("maxBackupFiles") private var maxBackupFiles: Int = 10
-    @AppStorage("showWelcomeScreen") private var showWelcomeScreen: Bool = true
     @AppStorage("crashReportingEnabled") private var crashReportingEnabled: Bool = true
     @AppStorage("debugModeEnabled") private var debugModeEnabled: Bool = false
     @AppStorage("exportFormat") private var exportFormat: ExportFormat = .json
@@ -41,6 +45,43 @@ struct SettingsView: View {
     @AppStorage("chartAnimationEnabled") private var chartAnimationEnabled: Bool = true
     @AppStorage("notificationSoundEnabled") private var notificationSoundEnabled: Bool = true
     @AppStorage("notificationBadgeEnabled") private var notificationBadgeEnabled: Bool = true
+    
+    // Theme background color
+    @AppStorage("themeBackgroundColor") private var themeBackgroundColorData: Data = {
+        #if os(macOS)
+        let color = NSColor.controlBackgroundColor
+        return (try? NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false)) ?? Data()
+        #else
+        let color = UIColor.systemBackground
+        return (try? NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false)) ?? Data()
+        #endif
+    }()
+    
+    private func getThemeBackgroundColor() -> Color {
+        #if os(macOS)
+        guard let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: themeBackgroundColorData) else {
+            return Color(NSColor.controlBackgroundColor)
+        }
+        return Color(color)
+        #else
+        guard let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: UIColor.self, from: themeBackgroundColorData) else {
+            return Color(UIColor.systemBackground)
+        }
+        return Color(color)
+        #endif
+    }
+    
+    private func setThemeBackgroundColor(_ color: Color) {
+        #if os(macOS)
+        if let data = try? NSKeyedArchiver.archivedData(withRootObject: NSColor(color), requiringSecureCoding: false) {
+            themeBackgroundColorData = data
+        }
+        #else
+        if let data = try? NSKeyedArchiver.archivedData(withRootObject: UIColor(color), requiringSecureCoding: false) {
+            themeBackgroundColorData = data
+        }
+        #endif
+    }
     
     // Additional settings for Psychological States view
     @AppStorage("statesDisplayMode") private var statesDisplayMode: DisplayMode = .list
@@ -333,23 +374,6 @@ struct SettingsView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
                 
-                // Window Behavior Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Window Behavior")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    VStack(spacing: 12) {
-                        Toggle("Show welcome screen", isOn: $showWelcomeScreen)
-                            .help("Show welcome screen on app launch")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
-                
                 // System Notifications Section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("System Notifications")
@@ -429,7 +453,10 @@ struct SettingsView: View {
                         HStack {
                             Text("Background Color")
                             Spacer()
-                            ColorPicker("", selection: .constant(Color(.windowBackgroundColor)))
+                            ColorPicker("", selection: Binding(
+                                get: { getThemeBackgroundColor() },
+                                set: { setThemeBackgroundColor($0) }
+                            ))
                         }
                         .padding(.vertical, 4)
                     }
@@ -841,105 +868,70 @@ struct SettingsView: View {
     private var advancedSettingsTab: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Search Settings Section
+                // Debug Settings Section
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Search & Performance")
+                    Text("Debug")
                         .font(.headline)
                         .padding(.horizontal)
                     
                     Form {
-                        Toggle("Enable live search", isOn: $enableLiveSearch)
-                            .help("Search results update as you type")
+                        Toggle("Enable debug mode", isOn: $debugModeEnabled)
+                        .help("Show additional debugging information")
+                        .padding(.vertical, 4)
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
+                
+                // Experimental Features Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Experimental")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    Form {
+                        Toggle("Enable experimental features", isOn: $enableExperimentalFeatures)
+                            .help("Try out new features in development")
                             .padding(.vertical, 4)
                         
-                        Toggle("Show search hints", isOn: $showSearchHints)
-                            .help("Display helpful hints for searching")
-                            .padding(.vertical, 4)
-                        
-                        Toggle("Lazy loading", isOn: $lazyLoading)
-                            .help("Load content progressively for better performance")
-                            .padding(.vertical, 4)
-                        
-                        Toggle("Cache search results", isOn: $cacheSearchResults)
-                            .help("Store search results for faster repeat searches")
-                            .padding(.vertical, 4)
-                        
-                        Toggle("Show performance metrics", isOn: $showPerformanceMetrics)
-                            .help("Display performance statistics overlay")
+                        Toggle("Beta updates", isOn: $betaUpdates)
+                            .help("Receive beta versions of the app")
                             .padding(.vertical, 4)
                     }
                     .padding()
                     .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            }
-            
-            // Debug Settings Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Debug")
-                    .font(.headline)
-                    .padding(.horizontal)
                 
-                Form {
-                    Toggle("Enable debug mode", isOn: $debugModeEnabled)
-                        .help("Show additional debugging information")
-                        .padding(.vertical, 4)
-                }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            }
-            
-            // Experimental Features Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Experimental")
-                    .font(.headline)
-                    .padding(.horizontal)
-                
-                Form {
-                    Toggle("Enable experimental features", isOn: $enableExperimentalFeatures)
-                        .help("Try out new features in development")
-                        .padding(.vertical, 4)
+                // Reset Options Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Reset Options")
+                        .font(.headline)
+                        .padding(.horizontal)
                     
-                    Toggle("Beta updates", isOn: $betaUpdates)
-                        .help("Receive beta versions of the app")
-                        .padding(.vertical, 4)
-                }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            }
-            
-            // Reset Options Section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Reset Options")
-                    .font(.headline)
-                    .padding(.horizontal)
-                
-                Form {
-                    Button("Reset All Settings") {
-                        showingResetAlert = true
+                    Form {
+                        Button("Reset All Settings") {
+                            showingResetAlert = true
+                        }
+                        .foregroundColor(.orange)
+                        .help("Restore all settings to their default values")
+                        
+                        Button("Clear Cache") {
+                            clearCache()
+                        }
+                        .help("Clear temporary files and cache")
                     }
-                    .foregroundColor(.orange)
-                    .help("Restore all settings to their default values")
-                    
-                    Button("Clear Cache") {
-                        clearCache()
-                    }
-                    .help("Clear temporary files and cache")
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             }
+            .padding()
         }
-        .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .tabItem {
             Label("Advanced", systemImage: "gearshape.2")
@@ -1141,7 +1133,6 @@ struct SettingsView: View {
         autoBackupEnabled = true
         backupFrequency = .weekly
         maxBackupFiles = 10
-        showWelcomeScreen = true
         crashReportingEnabled = true
         debugModeEnabled = false
         exportFormat = .json

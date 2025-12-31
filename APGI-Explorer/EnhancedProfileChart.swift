@@ -126,45 +126,103 @@ struct EnhancedProfileChart: View {
     }
     
     var body: some View {
-        TabView {
-            // Default Chart Style (based on user preference)
-            defaultChartView
-                .tabItem {
-                    Label(defaultChartStyleName, systemImage: defaultChartStyleIcon)
-                }
+        VStack(spacing: 0) {
+            // Customization Toolbar
+            customizationToolbar
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.gray.opacity(0.05))
             
-            // Radar Chart Tab
-            radarChartView
-                .tabItem {
-                    Label("Radar", systemImage: "circle.hexagonpath")
-                }
-            
-            // 3D Visualization
-            chart3DView
-                .tabItem {
-                    Label("3D View", systemImage: "cube")
-                }
-            
-            // Time Series
-            timeSeriesView
-                .tabItem {
-                    Label("Trends", systemImage: "chart.xyaxis.line")
-                }
-            
-            // Comparison Matrix
-            comparisonMatrixView
-                .tabItem {
-                    Label("Compare", systemImage: "square.grid.2x2")
-                }
+            TabView {
+                // Default Chart Style (based on user preference)
+                defaultChartView
+                    .tabItem {
+                        Label(defaultChartStyleName, systemImage: defaultChartStyleIcon)
+                    }
+                
+                // Radar Chart Tab
+                radarChartView
+                    .tabItem {
+                        Label("Radar", systemImage: "circle.hexagonpath")
+                    }
+                
+                // 3D Visualization
+                chart3DView
+                    .tabItem {
+                        Label("3D View", systemImage: "cube")
+                    }
+                
+                // Time Series
+                timeSeriesView
+                    .tabItem {
+                        Label("Trends", systemImage: "chart.xyaxis.line")
+                    }
+                
+                // Comparison Matrix
+                comparisonMatrixView
+                    .tabItem {
+                        Label("Compare", systemImage: "square.grid.2x2")
+                    }
+            }
+            .padding()
         }
-        .padding()
         .navigationTitle("Profile Analytics")
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     #endif
     }
     
-    // MARK: - Default Chart View
+    // MARK: - Customization Toolbar
+    
+    private var customizationToolbar: some View {
+        VStack(spacing: 12) {
+            // Chart Style Selector
+            HStack {
+                Text("Chart Style:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Picker("Style", selection: $defaultChartStyle) {
+                    ForEach(ChartStyle.allCases, id: \.self) { style in
+                        Text(style.rawValue.capitalized).tag(style)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            
+            // Options Row
+            HStack(spacing: 20) {
+                // Show Data Points Toggle
+                Toggle("Data Points", isOn: $showDataPoints)
+                    .toggleStyle(.switch)
+                
+                // Show Values on Bars Toggle
+                Toggle("Values", isOn: $showValuesOnBars)
+                    .toggleStyle(.switch)
+                
+                // Allow Zooming Toggle
+                Toggle("Zoom", isOn: $allowZooming)
+                    .toggleStyle(.switch)
+            }
+            .font(.caption)
+            
+            // Advanced Options Row
+            HStack(spacing: 20) {
+                // Normalize Values Toggle
+                Toggle("Normalize", isOn: $normalizeValues)
+                    .toggleStyle(.switch)
+                
+                // Show Average Profile Toggle
+                Toggle("Average", isOn: $showAverageProfile)
+                    .toggleStyle(.switch)
+                
+                // Show Differences Only Toggle
+                Toggle("Differences", isOn: $showDifferencesOnly)
+                    .toggleStyle(.switch)
+            }
+            .font(.caption)
+        }
+    }
     
     private var defaultChartView: some View {
         switch defaultChartStyle {
@@ -383,20 +441,21 @@ struct EnhancedProfileChart: View {
     
     private var comparisonMatrixView: some View {
         let comparisonHeight = 200 + CGFloat(comparisonProfiles.count) * 40
+        let effectiveComparisonData = showDifferencesOnly ? filterDifferencesOnly(comparisonData) : comparisonData
         
         return VStack {
             Text("Profile Comparison")
                 .font(.headline)
                 .padding(.bottom)
             
-            Chart(comparisonData) { dataPoint in
+            Chart(effectiveComparisonData) { dataPoint in
                 RectangleMark(
                     x: .value("Parameter", dataPoint.parameter),
                     y: .value("Profile", dataPoint.profileName),
                     width: .ratio(0.8),
                     height: .ratio(0.8)
                 )
-                .foregroundStyle(by: .value("Value", dataPoint.value))
+                .foregroundStyle(by: .value("Value", normalizeValues ? dataPoint.value / 100.0 : dataPoint.value))
                 .cornerRadius(4)
                 .annotation(position: .overlay) {
                     if showValuesOnBars {
@@ -439,12 +498,19 @@ struct EnhancedProfileChart: View {
             Chart(profileDataPoints) { point in
                 BarMark(
                     x: .value("Parameter", point.parameter),
-                    y: .value("Score", point.value)
+                    y: .value("Score", normalizeValues ? point.value / 100.0 : point.value)
                 )
                 .foregroundStyle(colorForParameter(point.parameter))
                 .opacity(0.8)
+                .annotation(position: .overlay) {
+                    if showValuesOnBars {
+                        Text("\(Int(point.value))")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(point.value > 70 ? .white : .primary)
+                    }
+                }
             }
-            .chartYScale(domain: 0...100)
+            .chartYScale(domain: normalizeValues ? 0...1 : 0...100)
             .chartLegend(.hidden)
             .frame(height: 300)
             .padding()
@@ -483,17 +549,19 @@ struct EnhancedProfileChart: View {
             Chart(profileDataPoints) { point in
                 LineMark(
                     x: .value("Parameter", point.parameter),
-                    y: .value("Score", point.value)
+                    y: .value("Score", normalizeValues ? point.value / 100.0 : point.value)
                 )
                 .foregroundStyle(colorForParameter(point.parameter))
                 .lineStyle(StrokeStyle(lineWidth: 3))
                 .symbol {
-                    Circle()
-                        .fill(colorForParameter(point.parameter))
-                        .frame(width: 8, height: 8)
+                    if showDataPoints {
+                        Circle()
+                            .fill(colorForParameter(point.parameter))
+                            .frame(width: 8, height: 8)
+                    }
                 }
             }
-            .chartYScale(domain: 0...100)
+            .chartYScale(domain: normalizeValues ? 0...1 : 0...100)
             .chartLegend(.hidden)
             .frame(height: 300)
             .padding()
@@ -532,7 +600,7 @@ struct EnhancedProfileChart: View {
             Chart(profileDataPoints) { point in
                 AreaMark(
                     x: .value("Parameter", point.parameter),
-                    y: .value("Score", point.value)
+                    y: .value("Score", normalizeValues ? point.value / 100.0 : point.value)
                 )
                 .foregroundStyle(
                     LinearGradient(
@@ -542,7 +610,7 @@ struct EnhancedProfileChart: View {
                     )
                 )
             }
-            .chartYScale(domain: 0...100)
+            .chartYScale(domain: normalizeValues ? 0...1 : 0...100)
             .chartLegend(.hidden)
             .frame(height: 300)
             .padding()
@@ -573,6 +641,32 @@ struct EnhancedProfileChart: View {
     }
     
     // MARK: - Helper Methods
+    
+    private func filterDifferencesOnly(_ data: [ChartDataPoint]) -> [ChartDataPoint] {
+        guard !data.isEmpty else { return data }
+        
+        // Group data by parameter
+        let groupedData = Dictionary(grouping: data) { $0.parameter }
+        var filteredData: [ChartDataPoint] = []
+        
+        for (_, points) in groupedData {
+            guard points.count >= 2 else { 
+                filteredData.append(contentsOf: points)
+                continue 
+            }
+            
+            let values = points.map { $0.value }
+            guard let maxValue = values.max(), let minValue = values.min() else { continue }
+            let range = maxValue - minValue
+            
+            // Only include parameters with significant differences (> 20% difference)
+            if range > 20.0 {
+                filteredData.append(contentsOf: points)
+            }
+        }
+        
+        return filteredData
+    }
     
     private func colorForParameter(_ parameter: String) -> Color {
         switch parameter {

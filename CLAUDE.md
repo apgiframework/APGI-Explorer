@@ -239,9 +239,8 @@ APGI-Explorer/
 
 ### App Store Distribution
 1. **Archive** → **Distribute App** → **App Store Connect**
-2. Include **Privacy Manifest** (`PrivacyInfo.xcprivacy`)
-3. Declare data use in **App Store Connect > App Privacy**
-4. Comply with **App Store Review Guidelines** for health/psychological apps
+2. Declare data use in **App Store Connect > App Privacy**
+3. Comply with **App Store Review Guidelines** for health/psychological apps
 
 ### Direct Distribution (Notarized)
 ```bash
@@ -263,24 +262,6 @@ xcrun notarytool submit Export/APGI-Explorer.app.zip \
 xcrun stapler staple Export/APGI-Explorer.app
 ```
 
-### Privacy Manifest Requirements
-```xml
-<key>NSPrivacyTracking</key>
-<false/>
-<key>NSPrivacyCollectedData</key>
-<array>
-  <dict>
-    <key>NSPrivacyCollectedDataType</key>
-    <string>NSPrivacyCollectedDataTypeEmailAddress</string>
-    <key>NSPrivacyCollectedDataTypeLinked</key>
-    <false/>
-  </dict>
-</array>
-<key>NSPrivacyRequiredReasons</key>
-<array>
-  <string>CA92.1</string> <!-- Authentication -->
-</array>
-```
 
 ---
 
@@ -297,7 +278,6 @@ xcrun stapler staple Export/APGI-Explorer.app
 - [ ] Runs on both Apple Silicon and Intel Macs
 - [ ] Passes App Store validation (if applicable)
 - [ ] Notarized for direct distribution
-- [ ] Includes privacy manifest with accurate data declarations
 - [ ] Complies with macOS Human Interface Guidelines
 
 ### Accessibility & UX

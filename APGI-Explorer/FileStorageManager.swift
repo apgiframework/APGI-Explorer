@@ -10,7 +10,10 @@ class FileStorageManager: ObservableObject {
     private var backupTimer: Timer?
     
     private lazy var documentsDirectory: URL = {
-        fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        guard let url = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            fatalError("Unable to access Documents directory")
+        }
+        return url
     }()
     
     private lazy var profilesDirectory: URL = {

@@ -13,7 +13,9 @@ struct MainTabView: View {
                     Label("Home", systemImage: "house.fill")
                 }
             
-            PsychologicalStatesView()
+            NavigationStack {
+                PsychologicalStatesView()
+            }
                 .tabItem {
                     Label("States", systemImage: "brain.head.profile")
                 }
@@ -28,7 +30,7 @@ struct MainTabView: View {
                     Label("Compare", systemImage: "person.2.fill")
                 }
             
-            AppSettingsView()
+            SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
@@ -39,11 +41,5 @@ struct MainTabView: View {
         .onReceive(themeManager.$currentTheme) { theme in
             // Theme will be applied automatically through preferredColorScheme
         }
-    }
-}
-
-struct AppSettingsView: View {
-    var body: some View {
-        SettingsView()
     }
 }

@@ -18,12 +18,10 @@ struct APGIExplorerApp: App {
     let persistenceController = PersistenceController.shared
     
     init() {
-        // Run screenshot automation in debug mode
-        #if DEBUG
+        // Run screenshot automation when requested (both debug and production)
         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 2.0) {
             ScreenshotAutomationRunner.run()
         }
-        #endif
         
         // Start automatic backup scheduling
         DispatchQueue.main.async {
@@ -43,6 +41,10 @@ struct APGIExplorerApp: App {
                     .withGlobalKeyboardShortcuts(profileManager: profileManager)
                     .preferredColorScheme(themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, themeManager.currentTheme)
+                    .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
+                        // Handle handoff at app level when no quiz view is active
+                        ConsoleAnalyticsService.shared.track(event: .handoffActivityRestored)
+                    }
             } else {
                 OnboardingView()
                     .environmentObject(appState)
@@ -50,6 +52,10 @@ struct APGIExplorerApp: App {
                     .frame(minWidth: 800, minHeight: 600)
                     .preferredColorScheme(themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, themeManager.currentTheme)
+                    .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
+                        // Handle handoff during onboarding
+                        ConsoleAnalyticsService.shared.track(event: .handoffActivityRestored)
+                    }
             }
         }
         .commands {
@@ -95,7 +101,7 @@ struct APGIExplorerApp: App {
         .defaultSize(width: 1000, height: 700)
         
         Settings {
-            AppSettingsView()
+            SettingsView()
                 .environmentObject(AppState.shared)
                 .environmentObject(themeManager)
                 .preferredColorScheme(themeManager.currentTheme.getColorScheme())

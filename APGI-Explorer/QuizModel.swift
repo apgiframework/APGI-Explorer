@@ -33,7 +33,7 @@ struct ScoringWeights {
     
     // Question-specific weights based on reliability
     static let questionReliability: [Int: Double] = [
-        // Epsilon questions (1-5) - Core direct questions
+        // Epsilon questions (1-4) - Core direct questions
         1: 0.95,
         2: 0.90,
         3: 0.95,
@@ -129,6 +129,36 @@ struct APGIProfile: Codable {
     
     var somaticCategory: ParameterLevel {
         switch somaticBias {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+    
+    var interactionCategory: ParameterLevel {
+        switch interactionScore {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+    
+    var temporalCategory: ParameterLevel {
+        switch temporalStability {
+        case 0..<25: return .veryLow
+        case 25..<40: return .low
+        case 40..<60: return .moderate
+        case 60..<75: return .high
+        default: return .veryHigh
+        }
+    }
+    
+    var environmentalCategory: ParameterLevel {
+        switch environmentalFit {
         case 0..<25: return .veryLow
         case 25..<40: return .low
         case 40..<60: return .moderate
@@ -692,15 +722,15 @@ class QuizModel: ObservableObject {
     }
     
     private func calculateResponseVariability() -> Double {
-        let answerValues = answers.values.map { Double($0) }
+        let answerValues = Array(answers.values)
         guard !answerValues.isEmpty else { return 0.0 }
         
-        let mean = answerValues.reduce(0, +) / Double(answerValues.count)
-        let variance = answerValues.reduce(0) { $0 + pow($1 - mean, 2) } / Double(answerValues.count)
+        let mean = Double(answerValues.reduce(0, +)) / Double(answerValues.count)
+        let variance = answerValues.reduce(0.0) { $0 + pow(Double($1) - mean, 2) } / Double(answerValues.count)
         
-        // Normalize variance to 0-1 range (assuming 1-5 scale)
-        // A variance of around 2.0 is considered good (not too consistent, not too random)
-        let normalizedVariance = min(variance / 2.0, 1.0)
+        // Normalize variance to 0-1 range (assuming 1-4 scale)
+        // A variance of around 1.33 is considered good (not too consistent, not too random)
+        let normalizedVariance = min(variance / 1.33, 1.0)
         return normalizedVariance
     }
     
@@ -738,7 +768,7 @@ class QuizModel: ObservableObject {
         let answerValues = Array(answers.values)
         guard answerValues.count > 5 else { return false }
         
-        // Check for alternating patterns (e.g., 1, 5, 1, 5, 1, 5)
+        // Check for alternating patterns (e.g., 1, 4, 1, 4, 1, 4)
         var alternatingPattern = true
         for i in 2..<answerValues.count {
             if answerValues[i] != answerValues[i - 2] {
@@ -751,8 +781,8 @@ class QuizModel: ObservableObject {
     }
     
     private func isExtremeResponding() -> Bool {
-        // Check if most answers are at the extremes (1 or 5)
-        let extremeCount = answers.values.filter { $0 == 1 || $0 == 5 }.count
+        // Check if most answers are at the extremes (1 or 4)
+        let extremeCount = answers.values.filter { $0 == 1 || $0 == 4 }.count
         return Double(extremeCount) / Double(answers.count) > 0.8  // More than 80% extreme responses
     }
     
