@@ -1022,6 +1022,7 @@ struct SettingsView: View {
         case .csv: return "CSV"
         case .pdf: return "PDF"
         case .png: return "PNG"
+        case .html: return "HTML"
         }
     }
     

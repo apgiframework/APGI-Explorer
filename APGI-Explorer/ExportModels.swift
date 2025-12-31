@@ -32,6 +32,7 @@ enum ExportFormat: String, CaseIterable {
     case csv = "CSV"
     case pdf = "PDF"
     case png = "PNG"
+    case html = "HTML"
     
     var fileExtension: String {
         switch self {
@@ -39,6 +40,7 @@ enum ExportFormat: String, CaseIterable {
         case .json: return "json"
         case .csv: return "csv"
         case .png: return "png"
+        case .html: return "html"
         }
     }
     
@@ -48,6 +50,7 @@ enum ExportFormat: String, CaseIterable {
         case .json: return "application/json"
         case .csv: return "text/csv"
         case .png: return "image/png"
+        case .html: return "text/html"
         }
     }
 }

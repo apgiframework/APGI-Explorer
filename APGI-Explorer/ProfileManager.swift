@@ -623,7 +623,7 @@ class ProfileManager: ObservableObject {
             return nil
         }
 
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .csv)
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .html)
         let tempDir = ExportUtilities.getTemporaryDirectory()
         let tempFile = tempDir.appendingPathComponent(filename)
 
@@ -675,6 +675,8 @@ class ProfileManager: ObservableObject {
         case .png:
             let apgiScores = self.profile(from: profile.results)
             return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
+        case .html:
+            return generateHTMLReport(for: profile)
         }
     }
 
