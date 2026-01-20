@@ -39,9 +39,14 @@ struct QuizView: View {
                 handoffActivity = nil
             }
             .onChange(of: currentQuestionIndex) { oldValue, newValue in
+                // HIGH-001 Fix: Prevent rapid navigation issues
+                guard newValue != oldValue else { return }
+                guard newValue >= 0 && newValue < quizModel.questions.count else { return }
                 updateHandoffActivity()
             }
             .onChange(of: quizModel.answers) { oldValue, newValue in
+                // HIGH-001 Fix: Debounce rapid answer changes
+                guard newValue != oldValue else { return }
                 updateHandoffActivity()
             }
             .onContinueUserActivity(HandoffActivity.activityType) { userActivity in

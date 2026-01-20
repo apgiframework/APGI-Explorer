@@ -40,7 +40,7 @@ struct ScreenshotConfig {
     let customScreenPaths: [CustomScreenPath]
     
     static let `default` = ScreenshotConfig(
-        outputDirectory: (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/Screenshots",
+        outputDirectory: FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!.appendingPathComponent("Screenshots").path,
         imageFormat: .png,
         quality: 0.9,
         appearanceModes: [.light, .dark],
@@ -174,24 +174,6 @@ struct ScreenNavigation {
     }
     
     static let allScreens: [ScreenNavigation] = [
-        ScreenNavigation(
-            name: "Onboarding",
-            identifier: "onboarding",
-            navigationPath: [
-                // Wait for the Onboarding screen to appear
-                NavigationStep(type: .wait(2.0), target: "Wait for Onboarding", delay: 0.0),
-                // Click through the onboarding steps (assuming 3 steps with a "Next" button)
-                NavigationStep(type: .tapElement("Next"), target: "Next Button", delay: 1.0),
-                NavigationStep(type: .wait(1.0), target: "Wait after first next", delay: 0.0),
-                NavigationStep(type: .tapElement("Next"), target: "Next Button", delay: 1.0),
-                NavigationStep(type: .wait(1.0), target: "Wait after second next", delay: 0.0),
-                NavigationStep(type: .tapElement("Get Started"), target: "Get Started Button", delay: 1.0),
-                NavigationStep(type: .wait(2.0), target: "Wait after onboarding completion", delay: 0.0)
-            ],
-            requiresInteraction: true,
-            interactionType: nil,
-            waitTime: 3.0
-        ),
         ScreenNavigation(
             name: "Home",
             identifier: "home",
@@ -494,6 +476,11 @@ class ScreenNavigator {
             return accessibilityManager.toggleElement(withIdentifier: identifier)
         }
     }
+    
+    /// Tap an element by name
+    func tapElement(name: String) -> Bool {
+        return accessibilityManager.clickElement(withIdentifier: name)
+    }
 }
 
 // MARK: - Accessibility Manager
@@ -528,7 +515,7 @@ class AccessibilityManager {
     /// Get the target application element
     func getTargetApplication() -> AXUIElement? {
         let runningApps = NSWorkspace.shared.runningApplications
-        guard let app = runningApps.first(where: { $0.bundleIdentifier == "com.example.APGI-Explorer" }) else {
+        guard let app = runningApps.first(where: { $0.bundleIdentifier == "lesoto.APGI-Explorer" }) else {
             logger.log("⚠️ Target application not running")
             return nil
         }
@@ -907,6 +894,7 @@ class ScreenshotAutomationEngine {
     private let logger: Logger
     private let navigator: ScreenNavigator
     private let screenshotManager: ScreenshotManager
+    private let accessibilityManager: AccessibilityManager
     private var screenshotCount = 0
     
     init(config: ScreenshotConfig = .default) {
@@ -914,6 +902,7 @@ class ScreenshotAutomationEngine {
         self.logger = Logger(enabled: config.enableLogging)
         self.navigator = ScreenNavigator(logger: logger)
         self.screenshotManager = ScreenshotManager(config: config, logger: logger)
+        self.accessibilityManager = AccessibilityManager(logger: logger)
         
         createOutputDirectory()
     }
@@ -1030,6 +1019,8 @@ class ScreenshotAutomationEngine {
             simulateKeyPress(key: "2", modifiers: .command)
         case "settings":
             simulateKeyPress(key: ",", modifiers: .command)
+        case "onboarding":
+            return executeNavigationSteps(screen.navigationPath)
         default:
             // Use accessibility for complex navigation
             return navigateUsingAccessibility(screen)
@@ -1040,6 +1031,46 @@ class ScreenshotAutomationEngine {
     
     private func navigateUsingAccessibility(_ screen: ScreenNavigation) -> Bool {
         // Implement complex navigation using accessibility APIs
+        return true
+    }
+    
+    private func executeNavigationSteps(_ steps: [NavigationStep]) -> Bool {
+        for step in steps {
+            switch step.type {
+            case .wait(let time):
+                Thread.sleep(forTimeInterval: time)
+            case .tapElement(let elementName):
+                if !accessibilityManager.clickElement(withIdentifier: elementName) {
+                    logger.log("⚠️ Element not found (skipping): \(elementName)")
+                    return false
+                }
+            case .tab(_):
+                // Handle tab navigation
+                break
+            case .menu(_):
+                // Handle menu navigation
+                break
+            case .keyboardShortcut(let key, let modifiers):
+                simulateKeyPress(key: key, modifiers: modifiers)
+            case .clickElement(let elementName):
+                if !accessibilityManager.clickElement(withIdentifier: elementName) {
+                    logger.log("⚠️ Element not found (skipping): \(elementName)")
+                    return false
+                }
+            case .swipe(let direction):
+                performSwipe(direction)
+            case .selectTab(_):
+                // Handle tab selection
+                break
+            case .longPress(_):
+                // Handle long press
+                break
+            }
+            
+            if step.delay > 0 {
+                Thread.sleep(forTimeInterval: step.delay)
+            }
+        }
         return true
     }
     
@@ -1101,35 +1132,24 @@ class ScreenshotAutomationEngine {
         }
     }
     
-    private func clickButton(withIcon iconName: String) {
-        // This would require accessibility APIs to find and click buttons
-        // For now, we'll simulate a click at a known position
-        DispatchQueue.main.async {
-            let clickPoint = NSPoint(x: 100, y: 100) // Adjust based on actual button positions
-            let cgEvent = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: clickPoint, mouseButton: .left)
-            cgEvent?.post(tap: .cghidEventTap)
-            
-            Thread.sleep(forTimeInterval: 0.1)
-            
-            let cgEventUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: clickPoint, mouseButton: .left)
-            cgEventUp?.post(tap: .cghidEventTap)
-        }
-    }
-    
     private func inputText(inField identifier: String, text: String) {
-        // Implementation for text input
+        _ = accessibilityManager.typeText(text, inElementWithIdentifier: identifier)
     }
     
     private func moveSlider(identifier: String, value: Double) {
-        // Implementation for slider movement
+        _ = accessibilityManager.setSliderValue(value, forElementWithIdentifier: identifier)
     }
     
     private func scrollArea(identifier: String, amount: Double) {
-        // Implementation for scrolling
+        _ = accessibilityManager.scrollArea(identifier, by: amount)
     }
     
     private func toggleSwitch(identifier: String) {
-        // Implementation for toggle switches
+        _ = accessibilityManager.toggleSwitch(withIdentifier: identifier)
+    }
+    
+    private func clickButton(withIcon iconName: String) {
+        _ = accessibilityManager.clickElement(withIdentifier: iconName)
     }
     
     private func captureScreenshot(screenName: String, suffix: String = "") {
@@ -1719,7 +1739,7 @@ struct ProductionScreenshotConfig {
         requiresAuthentication: true,
         allowedScreens: ["home", "states", "compare", "settings"],  // Whitelist of allowed screens
         maxScreenshotsPerSession: 10,  // Limit to prevent abuse
-        outputDirectory: (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/Screenshots",
+        outputDirectory: FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!.appendingPathComponent("Screenshots").path,
         imageFormat: .png,
         quality: 0.9,
         enableLogging: true
@@ -1730,7 +1750,7 @@ struct ProductionScreenshotConfig {
         requiresAuthentication: false,
         allowedScreens: ScreenNavigation.allScreens.map { $0.identifier },
         maxScreenshotsPerSession: 100,
-        outputDirectory: (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/Screenshots",
+        outputDirectory: FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!.appendingPathComponent("Screenshots").path,
         imageFormat: .png,
         quality: 0.9,
         enableLogging: true

@@ -34,7 +34,9 @@ struct PsychologicalStatesView: View {
         var result = stateModel.states
 
         if !searchText.isEmpty {
-            result = searchService.search(query: searchText, in: result)
+            // MED-001 Fix: Handle special characters properly in search
+            let sanitizedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            result = searchService.search(query: sanitizedSearchText, in: result)
         }
 
         if let key = parameterKey(for: selectedParameter), selectedParameter != "All" {

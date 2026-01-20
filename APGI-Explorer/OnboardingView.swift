@@ -9,19 +9,19 @@ struct OnboardingView: View {
             ZStack {
                 // Content
                 ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                    if index == currentStep {
-                        OnboardingStepView(step: step, isLastStep: index == steps.count - 1) {
-                            if index == steps.count - 1 {
-                                appState.completeOnboarding()
-                            } else {
-                                withAnimation {
-                                    currentStep += 1
-                                }
+                    OnboardingStepView(step: step, isLastStep: index == steps.count - 1) {
+                        if index == steps.count - 1 {
+                            appState.completeOnboarding()
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentStep += 1
                             }
                         }
-                        .transition(.opacity)
-                        .id(index)
                     }
+                    .opacity(index == currentStep ? 1 : 0)
+                    .scaleEffect(index == currentStep ? 1 : 0.95)
+                    .animation(.easeInOut(duration: 0.25), value: currentStep)
+                    .id("step-\(index)")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -31,8 +31,10 @@ struct OnboardingView: View {
                     Circle()
                         .fill(index == currentStep ? Color.blue : Color.gray.opacity(0.5))
                         .frame(width: 8, height: 8)
+                        .scaleEffect(index == currentStep ? 1.2 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: currentStep)
                         .onTapGesture {
-                            withAnimation {
+                            withAnimation(.easeInOut(duration: 0.3)) {
                                 currentStep = index
                             }
                         }

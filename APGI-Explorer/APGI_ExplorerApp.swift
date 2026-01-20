@@ -58,6 +58,8 @@ struct APGIExplorerApp: App {
                     }
             }
         }
+        .defaultSize(width: 1000, height: 700)
+        .windowResizability(.contentSize)
         .commands {
             MenuCommands(profileManager: profileManager, stateModel: stateModel)
             

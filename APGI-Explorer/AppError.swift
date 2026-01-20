@@ -24,7 +24,7 @@ enum AppError: LocalizedError {
         case .quizValidationFailed(let result):
             return "Quiz validation failed: \(result.warnings.first ?? "Unknown validation error")"
         case .profileGenerationFailed:
-            return "Failed to generate APGI profile"
+            return "Failed to generate APGI profile or profile name already exists"
         case .exportFailed(let error):
             return "Export failed: \(error.localizedDescription)"
         }
@@ -45,7 +45,7 @@ enum AppError: LocalizedError {
                 return "Please review your responses and try again"
             }
         case .profileGenerationFailed:
-            return "Please complete the quiz again and ensure all questions are answered"
+            return "Please choose a different profile name or complete the quiz again"
         case .exportFailed:
             return "Please check your storage space and try again"
         }

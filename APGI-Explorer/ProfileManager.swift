@@ -60,23 +60,45 @@ class ProfileManager: ObservableObject {
     // MARK: - CRUD Operations
     
     func createProfile(name: String, results: [String: Int]) async throws -> QuizProfile {
+        // CRIT-001 Fix: Validate input parameters
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw AppError.invalidParameters
+        }
+        
+        guard !results.isEmpty else {
+            throw AppError.invalidParameters
+        }
+        
+        // Validate results values are within expected range
+        for (key, value) in results {
+            guard value >= 0 && value <= 100 else {
+                print("Invalid parameter value for \(key): \(value). Expected 0-100 range.")
+                throw AppError.invalidParameters
+            }
+        }
+        
         let profile = QuizProfile(
             id: UUID(),
-            name: name,
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             dateCreated: Date(),
             dateModified: Date(),
             results: results
         )
         
-        try await persistence.saveProfile(profile)
-        await loadProfiles()
-        
-        currentProfile = profile
-        userDefaults.lastActiveProfileID = profile.id
-        userDefaults.totalQuizzesCompleted += 1
-        userDefaults.lastQuizDate = Date()
-        
-        return profile
+        do {
+            try await persistence.saveProfile(profile)
+            await loadProfiles()
+            
+            currentProfile = profile
+            userDefaults.lastActiveProfileID = profile.id
+            userDefaults.totalQuizzesCompleted += 1
+            userDefaults.lastQuizDate = Date()
+            
+            return profile
+        } catch {
+            // CRIT-001 Fix: Provide better error handling
+            throw AppError.profileGenerationFailed
+        }
     }
     
     func updateProfile(_ profile: QuizProfile) async throws {
@@ -913,7 +935,7 @@ struct StateAccessibility: Identifiable {
 
 // MARK: - QuizProfile Model
 
-struct QuizProfile: Identifiable, Codable {
+struct QuizProfile: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     let dateCreated: Date

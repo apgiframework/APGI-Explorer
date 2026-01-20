@@ -425,8 +425,14 @@ struct SettingsView: View {
                         }
                         .pickerStyle(RadioGroupPickerStyle())
                         .padding(.vertical, 8)
-                        .onChange(of: themeManager.currentTheme) {
+                        .onChange(of: themeManager.currentTheme) { oldValue, newValue in
+                            // HIGH-002 Fix: Ensure proper theme application
+                            guard newValue != oldValue else { return }
                             // Theme change is handled automatically by ThemeManager
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                // Force UI refresh to ensure theme is applied
+                                NSApp.sendAction(Selector(("reloadTheme")), to: nil, from: nil)
+                            }
                         }
                     }
                     .padding()

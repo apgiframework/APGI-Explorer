@@ -265,8 +265,22 @@ struct ResultsView: View {
     private func saveProfile() {
         Task {
             do {
+                // MED-003 Fix: Check for duplicate profile names
+                let trimmedProfileName = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedProfileName.isEmpty else {
+                    throw AppError.invalidParameters
+                }
+                
+                // Check for existing profile with same name
+                let existingProfiles = try await PersistenceController.shared.fetchProfiles()
+                let duplicateExists = existingProfiles.contains { $0.name.lowercased() == trimmedProfileName.lowercased() }
+                
+                if duplicateExists {
+                    throw AppError.profileGenerationFailed
+                }
+                
                 _ = try await profileManager.createProfile(
-                    name: profileName,
+                    name: trimmedProfileName,
                     results: quizModel.calculateRawScore()
                 )
                 analytics.track(event: .profileCreated(profileType: profileType))
@@ -278,6 +292,7 @@ struct ResultsView: View {
                 await MainActor.run {
                     // Handle error appropriately
                     print("Failed to save profile: \(error)")
+                    // Could show user-friendly error message here
                 }
             }
         }

@@ -34,9 +34,28 @@ class FileStorageManager: ObservableObject {
         return url
     }()
     
+    // CRIT-003 Fix: Add free disk space calculation
+    private var freeDiskSpace: UInt64 {
+        do {
+            let attributes = try fileManager.attributesOfFileSystem(forPath: documentsDirectory.path)
+            return attributes[.systemFreeSize] as? UInt64 ?? 0
+        } catch {
+            return 0
+        }
+    }
+    
     // MARK: - Profile Export/Import
     
     func exportProfile(_ profile: QuizProfile, to url: URL? = nil) throws -> URL {
+        // CRIT-003 Fix: Check available disk space before export
+        let requiredSpace: UInt64 = 1024 * 1024 // 1MB minimum estimate
+        let availableSpace = freeDiskSpace
+        guard availableSpace >= requiredSpace else {
+            throw AppError.exportFailed(underlying: NSError(domain: NSPOSIXErrorDomain, code: Int(ENOSPC), userInfo: [
+                NSLocalizedDescriptionKey: "Insufficient disk space for export. Required: \(requiredSpace/1024)KB, Available: \(availableSpace/1024)KB"
+            ]))
+        }
+        
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
@@ -44,9 +63,14 @@ class FileStorageManager: ObservableObject {
         let data = try encoder.encode(profile)
         
         let destinationURL = url ?? exportsDirectory.appendingPathComponent("\(profile.name)_\(profile.id.uuidString).json")
-        try data.write(to: destinationURL)
         
-        return destinationURL
+        do {
+            try data.write(to: destinationURL)
+            return destinationURL
+        } catch {
+            // CRIT-003 Fix: Provide better error handling for write failures
+            throw AppError.exportFailed(underlying: error)
+        }
     }
     
     func importProfile(from url: URL) throws -> QuizProfile {

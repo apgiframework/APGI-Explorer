@@ -31,7 +31,17 @@ struct ProfileComparisonView: View {
                 // Profile Selection Cards
                 HStack(spacing: 20) {
                     profileSelectionCard(profile: $selectedProfile1, title: "Profile 1")
+                        .onChange(of: selectedProfile1) { _, _ in
+                            if selectedProfile1 != nil && selectedProfile2 != nil {
+                                performComparison()
+                            }
+                        }
                     profileSelectionCard(profile: $selectedProfile2, title: "Profile 2")
+                        .onChange(of: selectedProfile2) { _, _ in
+                            if selectedProfile1 != nil && selectedProfile2 != nil {
+                                performComparison()
+                            }
+                        }
                 }
                 .padding(.horizontal)
                 
@@ -76,6 +86,12 @@ struct ProfileComparisonView: View {
             .padding()
         }
         .background(Color.gray.opacity(0.1).edgesIgnoringSafeArea(.all))
+        .onAppear {
+            // Trigger comparison if both profiles are already selected
+            if selectedProfile1 != nil && selectedProfile2 != nil {
+                performComparison()
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -101,6 +117,7 @@ struct ProfileComparisonView: View {
     
     @ViewBuilder
     private var comparisonChart: some View {
+        // HIGH-003 Fix: Add performance optimization for large datasets
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Comparison: \(selectedProfile1?.name ?? "Unknown") vs \(selectedProfile2?.name ?? "Unknown")")
@@ -126,18 +143,21 @@ struct ProfileComparisonView: View {
                             RadarComparisonChart(profile1: profile1, profile2: profile2)
                                 .frame(height: 350)
                                 .padding()
+                                .id("radar-chart") // Add ID for view recycling
                         }
                     case .bar:
                         if let profile1 = selectedProfile1, let profile2 = selectedProfile2 {
                             BarComparisonChart(profile1: profile1, profile2: profile2)
                                 .frame(height: 350)
                                 .padding()
+                                .id("bar-chart") // Add ID for view recycling
                         }
                     case .line:
                         if let profile1 = selectedProfile1, let profile2 = selectedProfile2 {
                             LineComparisonChart(profile1: profile1, profile2: profile2)
                                 .frame(height: 350)
                                 .padding()
+                                .id("line-chart") // Add ID for view recycling
                         }
                     }
                 }

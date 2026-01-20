@@ -46,6 +46,18 @@ class WindowManager: ObservableObject {
             case .reports: return CGSize(width: 1000, height: 800)
             }
         }
+        
+        var minimumSize: CGSize {
+            switch self {
+            case .main: return CGSize(width: 800, height: 600)
+            case .stateExplorer: return CGSize(width: 1000, height: 600)
+            case .profileComparison: return CGSize(width: 1200, height: 700)
+            case .settings: return CGSize(width: 500, height: 400)
+            case .about: return CGSize(width: 400, height: 300)
+            case .quiz: return CGSize(width: 700, height: 600)
+            case .reports: return CGSize(width: 800, height: 600)
+            }
+        }
     }
     
     // MARK: - Window Creation
@@ -73,6 +85,7 @@ class WindowManager: ObservableObject {
         window.center()
         window.setFrameAutosaveName(type.rawValue)
         window.isReleasedWhenClosed = false
+        window.minSize = type.minimumSize
         window.contentView = NSHostingView(rootView: content())
         window.makeKeyAndOrderFront(nil)
         

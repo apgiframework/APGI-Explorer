@@ -657,6 +657,13 @@ class QuizModel: ObservableObject {
         var warnings: [String] = []
         var confidence = calculateResponseConfidence()
         
+        // CRIT-002 Fix: Check completion rate first - require minimum 80%
+        let completionRate = Double(answers.count) / Double(questions.count)
+        if completionRate < 0.8 {
+            warnings.append("Quiz completion below 80% threshold. Please answer at least 28 of 35 questions for valid results.")
+            confidence *= 0.5  // Significant confidence reduction for low completion
+        }
+        
         // Check for straight-lining (all same answers)
         if isStraightLining() {
             warnings.append("Your responses show a pattern of straight-lining, which may indicate inattentive responding.")
@@ -675,8 +682,6 @@ class QuizModel: ObservableObject {
             confidence *= 0.7
         }
         
-        // Check for completion rate
-        let completionRate = Double(answers.count) / Double(questions.count)
         if completionRate < 0.9 {
             warnings.append("You've completed \(Int(completionRate * 100))% of the questions. Completing all questions provides more accurate results.")
             confidence *= 0.9
@@ -689,7 +694,7 @@ class QuizModel: ObservableObject {
         }
         
         let result = ValidationResult(
-            isValid: confidence >= validationThreshold,
+            isValid: confidence >= validationThreshold && completionRate >= 0.8,
             warnings: warnings,
             confidence: min(max(confidence, 0), 1),  // Ensure confidence is between 0 and 1
             completionRate: completionRate
