@@ -1,10 +1,5 @@
 import SwiftUI
 import Charts
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
 // MARK: - Shape Extensions
 
@@ -41,8 +36,6 @@ struct Square: Shape {
 
 // MARK: - Data Models
 
-// MARK: - Data Models
-
 struct ChartDataPoint: Identifiable {
     let id = UUID()
     let parameter: String
@@ -59,11 +52,12 @@ struct HistoricalDataPoint: Identifiable {
     let somaticBias: Double
 }
 
-// MARK: - Main View
-
 struct EnhancedProfileChart: View {
     let profile: APGIProfile
     let comparisonProfiles: [APGIProfile]
+    
+    @StateObject private var performanceManager = PerformanceManager.shared
+    @StateObject private var performanceTracker = PerformanceTracker()
     
     @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
     @AppStorage("showDataPoints") private var showDataPoints: Bool = true
@@ -73,55 +67,93 @@ struct EnhancedProfileChart: View {
     @AppStorage("showAverageProfile") private var showAverageProfile: Bool = false
     @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
     
-    // Sample historical data (replace with actual data from your data store)
+    // Performance optimization: Cache computed properties
+    @State private var cachedHistoricalData: [HistoricalDataPoint]? = nil
+    @State private var cachedProfileDataPoints: [ChartDataPoint]? = nil
+    @State private var cachedComparisonData: [ChartDataPoint]? = nil
+    
+    // Memory management: Track view visibility
+    @State private var isVisible = false
+    
+    // Performance optimization: Lazy load and cache historical data
     private var historicalData: [HistoricalDataPoint] {
-        // Generate sample data for the last 7 days
-        var data: [HistoricalDataPoint] = []
-        for i in 0..<7 {
-            let date = Calendar.current.date(byAdding: .day, value: -i, to: Date())!
-            let variation = Double.random(in: -10...10)
-            data.append(HistoricalDataPoint(
-                date: date,
-                epsilon: max(0, min(100, profile.epsilon + variation)),
-                precision: max(0, min(100, profile.precision + variation)),
-                threshold: max(0, min(100, profile.threshold + variation)),
-                somaticBias: max(0, min(100, profile.somaticBias + variation))
-            ))
+        if let cached = cachedHistoricalData {
+            return cached
         }
-        return data.sorted { $0.date < $1.date }
+        
+        let data = performanceTracker.track("historicalDataGeneration") {
+            // Generate sample data for last 7 days
+            var data: [HistoricalDataPoint] = []
+            for i in 0..<7 {
+                let date = Calendar.current.date(byAdding: .day, value: -i, to: Date())!
+                let variation = Double.random(in: -10...10)
+                data.append(HistoricalDataPoint(
+                    date: date,
+                    epsilon: max(0, min(100, profile.epsilon + variation)),
+                    precision: max(0, min(100, profile.precision + variation)),
+                    threshold: max(0, min(100, profile.threshold + variation)),
+                    somaticBias: max(0, min(100, profile.somaticBias + variation))
+                ))
+            }
+            return data.sorted { $0.date < $1.date }
+        }
+        
+        cachedHistoricalData = data
+        return data
     }
     
+    // Performance optimization: Cache profile data points
     private var profileDataPoints: [ChartDataPoint] {
-        [
+        if let cached = cachedProfileDataPoints {
+            return cached
+        }
+        
+        let data = [
             ChartDataPoint(parameter: "ε (Epsilon)", value: profile.epsilon, profileName: String(describing: profile.epsilonCategory).capitalized),
             ChartDataPoint(parameter: "π (Precision)", value: profile.precision, profileName: String(describing: profile.precisionCategory).capitalized),
             ChartDataPoint(parameter: "θₜ (Threshold)", value: profile.threshold, profileName: String(describing: profile.thresholdCategory).capitalized),
             ChartDataPoint(parameter: "β (Somatic Bias)", value: profile.somaticBias, profileName: String(describing: profile.somaticCategory).capitalized)
         ]
+        
+        cachedProfileDataPoints = data
+        return data
     }
     
+    // Performance optimization: Cache comparison data and limit comparisons
     private var comparisonData: [ChartDataPoint] {
-        var data: [ChartDataPoint] = []
-        
-        // Add main profile data
-        data.append(contentsOf: [
-            ChartDataPoint(parameter: "ε (Epsilon)", value: profile.epsilon, profileName: "Current"),
-            ChartDataPoint(parameter: "π (Precision)", value: profile.precision, profileName: "Current"),
-            ChartDataPoint(parameter: "θₜ (Threshold)", value: profile.threshold, profileName: "Current"),
-            ChartDataPoint(parameter: "β (Somatic Bias)", value: profile.somaticBias, profileName: "Current")
-        ])
-        
-        // Add comparison profiles data
-        for compProfile in comparisonProfiles.prefix(3) { // Limit to 3 comparisons for readability
-            let profileName = "Comparison \(data.count / 4 + 1)"
-            data.append(contentsOf: [
-                ChartDataPoint(parameter: "ε (Epsilon)", value: compProfile.epsilon, profileName: profileName),
-                ChartDataPoint(parameter: "π (Precision)", value: compProfile.precision, profileName: profileName),
-                ChartDataPoint(parameter: "θₜ (Threshold)", value: compProfile.threshold, profileName: profileName),
-                ChartDataPoint(parameter: "β (Somatic Bias)", value: compProfile.somaticBias, profileName: profileName)
-            ])
+        if let cached = cachedComparisonData {
+            return cached
         }
         
+        let data = performanceTracker.track("comparisonDataGeneration") {
+            var data: [ChartDataPoint] = []
+            
+            // Add main profile data
+            data.append(contentsOf: [
+                ChartDataPoint(parameter: "ε (Epsilon)", value: profile.epsilon, profileName: "Current"),
+                ChartDataPoint(parameter: "π (Precision)", value: profile.precision, profileName: "Current"),
+                ChartDataPoint(parameter: "θₜ (Threshold)", value: profile.threshold, profileName: "Current"),
+                ChartDataPoint(parameter: "β (Somatic Bias)", value: profile.somaticBias, profileName: "Current")
+            ])
+            
+            // Limit comparisons based on performance mode
+            let maxComparisons = performanceManager.performanceMode == .memory ? 1 : 3
+            
+            // Add comparison profiles data
+            for (index, compProfile) in comparisonProfiles.prefix(maxComparisons).enumerated() {
+                let profileName = "Comparison \(index + 1)"
+                data.append(contentsOf: [
+                    ChartDataPoint(parameter: "ε (Epsilon)", value: compProfile.epsilon, profileName: profileName),
+                    ChartDataPoint(parameter: "π (Precision)", value: compProfile.precision, profileName: profileName),
+                    ChartDataPoint(parameter: "θₜ (Threshold)", value: compProfile.threshold, profileName: profileName),
+                    ChartDataPoint(parameter: "β (Somatic Bias)", value: compProfile.somaticBias, profileName: profileName)
+                ])
+            }
+            
+            return data
+        }
+        
+        cachedComparisonData = data
         return data
     }
     
@@ -132,19 +164,25 @@ struct EnhancedProfileChart: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
                 .background(Color.gray.opacity(0.05))
+                .memoryEfficient()
             
+            // Performance optimization: Use TabView with lazy loading
             TabView {
                 // Default Chart Style (based on user preference)
-                defaultChartView
-                    .tabItem {
-                        Label(defaultChartStyleName, systemImage: defaultChartStyleIcon)
-                    }
+                lazyLoad(data: defaultChartStyle) { chartStyle in
+                    defaultChartView
+                        .tabItem {
+                            Label(defaultChartStyleName, systemImage: defaultChartStyleIcon)
+                        }
+                }
                 
                 // Radar Chart Tab
-                radarChartView
-                    .tabItem {
-                        Label("Radar", systemImage: "circle.hexagonpath")
-                    }
+                lazyLoad(data: "radar") { _ in
+                    radarChartView
+                        .tabItem {
+                            Label("Radar", systemImage: "circle.hexagonpath")
+                        }
+                }
                 
                 // 3D Visualization
                 chart3DView
@@ -166,10 +204,7 @@ struct EnhancedProfileChart: View {
             }
             .padding()
         }
-        .navigationTitle("Profile Analytics")
-    #if os(iOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
+        .platformNavigationTitle("Profile Analytics")
     }
     
     // MARK: - Customization Toolbar

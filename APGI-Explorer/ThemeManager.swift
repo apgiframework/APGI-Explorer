@@ -4,29 +4,29 @@ import QuartzCore
 
 class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
-    
+
     @Published var currentTheme: AppTheme = .system {
         didSet {
             // Debounce rapid theme changes to prevent visual artifacts
             themeChangeCancellable?.cancel()
             themeChangeCancellable = Just(currentTheme)
                 .delay(for: .milliseconds(100), scheduler: DispatchQueue.main)
-                .sink { [weak self] theme in
+                .sink { [weak self] _ in
                     self?.applyTheme()
                     self?.saveTheme()
                 }
         }
     }
-    
+
     private let userDefaults = UserDefaults.standard
     private let themeKey = "theme"
     private var themeChangeCancellable: AnyCancellable?
-    
+
     private init() {
         loadTheme()
         applyTheme()
     }
-    
+
     private func loadTheme() {
         if let rawValue = userDefaults.string(forKey: themeKey),
            let theme = AppTheme(rawValue: rawValue) {
@@ -35,12 +35,12 @@ class ThemeManager: ObservableObject {
             currentTheme = .system
         }
     }
-    
+
     private func saveTheme() {
         userDefaults.set(currentTheme.rawValue, forKey: themeKey)
         userDefaults.synchronize()
     }
-    
+
     private func applyTheme() {
         DispatchQueue.main.async {
             // Apply theme changes smoothly to prevent visual artifacts
@@ -48,11 +48,11 @@ class ThemeManager: ObservableObject {
                 context.duration = 0.15
                 context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
                 context.allowsImplicitAnimation = true
-                
+
                 if let window = NSApp.keyWindow {
                     self.applyThemeToWindow(window)
                 }
-                
+
                 // Apply to all windows
                 for window in NSApp.windows {
                     self.applyThemeToWindow(window)
@@ -60,7 +60,7 @@ class ThemeManager: ObservableObject {
             }
         }
     }
-    
+
     private func applyThemeToWindow(_ window: NSWindow) {
         switch currentTheme {
         case .system:
@@ -71,11 +71,11 @@ class ThemeManager: ObservableObject {
             window.appearance = NSAppearance(named: .darkAqua)
         }
     }
-    
+
     func setTheme(_ theme: AppTheme) {
         currentTheme = theme
     }
-    
+
     func getColorScheme() -> ColorScheme? {
         switch currentTheme {
         case .system:
@@ -103,7 +103,7 @@ extension EnvironmentValues {
 // View modifier for applying theme
 struct ThemedView: ViewModifier {
     let theme: AppTheme
-    
+
     func body(content: Content) -> some View {
         content
             .preferredColorScheme(theme.getColorScheme())

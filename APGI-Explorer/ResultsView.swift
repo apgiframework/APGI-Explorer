@@ -557,12 +557,3 @@ struct APGIRadarChart: View {
     }
 }
 
-private extension Color {
-    static var adaptiveBackground: Color {
-        #if os(macOS)
-        return Color(NSColor.windowBackgroundColor)
-        #else
-        return Color(.systemBackground)
-        #endif
-    }
-}

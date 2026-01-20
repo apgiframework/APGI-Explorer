@@ -258,14 +258,14 @@ struct ScreenNavigation {
 
 // MARK: - Screen Navigator
 class ScreenNavigator {
-    private let accessibilityManager: AccessibilityManager
+    private let accessibilityManager: ScreenshotAccessibilityManager
     private let logger: Logger
     private var currentScreen: ScreenNavigation?
     private var navigationStack: [ScreenNavigation] = []
     
     init(logger: Logger) {
         self.logger = logger
-        self.accessibilityManager = AccessibilityManager(logger: logger)
+        self.accessibilityManager = ScreenshotAccessibilityManager(logger: logger)
     }
     
     /// Discover all available screens in the application
@@ -484,7 +484,7 @@ class ScreenNavigator {
 }
 
 // MARK: - Accessibility Manager
-class AccessibilityManager {
+class ScreenshotAccessibilityManager {
     private let logger: Logger
     private let systemWideElement = AXUIElementCreateSystemWide()
     
@@ -894,7 +894,7 @@ class ScreenshotAutomationEngine {
     private let logger: Logger
     private let navigator: ScreenNavigator
     private let screenshotManager: ScreenshotManager
-    private let accessibilityManager: AccessibilityManager
+    private let accessibilityManager: ScreenshotAccessibilityManager
     private var screenshotCount = 0
     
     init(config: ScreenshotConfig = .default) {
@@ -902,7 +902,7 @@ class ScreenshotAutomationEngine {
         self.logger = Logger(enabled: config.enableLogging)
         self.navigator = ScreenNavigator(logger: logger)
         self.screenshotManager = ScreenshotManager(config: config, logger: logger)
-        self.accessibilityManager = AccessibilityManager(logger: logger)
+        self.accessibilityManager = ScreenshotAccessibilityManager(logger: logger)
         
         createOutputDirectory()
     }

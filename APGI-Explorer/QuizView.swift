@@ -11,7 +11,7 @@ struct QuizView: View {
     @State private var showExitAlert = false
     @State private var handoffActivity: NSUserActivity?
     @Environment(\.presentationMode) private var presentationMode
-    
+
     var body: some View {
         mainContent
             .navigationBarBackButtonHidden(true)
@@ -50,7 +50,10 @@ struct QuizView: View {
                 updateHandoffActivity()
             }
             .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
-                if let restoredAnswers = HandoffActivity.restoreUserActivity(userActivity, currentQuestionIndex: $currentQuestionIndex) {
+                if let restoredAnswers = HandoffActivity.restoreUserActivity(
+                    userActivity,
+                    currentQuestionIndex: $currentQuestionIndex
+                ) {
                     quizModel.restoreAnswers(restoredAnswers)
                     ConsoleAnalyticsService.shared.track(event: .handoffActivityRestored)
                 }
@@ -62,7 +65,7 @@ struct QuizView: View {
                 }
             }
     }
-    
+
     private var mainContent: some View {
         VStack(spacing: 0) {
             progressBarSection
@@ -75,73 +78,83 @@ struct QuizView: View {
             }
         }
     }
-    
+
     private var progressBarSection: some View {
         ProgressView(value: Double(currentQuestionIndex + 1), total: Double(quizModel.questions.count))
             .progressViewStyle(.linear)
             .tint(.blue)
             .padding()
     }
-    
+
     private var progressTextSection: some View {
         Text("Question \(currentQuestionIndex + 1) of \(quizModel.questions.count)")
             .font(.caption)
             .foregroundColor(.secondary)
     }
-    
+
     private var liveScoreSection: some View {
         LiveScoreTracker(quizModel: quizModel)
             .padding(.horizontal)
     }
-    
+
     private var currentSectionSection: some View {
         Text(sectionName(for: quizModel.questions[currentQuestionIndex]))
             .font(.subheadline)
             .foregroundColor(.blue)
             .padding(.vertical, 8)
     }
-    
+
     private var questionSection: some View {
         QuestionView(
             question: quizModel.questions[currentQuestionIndex],
-            selectedAnswer: quizModel.answers[quizModel.questions[currentQuestionIndex].id]
-        ) { answer in
-            quizModel.selectAnswer(for: quizModel.questions[currentQuestionIndex].id, answer: answer)
-        }
+            selectedAnswer: quizModel.answers[quizModel.questions[currentQuestionIndex].id],
+            onAnswer: { answer in
+                quizModel.selectAnswer(for: quizModel.questions[currentQuestionIndex].id, answer: answer)
+            }
+        )
     }
-    
+
     private var navigationButtonsSection: some View {
         HStack {
             if currentQuestionIndex > 0 {
-                Button(action: { currentQuestionIndex -= 1 }) {
-                    Label("Previous", systemImage: "chevron.left")
-                }
+                Button(
+                    action: { currentQuestionIndex -= 1 },
+                    label: {
+                        Label("Previous", systemImage: "chevron.left")
+                    }
+                )
                 .buttonStyle(.bordered)
             }
-            
+
             Spacer()
-            
+
             if currentQuestionIndex < quizModel.questions.count - 1 {
-                Button(action: {
-                    if quizModel.answers[quizModel.questions[currentQuestionIndex].id] != nil {
-                        currentQuestionIndex += 1
+                Button(
+                    action: {
+                        if quizModel.answers[quizModel.questions[currentQuestionIndex].id] != nil {
+                            currentQuestionIndex += 1
+                        }
+                    },
+                    label: {
+                        Label("Next", systemImage: "chevron.right")
                     }
-                }) {
-                    Label("Next", systemImage: "chevron.right")
-                }
+                )
                 .buttonStyle(.borderedProminent)
                 .disabled(quizModel.answers[quizModel.questions[currentQuestionIndex].id] == nil)
             } else {
-                NavigationLink(destination: ResultsView(quizModel: quizModel)) {
-                    Label("See Results", systemImage: "chart.bar.fill")
-                }
+                NavigationLink(
+                    destination: ResultsView(quizModel: quizModel),
+                    label: {
+                        Label("See Results", systemImage: "chart.bar.fill")
+                    }
+                )
                 .buttonStyle(.borderedProminent)
                 .disabled(!quizModel.isComplete)
             }
         }
         .padding()
     }
-    
+
     private func setupHandoffActivity() {
         handoffActivity = HandoffActivity.createUserActivity(
             quizModel: quizModel,
@@ -149,7 +162,7 @@ struct QuizView: View {
         )
         handoffActivity?.becomeCurrent()
     }
-    
+
     private func updateHandoffActivity() {
         handoffActivity?.invalidate()
         handoffActivity = HandoffActivity.createUserActivity(
@@ -158,7 +171,7 @@ struct QuizView: View {
         )
         handoffActivity?.becomeCurrent()
     }
-    
+
     private func sectionName(for question: QuizQuestion) -> String {
         switch question.parameter {
         case "epsilon": return "Prediction Error Sensitivity"
@@ -250,7 +263,7 @@ struct QuestionView: View {
     let selectedAnswer: Int?
     let onAnswer: (Int) -> Void
     @State private var tooltipOptionID: UUID?
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -258,7 +271,7 @@ struct QuestionView: View {
                     .font(.title2)
                     .fontWeight(.medium)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 ForEach(question.options) { option in
                     QuestionOptionRow(
                         option: option,

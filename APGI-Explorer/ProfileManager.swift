@@ -935,7 +935,7 @@ struct StateAccessibility: Identifiable {
 
 // MARK: - QuizProfile Model
 
-struct QuizProfile: Identifiable, Codable, Equatable {
+struct QuizProfile: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     var name: String
     let dateCreated: Date
@@ -949,5 +949,22 @@ struct QuizProfile: Identifiable, Codable, Equatable {
         θₜ: \(results["threshold"] ?? 0)
         β: \(results["somatic"] ?? 0)
         """
+    }
+    
+    // Computed properties for analytics compatibility
+    var epsilon: Double {
+        Double(results["epsilon"] ?? 0)
+    }
+    
+    var precision: Double {
+        Double(results["precision"] ?? 0)
+    }
+    
+    var threshold: Double {
+        Double(results["threshold"] ?? 0)
+    }
+    
+    var somaticBias: Double {
+        Double(results["somatic"] ?? 0)
     }
 }

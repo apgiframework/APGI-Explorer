@@ -7,13 +7,13 @@ import Combine
 
 class WindowManager: ObservableObject {
     static let shared = WindowManager()
-    
+
     @Published var activeWindows: [WindowType: NSWindow] = [:]
-    
+
     private init() {}
-    
+
     // MARK: - Window Types
-    
+
     enum WindowType: String, CaseIterable {
         case main = "main"
         case stateExplorer = "state-explorer"
@@ -22,7 +22,7 @@ class WindowManager: ObservableObject {
         case about = "about"
         case quiz = "quiz"
         case reports = "reports"
-        
+
         var title: String {
             switch self {
             case .main: return "APGI Explorer"
@@ -34,7 +34,7 @@ class WindowManager: ObservableObject {
             case .reports: return "Reports"
             }
         }
-        
+
         var defaultSize: CGSize {
             switch self {
             case .main: return CGSize(width: 1000, height: 700)
@@ -46,7 +46,7 @@ class WindowManager: ObservableObject {
             case .reports: return CGSize(width: 1000, height: 800)
             }
         }
-        
+
         var minimumSize: CGSize {
             switch self {
             case .main: return CGSize(width: 800, height: 600)
@@ -59,9 +59,9 @@ class WindowManager: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Window Creation
-    
+
     func openWindow<Content: View>(
         type: WindowType,
         @ViewBuilder content: () -> Content
@@ -72,7 +72,7 @@ class WindowManager: ObservableObject {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        
+
         // Create new window
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: type.defaultSize),
@@ -80,7 +80,7 @@ class WindowManager: ObservableObject {
             backing: .buffered,
             defer: false
         )
-        
+
         window.title = type.title
         window.center()
         window.setFrameAutosaveName(type.rawValue)
@@ -88,32 +88,32 @@ class WindowManager: ObservableObject {
         window.minSize = type.minimumSize
         window.contentView = NSHostingView(rootView: content())
         window.makeKeyAndOrderFront(nil)
-        
+
         // Store reference
         activeWindows[type] = window
-        
+
         // Set up window delegate
         let delegate = WindowDelegate { [weak self] in
             self?.activeWindows.removeValue(forKey: type)
         }
         window.delegate = delegate
         objc_setAssociatedObject(window, &associatedDelegateKey, delegate, .OBJC_ASSOCIATION_RETAIN)
-        
+
         NSApp.activate(ignoringOtherApps: true)
     }
-    
+
     func closeWindow(type: WindowType) {
         activeWindows[type]?.close()
         activeWindows.removeValue(forKey: type)
     }
-    
+
     func closeAllWindows() {
         activeWindows.values.forEach { $0.close() }
         activeWindows.removeAll()
     }
-    
+
     // MARK: - Fullscreen
-    
+
     func toggleFullscreen(type: WindowType) {
         guard let window = activeWindows[type] else { return }
         window.toggleFullScreen(nil)
@@ -126,11 +126,11 @@ private var associatedDelegateKey: UInt8 = 0
 
 class WindowDelegate: NSObject, NSWindowDelegate {
     let onClose: () -> Void
-    
+
     init(onClose: @escaping () -> Void) {
         self.onClose = onClose
     }
-    
+
     func windowWillClose(_ notification: Notification) {
         onClose()
     }
@@ -140,7 +140,7 @@ class WindowDelegate: NSObject, NSWindowDelegate {
 
 struct WindowAccessor: ViewModifier {
     let windowType: WindowManager.WindowType
-    
+
     func body(content: Content) -> some View {
         content
             .onAppear {

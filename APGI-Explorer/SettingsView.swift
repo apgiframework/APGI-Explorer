@@ -119,13 +119,6 @@ struct SettingsView: View {
     @State private var selectedTab: Int = 0
     @Environment(\.dismiss) private var dismiss
     
-    private enum ExportQuality: String, CaseIterable {
-        case low = "Low"
-        case medium = "Medium"
-        case high = "High"
-        case ultra = "Ultra"
-    }
-    
     // Use enums from UserDefaultsManager instead of duplicating them
     
     var body: some View {
@@ -247,7 +240,7 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
                     }
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -272,7 +265,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -300,7 +293,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -323,7 +316,7 @@ struct SettingsView: View {
                         .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -348,7 +341,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -369,7 +362,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -387,14 +380,12 @@ struct SettingsView: View {
                         .help("Reset all notification settings to default")
                         
                         Button("Open System Notification Settings") {
-                            #if os(macOS)
-                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.notifications")!)
-                            #endif
+                            PlatformAdapter.openURL(URL(string: "x-apple.systempreferences:com.apple.preference.notifications")!)
                         }
                         .help("Open system notification preferences")
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -431,12 +422,12 @@ struct SettingsView: View {
                             // Theme change is handled automatically by ThemeManager
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 // Force UI refresh to ensure theme is applied
-                                NSApp.sendAction(Selector(("reloadTheme")), to: nil, from: nil)
+                                PlatformAdapter.setAccessibilityFocus(to: "theme_changed")
                             }
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -467,7 +458,7 @@ struct SettingsView: View {
                         .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -508,7 +499,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -539,13 +530,9 @@ struct SettingsView: View {
                         Toggle("Show average profile", isOn: $showAverageProfile)
                             .help("Display average profile as reference in comparisons")
                             .padding(.vertical, 4)
-                        
-                        Toggle("Show differences only", isOn: $showDifferencesOnly)
-                            .help("Highlight only differences when comparing profiles")
-                            .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -614,7 +601,7 @@ struct SettingsView: View {
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -646,7 +633,7 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -718,7 +705,7 @@ struct SettingsView: View {
                             }
                         }
                         .padding()
-                        .background(Color(NSColor.controlBackgroundColor))
+                        .background(PlatformColor.adaptiveSecondaryBackground)
                         .cornerRadius(8)
                         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
@@ -758,7 +745,7 @@ struct SettingsView: View {
                         .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -796,7 +783,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -825,7 +812,7 @@ struct SettingsView: View {
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -857,7 +844,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -882,11 +869,23 @@ struct SettingsView: View {
                     
                     Form {
                         Toggle("Enable debug mode", isOn: $debugModeEnabled)
-                        .help("Show additional debugging information")
-                        .padding(.vertical, 4)
+                            .help("Show additional debugging information")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show performance metrics", isOn: $showPerformanceMetrics)
+                            .help("Display performance metrics throughout the app")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Compact mode", isOn: $compactModeEnabled)
+                            .help("Use compact layout for better space utilization")
+                            .padding(.vertical, 4)
+                        
+                        Toggle("Show advanced options", isOn: $showAdvancedOptions)
+                            .help("Display advanced options throughout the app")
+                            .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -907,7 +906,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -931,7 +930,7 @@ struct SettingsView: View {
                         .help("Clear temporary files and cache")
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -973,7 +972,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -998,7 +997,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(PlatformColor.adaptiveSecondaryBackground)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
@@ -1152,6 +1151,7 @@ struct SettingsView: View {
         chartAnimationEnabled = true
         notificationSoundEnabled = true
         notificationBadgeEnabled = true
+        showPerformanceMetrics = false
     }
     
     private func viewSystemInformation() {

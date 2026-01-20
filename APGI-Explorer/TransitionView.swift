@@ -4,15 +4,15 @@ import SwiftUI
 struct TransitionView: View {
     let transition: StateTransitionModel.Transition
     let states: [PsychologicalState]
-    
+
     private var fromState: PsychologicalState? {
         states.first { $0.id == transition.from }
     }
-    
+
     private var toState: PsychologicalState? {
         states.first { $0.id == transition.to }
     }
-    
+
     var body: some View {
         if let fromState = fromState, let toState = toState {
             VStack(alignment: .leading, spacing: 4) {
@@ -28,7 +28,7 @@ struct TransitionView: View {
                         .font(.caption.monospacedDigit())
                         .foregroundColor(.secondary)
                 }
-                
+
                 if !transition.triggers.isEmpty {
                     Text("Triggers:")
                         .font(.caption2)
