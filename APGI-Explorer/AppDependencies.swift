@@ -6,22 +6,22 @@ import Combine
 
 /// A centralized dependency injection container that manages shared app instances
 class AppDependencies: ObservableObject {
-    
+
     // MARK: - Published Properties
     @Published private(set) var profileManager: ProfileManager
-    
+
     // MARK: - Core Dependencies
     let stateModel: StateModel
     let transitionModel: StateTransitionModel
     let analyticsService: AnalyticsService
     let stateSearchService: StateSearchService
-    
+
     // MARK: - Singleton
-    
+
     static let shared = AppDependencies()
-    
+
     // MARK: - Initialization
-    
+
     private init() {
         // Initialize all properties first
         self.stateModel = StateModel()
@@ -30,9 +30,9 @@ class AppDependencies: ObservableObject {
         self.analyticsService = ConsoleAnalyticsService()
         self.stateSearchService = StateSearchService()
     }
-    
+
     // MARK: - Convenience Methods
-    
+
     /// Creates a new InteractiveStateView with injected dependencies
     func makeInteractiveStateView(state: PsychologicalState) -> InteractiveStateView {
         return InteractiveStateView(
@@ -41,17 +41,17 @@ class AppDependencies: ObservableObject {
             transitionModel: transitionModel
         )
     }
-    
+
     /// Provides dependencies for views that need StateModel
     func getStateModel() -> StateModel {
         return stateModel
     }
-    
+
     /// Provides dependencies for views that need StateTransitionModel
     func getTransitionModel() -> StateTransitionModel {
         return transitionModel
     }
-    
+
     /// Provides dependencies for views that need ProfileManager
     func getProfileManager() -> ProfileManager {
         return profileManager
@@ -64,7 +64,7 @@ class AppDependencies: ObservableObject {
     func getStateSearchService() -> StateSearchService {
         return stateSearchService
     }
-    
+
     /// Clears all cached similarity calculations
     func clearStateCache() {
         stateModel.clearCache()

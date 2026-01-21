@@ -6,7 +6,10 @@ import AppKit
 #endif
 
 struct IntroView: View {
+    @State private var showQuiz = false
+
     var body: some View {
+        NavigationStack {
         ScrollView {
             VStack(spacing: 24) {
                 // Header with icon
@@ -34,70 +37,97 @@ struct IntroView: View {
 
                     Text("""
                     This quiz measures four fundamental parameters of consciousness that shape your experience:
-
-                    • **Prediction Error Sensitivity (ε)**: How you respond to surprises and mismatches
-                    • **Precision Allocation (π)**: What signals you trust most
-                    • **Ignition Threshold (θₜ)**: What captures your awareness
-                    • **Somatic Bias (β)**: Whether you're more body- or world-focused
                     """)
-                    .font(.body)
-                    .foregroundColor(.primary)
-
-                    Text("The assessment consists of 35 questions with 4 response options each. Answer honestly for the most accurate results about your unique cognitive profile.")
                         .font(.body)
-                        .foregroundColor(.primary)
-
-                    Text("Estimated time: 10-15 minutes")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.windowBackgroundColor))
-                .cornerRadius(12)
+                }
+
+                StandardCard {
+                    VStack(alignment: .leading, spacing: LayoutConstants.smallSpacing) {
+                        Text("APGI Assessment")
+                            .font(.title2.bold())
+                        Text("Discover your unique consciousness profile through our comprehensive assessment")
+                            .font(.body)
+                        Text("Estimated time: 10-15 minutes")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
 
                 // APGI Parameters Overview
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("What You'll Discover")
-                        .font(.title2)
-
-                    ParameterCard(symbol: "bolt.fill", color: .orange, title: "Prediction Error (ε)", description: "Your sensitivity to surprises and changes")
-
-                    ParameterCard(symbol: "scale.3d", color: .green, title: "Precision (π)", description: "Which signals you prioritize")
-
-                    ParameterCard(symbol: "target", color: .purple, title: "Ignition Threshold (θₜ)", description: "What grabs your attention")
-
-                    ParameterCard(symbol: "figure.walk", color: .blue, title: "Somatic Bias (β)", description: "Your body-world awareness balance")
+                InfoCard(title: "What You'll Discover") {
+                    VStack(spacing: LayoutConstants.smallSpacing) {
+                        ParameterCard(
+                            symbol: "bolt.fill",
+                            color: .orange,
+                            title: "Prediction Error (ε)",
+                            description: "Your sensitivity to surprises and changes"
+                        )
+                        ParameterCard(
+                            symbol: "scale.3d",
+                            color: .green,
+                            title: "Precision (π)",
+                            description: "Which signals you prioritize"
+                        )
+                        ParameterCard(
+                            symbol: "target",
+                            color: .purple,
+                            title: "Ignition Threshold (θₜ)",
+                            description: "What grabs your attention"
+                        )
+                        ParameterCard(
+                            symbol: "figure.walk",
+                            color: .blue,
+                            title: "Somatic Bias (β)",
+                            description: "Your body-world awareness balance"
+                        )
+                    }
                 }
-                .padding()
-                .background(Color(.windowBackgroundColor))
-                .cornerRadius(12)
 
                 // Benefits section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Why Take This Assessment?")
-                        .font(.title2)
-
-                    BenefitItem(symbol: "lightbulb.fill", text: "Understand your cognitive strengths and challenges")
-                    BenefitItem(symbol: "chart.bar.fill", text: "Get personalized insights about your consciousness profile")
-                    BenefitItem(symbol: "person.2.fill", text: "Learn how you process information differently from others")
-                    BenefitItem(symbol: "gearshape.fill", text: "Discover strategies tailored to your mind's explorer")
+                InfoCard(title: "Why Take This Assessment?") {
+                    VStack(spacing: LayoutConstants.smallSpacing) {
+                        BenefitItem(
+                            symbol: "lightbulb.fill",
+                            text: "Understand your cognitive strengths and challenges"
+                        )
+                        BenefitItem(
+                            symbol: "chart.bar.fill",
+                            text: "Get personalized insights about your consciousness profile"
+                        )
+                        BenefitItem(
+                            symbol: "person.2.fill",
+                            text: "Learn how you process information differently from others"
+                        )
+                        BenefitItem(
+                            symbol: "gearshape.fill",
+                            text: "Discover strategies tailored to your mind's explorer"
+                        )
+                    }
                 }
-                .padding()
-                .background(Color(.windowBackgroundColor))
-                .cornerRadius(12)
 
                 // Start button
-                NavigationLink(destination: QuizView()) {
+                Button(action: {
+                    showQuiz = true
+                }, label: {
                     Text("Begin Assessment")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                }
+                })
+                .buttonStyle(PrimaryButtonStyle())
                 .padding(.bottom, 30)
+                #if os(iOS)
+                .fullScreenCover(isPresented: $showQuiz) {
+                    QuizNavigationView()
+                }
+                #else
+                .sheet(isPresented: $showQuiz) {
+                    QuizNavigationView()
+                        .frame(minWidth: 800, minHeight: 600)
+                }
+                #endif
 
                 // Footer
                 VStack(spacing: 8) {
@@ -116,8 +146,7 @@ struct IntroView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-    }
-}
+        }
 
 // MARK: - Helper Views
 
@@ -165,3 +194,4 @@ private struct BenefitItem: View {
         }
     }
 }
+        }

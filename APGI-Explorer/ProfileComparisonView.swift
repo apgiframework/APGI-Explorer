@@ -23,7 +23,7 @@ struct ComparisonData: Hashable {
 
 struct ProfileComparisonView: View {
     @EnvironmentObject private var profileManager: ProfileManager
-    @Environment(\.appDependencies) private var dependencies
+    @Environment(\.appDependencies) private var dependencies: AppDependencies
     @StateObject private var performanceManager = PerformanceManager.shared
     @StateObject private var performanceTracker = PerformanceTracker()
 
@@ -34,7 +34,7 @@ struct ProfileComparisonView: View {
     @State private var error: Error?
     @State private var showExportSheet = false
     @State private var exportData: Data?
-    @State private var chartData: [ChartDataPoint]? = nil
+    @State private var chartData: [ChartDataPoint]?
 
     // Performance optimization: Lazy loading for chart data
     @State private var isChartVisible = false
@@ -124,13 +124,13 @@ struct ProfileComparisonView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button(action: exportComparison) {
+                    Button(action: exportComparison, label: {
                         Label("Export as Image", systemImage: "square.and.arrow.up")
-                    }
+                    })
 
-                    Button(action: { showExportSheet = true }) {
+                    Button(action: { showExportSheet = true }, label: {
                         Label("Export as PDF", systemImage: "doc.text")
-                    }
+                    })
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
                 }
@@ -239,8 +239,7 @@ struct ProfileComparisonView: View {
     @ViewBuilder
     private var loadingView: some View {
         VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(1.5)
+            LoadingIndicator(message: "Loading comparison...", size: .large)
                 .padding()
 
             Text("Analyzing Profiles...")
@@ -272,7 +271,7 @@ struct ProfileComparisonView: View {
                     await loadProfiles()
                 }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(SecondaryButtonStyle())
             .padding(.top, 10)
         }
         .padding()
@@ -342,21 +341,21 @@ struct ProfileComparisonView: View {
                 .foregroundColor(.secondary)
 
             Menu {
-                Button(action: { profile.wrappedValue = nil }) {
+                Button(action: { profile.wrappedValue = nil }, label: {
                     Label("Select Profile...", systemImage: "person.crop.circle")
-                }
+                })
 
                 Divider()
 
                 ForEach(getAvailableProfiles(), id: \.id) { quizProfile in
-                    Button(action: { profile.wrappedValue = quizProfile }) {
+                    Button(action: { profile.wrappedValue = quizProfile }, label: {
                         HStack {
                             Text(quizProfile.name)
                             if profile.wrappedValue?.id == quizProfile.id {
                                 Image(systemName: "checkmark")
                             }
                         }
-                    }
+                    })
                 }
             } label: {
                 HStack {
@@ -372,7 +371,7 @@ struct ProfileComparisonView: View {
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(10)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPlainButtonStyle())
         }
     }
 

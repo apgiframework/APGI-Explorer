@@ -1,0 +1,267 @@
+import Foundation
+import AppKit
+import os.log
+
+// MARK: - Main Execution
+class ScreenshotAutomationRunner {
+    static func run() {
+        print("🔍 ScreenshotAutomationRunner started")
+        print("📅 Date: \(Date())")
+        print("🖥️ macOS Version: \(ProcessInfo.processInfo.operatingSystemVersionString)")
+
+        // Check if we're in a safe environment
+        let currentEnvironment = getCurrentEnvironment()
+        print("🌍 Environment: \(currentEnvironment.displayName)")
+
+        if currentEnvironment == .production {
+            runProductionMode()
+        } else {
+            runDevelopmentMode()
+        }
+    }
+
+    private static func getCurrentEnvironment() -> ScreenshotEnvironment {
+        // Check environment variables
+        if let envVar = ProcessInfo.processInfo.environment["APGI_ENVIRONMENT"] {
+            return ScreenshotEnvironment(rawValue: envVar.lowercased()) ?? .production
+        }
+
+        // Check build configuration
+        #if DEBUG
+        return .development
+        #elseif STAGING
+        return .staging
+        #else
+        return .production
+        #endif
+    }
+
+    private static func runDevelopmentMode() {
+        print("🛠️ Running in DEVELOPMENT mode")
+
+        // Check screen recording permission
+        guard ScreenRecordingPermission.hasPermission else {
+            print("❌ Screen recording permission not granted")
+            ScreenRecordingPermission.requestPermission()
+            print("💡 Please grant permission in System Preferences and try again")
+            return
+        }
+
+        print("✅ Screen recording permission granted")
+
+        // Create configuration
+        let config = ScreenshotConfig.default
+
+        // Create logger
+        let logger = Logger(enabled: config.enableLogging)
+
+        // Create components
+        let accessibilityManager = ScreenshotAccessibilityManager(logger: logger)
+        let navigator = ScreenNavigator(accessibilityManager: accessibilityManager, logger: logger)
+        let engine = ScreenshotAutomationEngine(config: config, logger: logger, navigator: navigator)
+
+        print("🚀 Starting screenshot automation in development mode")
+        print("📊 Output directory: \(config.outputDirectory)")
+        print("🎨 Appearance modes: \(config.appearanceModes.map(\.displayName).joined(separator: ", "))")
+        print("📱 Resolutions: \(config.resolutions.map(\.displayName).joined(separator: ", "))")
+
+        // Run automation
+        engine.run()
+    }
+
+    private static func runProductionMode() {
+        print("🏭 Running in PRODUCTION mode with safety restrictions")
+
+        let config = ProductionScreenshotConfig.default
+
+        // Check if screenshot automation is enabled
+        guard config.isEnabled else {
+            print("❌ Screenshot automation is disabled in production configuration")
+            print("💡 To enable, set ProductionScreenshotConfig.default.isEnabled = true")
+            return
+        }
+
+        // Check authentication if required
+        if config.requiresAuthentication {
+            print("🔐 Authentication required for screenshot automation in production")
+            guard authenticateUser() else {
+                print("❌ Authentication failed - aborting screenshot automation")
+                return
+            }
+        }
+
+        // Request screen recording permission
+        guard ScreenRecordingPermission.hasPermission else {
+            print("❌ Screen recording permission not granted")
+            ScreenRecordingPermission.requestPermission()
+            print("💡 Please grant permission in System Preferences and try again")
+            return
+        }
+
+        print("✅ Production screenshot automation starting with safety restrictions")
+        print("📸 Max screenshots per session: \(config.maxScreenshotsPerSession)")
+        print("📋 Allowed screens: \(config.allowedScreens.joined(separator: ", "))")
+
+        // Create production-safe engine
+        let engine = ProductionScreenshotAutomationEngine(config: config)
+
+        // Run on main thread for safety
+        DispatchQueue.main.async {
+            engine.run()
+        }
+    }
+
+    private static func authenticateUser() -> Bool {
+        // Simple authentication check - in production this would be more robust
+        // For now, check for a special environment variable or user defaults flag
+        let authToken = ProcessInfo.processInfo.environment["SCREENSHOT_AUTH_TOKEN"]
+        let isValidToken = authToken == "APGI-Screenshot-2024"
+
+        if !isValidToken {
+            print("🔐 Invalid or missing authentication token")
+            print("💡 Set environment variable SCREENSHOT_AUTH_TOKEN=APGI-Screenshot-2024")
+        }
+
+        return isValidToken
+    }
+}
+
+// MARK: - Command Line Interface
+extension ScreenshotAutomationRunner {
+    static func runWithArguments(_ arguments: [String]) {
+        print("📝 Processing command line arguments: \(arguments)")
+
+        let (config, productionMode) = parseArguments(arguments)
+
+        if productionMode {
+            runProductionMode()
+        } else {
+            runWithCustomConfig(config)
+        }
+    }
+
+    private static func parseArguments(_ arguments: [String]) -> (config: ScreenshotConfig, productionMode: Bool) {
+        var config = ScreenshotConfig.default
+        var productionMode = false
+
+        for (index, argument) in arguments.enumerated() {
+            switch argument {
+            case "--screenshot-mode":
+                continue
+            case "--production":
+                productionMode = true
+                print("🏭 Production mode enabled")
+            case "--output-dir":
+                config = handleOutputDirectory(config, arguments: arguments, index: index)
+            case "--format":
+                config = handleFormat(config, arguments: arguments, index: index)
+            case "--quality":
+                config = handleQuality(config, arguments: arguments, index: index)
+            case "--help", "-h":
+                printHelp()
+                return (config, productionMode)
+            default:
+                if argument.hasPrefix("--") {
+                    print("⚠️ Unknown argument: \(argument)")
+                }
+            }
+        }
+
+        return (config, productionMode)
+    }
+
+    private static func handleOutputDirectory(_ config: ScreenshotConfig, arguments: [String], index: Int) -> ScreenshotConfig {
+        var newConfig = config
+        if index + 1 < arguments.count {
+            newConfig.outputDirectory = arguments[index + 1]
+            print("📁 Custom output directory: \(newConfig.outputDirectory)")
+        }
+        return newConfig
+    }
+
+    private static func handleFormat(_ config: ScreenshotConfig, arguments: [String], index: Int) -> ScreenshotConfig {
+        var newConfig = config
+        if index + 1 < arguments.count {
+            let formatString = arguments[index + 1]
+            if let format = ImageFormat(rawValue: formatString) {
+                newConfig.imageFormat = format
+                print("🖼️ Custom format: \(format.rawValue)")
+            }
+        }
+        return newConfig
+    }
+
+    private static func handleQuality(_ config: ScreenshotConfig, arguments: [String], index: Int) -> ScreenshotConfig {
+        var newConfig = config
+        if index + 1 < arguments.count {
+            let qualityString = arguments[index + 1]
+            if let quality = Double(qualityString) {
+                newConfig.quality = max(0.1, min(1.0, quality))
+                print("🎨 Custom quality: \(newConfig.quality)")
+            }
+        }
+        return newConfig
+    }
+
+    private static func runWithCustomConfig(_ config: ScreenshotConfig) {
+        print("🛠️ Running with custom configuration")
+
+        // Check screen recording permission
+        guard ScreenRecordingPermission.hasPermission else {
+            print("❌ Screen recording permission not granted")
+            ScreenRecordingPermission.requestPermission()
+            print("💡 Please grant permission in System Preferences and try again")
+            return
+        }
+
+        // Create logger
+        let logger = Logger(enabled: config.enableLogging)
+
+        // Create components
+        let accessibilityManager = ScreenshotAccessibilityManager(logger: logger)
+        let navigator = ScreenNavigator(accessibilityManager: accessibilityManager, logger: logger)
+        let engine = ScreenshotAutomationEngine(config: config, logger: logger, navigator: navigator)
+
+        print("🚀 Starting screenshot automation with custom configuration")
+
+        // Run automation
+        engine.run()
+    }
+
+    private static func printHelp() {
+        print("""
+        📸 APGI Explorer Screenshot Automation
+
+        USAGE:
+          xcodebuild -scheme APGI-Explorer run -arguments --screenshot-mode [OPTIONS]
+
+        OPTIONS:
+          --screenshot-mode          Enable screenshot automation mode
+          --production               Run in production mode with safety restrictions
+          --output-dir <path>        Custom output directory for screenshots
+          --format <format>          Image format (png, jpeg, heic)
+          --quality <0.0-1.0>       Image quality (0.1 to 1.0)
+          --help, -h                 Show this help message
+
+        EXAMPLES:
+          # Run with default settings
+          xcodebuild -scheme APGI-Explorer run -arguments --screenshot-mode
+
+          # Run in production mode
+          xcodebuild -scheme APGI-Explorer run -arguments --screenshot-mode --production
+
+          # Custom output directory and format
+          xcodebuild -scheme APGI-Explorer run -arguments --screenshot-mode \
+            --output-dir ~/Desktop/Screenshots --format jpeg
+
+          # High quality PNGs
+          xcodebuild -scheme APGI-Explorer run -arguments --screenshot-mode --format png --quality 1.0
+
+        ENVIRONMENT VARIABLES:
+          SCREENSHOT_AUTH_TOKEN      Authentication token for production mode
+          APGI_ENVIRONMENT          Environment (development, staging, production)
+
+        For more information, see the documentation.
+        """)
+    }
+}

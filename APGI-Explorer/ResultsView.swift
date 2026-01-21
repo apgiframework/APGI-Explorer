@@ -13,6 +13,7 @@ struct ResultsView: View {
     @ObservedObject var quizModel: QuizModel
     @State private var profileName = ""
     @State private var showSavedAlert = false
+    @State private var toast: ToastMessage?
     @State private var selectedTab = 0
     @StateObject private var stateModel = StateModel()
     @Environment(\.appDependencies) private var dependencies
@@ -43,7 +44,7 @@ struct ResultsView: View {
     }
 
     @State private var showingExportSheet = false
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -79,17 +80,17 @@ struct ResultsView: View {
         .toolbar {
             #if os(macOS)
             ToolbarItem(placement: .automatic) {
-                Button(action: { showingExportSheet = true }) {
+                Button(action: { showingExportSheet = true }, label: {
                     Image(systemName: "square.and.arrow.up")
                         .imageScale(.large)
-                }
+                })
             }
             #else
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingExportSheet = true }) {
+                Button(action: { showingExportSheet = true }, label: {
                     Image(systemName: "square.and.arrow.up")
                         .imageScale(.large)
-                }
+                })
             }
             #endif
         }
@@ -109,6 +110,7 @@ struct ResultsView: View {
         } message: {
             Text("Your results have been saved to '\(profileName)'.")
         }
+        .toast($toast)
         .onAppear {
             analytics.track(event: .quizCompleted(profileType: profileType, score: quizModel.calculatePartialScore().epsilon, duration: 0))
             analytics.setUserProperty(profileType.rawValue, forKey: "recentProfileType")
@@ -219,14 +221,12 @@ struct ResultsView: View {
             TextField("Profile Name", text: $profileName)
                 .textFieldStyle(.roundedBorder)
 
-            Button(action: saveProfile) {
-                Text("Save to Profile")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(profileName.isEmpty ? Color.gray : Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
+            LoadingButton(
+                title: "Save to Profile",
+                isLoading: false,
+                style: profileName.isEmpty ? SecondaryButtonStyle() : PrimaryButtonStyle(),
+                action: saveProfile
+            )
             .disabled(profileName.isEmpty)
         }
         .padding()
@@ -270,15 +270,15 @@ struct ResultsView: View {
                 guard !trimmedProfileName.isEmpty else {
                     throw AppError.invalidParameters
                 }
-                
+
                 // Check for existing profile with same name
                 let existingProfiles = try await PersistenceController.shared.fetchProfiles()
                 let duplicateExists = existingProfiles.contains { $0.name.lowercased() == trimmedProfileName.lowercased() }
-                
+
                 if duplicateExists {
                     throw AppError.profileGenerationFailed
                 }
-                
+
                 _ = try await profileManager.createProfile(
                     name: trimmedProfileName,
                     results: quizModel.calculateRawScore()
@@ -290,14 +290,12 @@ struct ResultsView: View {
                 }
             } catch {
                 await MainActor.run {
-                    // Handle error appropriately
-                    print("Failed to save profile: \(error)")
-                    // Could show user-friendly error message here
+                    toast = .error("Failed to save profile: \(error.localizedDescription)")
                 }
             }
         }
     }
-    
+
     private func createTemporaryProfile() -> QuizProfile {
         QuizProfile(
             id: UUID(),
@@ -556,4 +554,3 @@ struct APGIRadarChart: View {
         return path
     }
 }
-

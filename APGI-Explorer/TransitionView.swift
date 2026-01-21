@@ -10,12 +10,12 @@ struct TransitionView: View {
     }
 
     private var toState: PsychologicalState? {
-        states.first { $0.id == transition.to }
+        states.first { $0.id == transition.toState }
     }
 
     var body: some View {
         if let fromState = fromState, let toState = toState {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: LayoutConstants.tinySpacing) {
                 HStack {
                     Text(fromState.name)
                         .font(.subheadline)
@@ -24,7 +24,7 @@ struct TransitionView: View {
                     Text(toState.name)
                         .font(.subheadline)
                     Spacer()
-                    Text(String(format: "%.0f%%", transition.probability * 100))
+                    Text(String(format: "%.0f%%", transition.probability * DataConstants.probabilityMultiplier))
                         .font(.caption.monospacedDigit())
                         .foregroundColor(.secondary)
                 }
@@ -40,7 +40,7 @@ struct TransitionView: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, LayoutConstants.tinySpacing)
         }
     }
 }

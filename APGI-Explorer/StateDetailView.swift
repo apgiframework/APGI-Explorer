@@ -32,7 +32,10 @@ struct StateDetailView: View {
                     Text("APGI Parameters")
                         .font(.headline)
 
-                    StateParameterRow(label: "Prediction Error (ε)", value: state.parameters.predictionError.formattedAccuracy)
+                    StateParameterRow(
+                        label: "Prediction Error (ε)",
+                        value: state.parameters.predictionError.formattedAccuracy
+                    )
                     StateParameterRow(label: "Precision (π)", value: "\(state.parameters.precision)")
                     StateParameterRow(label: "Threshold (θₜ)", value: "\(state.parameters.threshold)")
                     StateParameterRow(label: "Somatic Bias (β)", value: "\(state.parameters.somaticBias)")

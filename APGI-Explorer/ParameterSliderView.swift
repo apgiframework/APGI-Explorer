@@ -4,16 +4,16 @@ import SwiftUI
 struct ParameterSliderView: View {
     let state: PsychologicalState
     let onParameterChange: (String, Double) -> Void
-    
+
     @State private var predictionError: Double
     @State private var precision: Double
     @State private var threshold: Double
     @State private var somaticBias: Double
-    
+
     init(state: PsychologicalState, onParameterChange: @escaping (String, Double) -> Void) {
         self.state = state
         self.onParameterChange = onParameterChange
-        
+
         // Initialize with current state values
         _predictionError = State(initialValue: Double(state.parameters.predictionError.accuracy.min))
         if case let .veryHigh(value) = state.parameters.precision.task {
@@ -24,12 +24,12 @@ struct ParameterSliderView: View {
         _threshold = State(initialValue: abs(Double(state.parameters.threshold.adjustment)))
         _somaticBias = State(initialValue: state.parameters.somaticBias.max)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Adjust Parameters")
                 .font(.headline)
-            
+
             ParameterSlider(
                 name: "Prediction Error",
                 value: $predictionError,
@@ -38,7 +38,7 @@ struct ParameterSliderView: View {
             ) { value in
                 onParameterChange("predictionError", value)
             }
-            
+
             ParameterSlider(
                 name: "Precision",
                 value: $precision,
@@ -47,7 +47,7 @@ struct ParameterSliderView: View {
             ) { value in
                 onParameterChange("precision", value)
             }
-            
+
             ParameterSlider(
                 name: "Threshold",
                 value: $threshold,
@@ -56,7 +56,7 @@ struct ParameterSliderView: View {
             ) { value in
                 onParameterChange("threshold", value)
             }
-            
+
             ParameterSlider(
                 name: "Somatic Bias",
                 value: $somaticBias,
@@ -78,7 +78,7 @@ struct ParameterSlider: View {
     let range: ClosedRange<Double>
     let step: Double
     let onValueChanged: (Double) -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
@@ -89,7 +89,7 @@ struct ParameterSlider: View {
                     .font(.caption.monospacedDigit())
                     .foregroundColor(.secondary)
             }
-            
+
             Slider(
                 value: $value,
                 in: range,

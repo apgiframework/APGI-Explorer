@@ -5,23 +5,23 @@ import SwiftUI
 struct LoadingOverlay: View {
     let message: String
     let isVisible: Bool
-    
+
     init(message: String = "Loading...", isVisible: Bool = true) {
         self.message = message
         self.isVisible = isVisible
     }
-    
+
     var body: some View {
         if isVisible {
             ZStack {
                 AppColors.loadingOverlay
                     .ignoresSafeArea()
-                
+
                 VStack(spacing: 16) {
                     ProgressView()
                         .scaleEffect(1.5)
                         .tint(.white)
-                    
+
                     Text(message)
                         .foregroundColor(.white)
                         .font(.headline)
@@ -45,10 +45,10 @@ struct LoadingOverlay: View {
 struct LoadingIndicator: View {
     let message: String?
     let size: LoadingSize
-    
+
     enum LoadingSize {
         case small, medium, large
-        
+
         var scale: CGFloat {
             switch self {
             case .small: return 0.8
@@ -56,7 +56,7 @@ struct LoadingIndicator: View {
             case .large: return 1.5
             }
         }
-        
+
         var font: Font {
             switch self {
             case .small: return .caption
@@ -65,18 +65,18 @@ struct LoadingIndicator: View {
             }
         }
     }
-    
+
     init(message: String? = nil, size: LoadingSize = .medium) {
         self.message = message
         self.size = size
     }
-    
+
     var body: some View {
         VStack(spacing: 12) {
             ProgressView()
                 .scaleEffect(size.scale)
                 .tint(AppColors.progressTint)
-            
+
             if let message = message {
                 Text(message)
                     .font(size.font)
@@ -91,24 +91,24 @@ struct LoadingIndicator: View {
 struct FullScreenLoadingView: View {
     let message: String
     let showBackground: Bool
-    
+
     init(message: String = "Loading...", showBackground: Bool = true) {
         self.message = message
         self.showBackground = showBackground
     }
-    
+
     var body: some View {
         ZStack {
             if showBackground {
                 AppColors.primaryBackground
                     .ignoresSafeArea()
             }
-            
+
             VStack(spacing: 20) {
                 ProgressView()
                     .scaleEffect(2.0)
                     .tint(AppColors.progressTint)
-                
+
                 Text(message)
                     .font(.headline)
                     .foregroundColor(AppColors.primaryText)
@@ -125,19 +125,19 @@ struct ProgressRingView: View {
     let progress: Double
     let message: String?
     let lineWidth: CGFloat
-    
+
     init(progress: Double, message: String? = nil, lineWidth: CGFloat = 8) {
         self.progress = progress
         self.message = message
         self.lineWidth = lineWidth
     }
-    
+
     var body: some View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
                     .stroke(AppColors.adaptiveGray5, lineWidth: lineWidth)
-                
+
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(
@@ -146,14 +146,14 @@ struct ProgressRingView: View {
                     )
                     .rotationEffect(.degrees(-90))
                     .animation(.easeInOut(duration: 0.3), value: progress)
-                
+
                 Text("\(Int(progress * 100))%")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText)
             }
             .frame(width: 120, height: 120)
-            
+
             if let message = message {
                 Text(message)
                     .font(.body)
@@ -171,13 +171,13 @@ struct LoadingOverlay_Previews: PreviewProvider {
         Group {
             LoadingOverlay(message: "Loading states...")
                 .previewDisplayName("Loading Overlay")
-            
+
             LoadingIndicator(message: "Processing...", size: .large)
                 .previewDisplayName("Loading Indicator")
-            
+
             FullScreenLoadingView(message: "Analyzing your responses...")
                 .previewDisplayName("Full Screen Loading")
-            
+
             ProgressRingView(progress: 0.75, message: "Generating profile...")
                 .previewDisplayName("Progress Ring")
         }

@@ -9,7 +9,7 @@ import AppKit
 
 struct PsychologicalStatesView: View {
     @StateObject private var stateModel = StateModel()
-    @Environment(\.appDependencies) private var dependencies
+    @Environment(\.appDependencies) private var dependencies: AppDependencies
     @State private var searchText = ""
     @State private var selectedParameter = "All"
     @AppStorage("statesDisplayMode") private var displayMode: DisplayMode = .list
@@ -18,11 +18,11 @@ struct PsychologicalStatesView: View {
     @AppStorage("showSearchHints") private var showSearchHints: Bool = true
     @AppStorage("lazyLoading") private var lazyLoading: Bool = true
     @AppStorage("cacheSearchResults") private var cacheSearchResults: Bool = true
-    
+
     private var searchService: StateSearchService {
         dependencies.getStateSearchService()
     }
-    
+
     private let parameters = ["All", "ε (Prediction Error)", "π (Precision)", "θₜ (Threshold)", "β (Somatic Bias)"]
     private let gradient = LinearGradient(
         gradient: Gradient(colors: [.blue, .purple]),
@@ -51,11 +51,11 @@ struct PsychologicalStatesView: View {
 
         return result
     }
-    
+
     private var selectedParameterKey: String? {
         parameterKey(for: selectedParameter)
     }
-    
+
     private func colorForParameter(_ key: String) -> Color {
         switch key {
         case "predictionError": return .red
@@ -65,7 +65,7 @@ struct PsychologicalStatesView: View {
         default: return .blue
         }
     }
-    
+
     private func formattedParameterValue(_ value: String, for key: String) -> String {
         let numValue = extractNumericValue(from: value)
         if key == "threshold" || key == "somaticBias" {
@@ -76,140 +76,7 @@ struct PsychologicalStatesView: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            VStack(spacing: 0) {
-            // Search and filter bar
-            VStack(spacing: 0) {
-                HStack {
-                    // Search bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 8)
-                        
-                        TextField("Search states...", text: $searchText)
-                            .textFieldStyle(.plain)
-                            .padding(.vertical, 8)
-                            .padding(.trailing, 8)
-                            .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
-                            .cornerRadius(8)
-                            .overlay(
-                                // Search hints
-                                Group {
-                                    if showSearchHints && searchText.isEmpty {
-                                        HStack {
-                                            Text("Try: anxiety, focus, creativity...")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                            Spacer()
-                                        }
-                                        .padding(.horizontal, 12)
-                                    }
-                                }
-                                .animation(.easeInOut(duration: 0.3), value: searchText.isEmpty)
-                            )
-                    }
-                    .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                    )
-                    
-                    Spacer()
-                    
-                    // Display mode toggle
-                    Picker("Display Mode", selection: $displayMode) {
-                        ForEach(DisplayMode.allCases) { mode in
-                            Image(systemName: mode.icon).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 100)
-                    
-                    // Filter menu
-                    Menu {
-                        Picker("Sort by", selection: $selectedParameter) {
-                            ForEach(parameters, id: \.self) { param in
-                                Label(param, systemImage: iconName(for: parameterKey(for: param)))
-                                    .tag(param)
-                            }
-                        }
-                    } label: {
-                        Label("Sort", systemImage: "line.3.horizontal.decrease.circle")
-                            .padding(8)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                    .menuStyle(.borderlessButton)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(Material.ultraThinMaterial)
-                
-                // Parameter summary
-                if showParameterSummary && selectedParameterKey != nil {
-                    HStack {
-                        Text("Showing by: ").font(.caption).foregroundColor(.secondary)
-                        HStack(spacing: 16) {
-                            ForEach(["predictionError", "precision", "threshold", "somaticBias"], id: \.self) { key in
-                                if let paramName = parameterName(for: key) {
-                                    HStack(spacing: 4) {
-                                        Circle()
-                                            .fill(colorForParameter(key).opacity(0.7))
-                                            .frame(width: 10, height: 10)
-                                        Text(paramName.prefix(1))
-                                            .font(.caption)
-                                            .foregroundColor(.primary)
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(
-                                        selectedParameterKey == key ?
-                                        colorForParameter(key).opacity(0.2) :
-                                        Color.gray.opacity(0.1)
-                                    )
-                                    .cornerRadius(12)
-                                    .onTapGesture {
-                                        selectedParameter = parameterDisplayName(for: key) ?? "All"
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        Button(action: { showParameterSummary = false }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                    .transition(.opacity)
-                }
-            }
-            .background(Material.ultraThinMaterial)
-            .animation(.easeInOut, value: showParameterSummary)
-            
-            // Content
-            if filteredStates.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 44))
-                        .foregroundColor(.secondary)
-                    Text("No states found")
-                        .font(.headline)
-                    Text("Try adjusting your search or filter criteria")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if displayMode == .list {
-                listView
-            } else {
-                gridView
-            }
+            mainContent
         }
         .navigationTitle("Psychological States")
         .toolbar {
@@ -227,11 +94,177 @@ struct PsychologicalStatesView: View {
         .onChange(of: selectedParameter) {
             showParameterSummary = selectedParameter != "All"
         }
+    }
+
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            searchAndFilterBar
+            contentArea
         }
     }
 
+    private var searchAndFilterBar: some View {
+        VStack(spacing: 0) {
+            searchBar
+            parameterSummaryView
+        }
+        .background(Material.ultraThinMaterial)
+        .animation(.easeInOut, value: showParameterSummary)
+    }
+
+    private var searchBar: some View {
+        HStack {
+            searchTextField
+            Spacer()
+            displayModeToggle
+            filterMenu
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+
+    private var searchTextField: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+                .padding(.leading, 8)
+
+            TextField("Search states...", text: $searchText)
+                .textFieldStyle(.plain)
+                .padding(.vertical, 8)
+                .padding(.trailing, 8)
+                .background(AppColors.secondaryBackground.opacity(0.5))
+                .cornerRadius(8)
+                .overlay(searchHintsOverlay)
+        }
+        .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private var searchHintsOverlay: some View {
+        if showSearchHints && searchText.isEmpty {
+            HStack {
+                Text("Try: anxiety, focus, creativity...")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+        }
+    }
+
+    private var displayModeToggle: some View {
+        Picker("Display Mode", selection: $displayMode) {
+            ForEach(DisplayMode.allCases) { mode in
+                Image(systemName: mode.icon).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 100)
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            Picker("Sort by", selection: $selectedParameter) {
+                ForEach(parameters, id: \.self) { param in
+                    Label(param, systemImage: iconName(for: parameterKey(for: param)))
+                        .tag(param)
+                }
+            }
+        } label: {
+            Label("Sort", systemImage: "line.3.horizontal.decrease.circle")
+                .padding(8)
+                .background(AppColors.buttonBackground.opacity(0.1))
+                .cornerRadius(8)
+        }
+        .menuStyle(.borderlessButton)
+    }
+
+    @ViewBuilder
+    private var parameterSummaryView: some View {
+        if showParameterSummary && selectedParameterKey != nil {
+            HStack {
+                Text("Showing by: ").font(.caption).foregroundColor(.secondary)
+                parameterFilterButtons
+                Spacer()
+                Button(action: { showParameterSummary = false }, label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                })
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+            .transition(.opacity)
+        }
+    }
+
+    private var parameterFilterButtons: some View {
+        HStack(spacing: 16) {
+            ForEach(["predictionError", "precision", "threshold", "somaticBias"], id: \.self) { key in
+                if let paramName = parameterName(for: key) {
+                    parameterFilterButton(key: key, paramName: paramName)
+                }
+            }
+        }
+    }
+
+    private func parameterFilterButton(key: String, paramName: String) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(colorForParameter(key).opacity(0.7))
+                .frame(width: 10, height: 10)
+            Text(paramName.prefix(1))
+                .font(.caption)
+                .foregroundColor(.primary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            selectedParameterKey == key ?
+            colorForParameter(key).opacity(0.2) :
+            Color.gray.opacity(0.1)
+        )
+        .cornerRadius(12)
+        .accessibleTap(
+            action: { selectedParameter = parameterDisplayName(for: key) ?? "All" },
+            accessibilityLabel: "Select \(parameterDisplayName(for: key) ?? "All") parameter",
+            accessibilityHint: "Filters states by \(parameterDisplayName(for: key) ?? "All") parameter"
+        )
+    }
+
+    @ViewBuilder
+    private var contentArea: some View {
+        if filteredStates.isEmpty {
+            emptyStateView
+        } else if displayMode == .list {
+            listView
+        } else {
+            gridView
+        }
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 44))
+                .foregroundColor(.secondary)
+            Text("No states found")
+                .font(.headline)
+            Text("Try adjusting your search or filter criteria")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     // MARK: - View Components
-    
+
     private var listView: some View {
         List(filteredStates, id: \.id) { state in
             NavigationLink(destination: StateDetailView(state: state)) {
@@ -241,27 +274,27 @@ struct PsychologicalStatesView: View {
                         Circle()
                             .fill(colorForState(state).opacity(0.2))
                             .frame(width: 40, height: 40)
-                        
+
                         // Use first letter of state name as fallback
                         Text(state.name.prefix(1))
                             .font(.headline)
                             .foregroundColor(colorForState(state))
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text(state.name)
                             .font(.headline)
                             .lineLimit(1)
-                        
+
                         if let key = selectedParameterKey, key != "All" {
                             parameterRow(state: state, key: key)
                         } else {
                             allParametersRow(state: state)
                         }
                     }
-                    
+
                     Spacer()
-                    
+
                     Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -273,7 +306,7 @@ struct PsychologicalStatesView: View {
         }
         .listStyle(.plain)
     }
-    
+
     private var gridView: some View {
         ScrollView {
             LazyVGrid(columns: [
@@ -287,35 +320,35 @@ struct PsychologicalStatesView: View {
                                 Circle()
                                     .fill(colorForState(state).opacity(0.2))
                                     .frame(width: 50, height: 50)
-                                
+
                                 // Use first letter of state name as fallback
                                 Text(state.name.prefix(1))
                                     .font(.title3.bold())
                                     .foregroundColor(colorForState(state))
                             }
-                            
+
                             // State name
                             Text(state.name)
                                 .font(.subheadline.bold())
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
-                            
+
                             // Parameter value if filtered
                             if let key = selectedParameterKey, key != "All" {
                                 VStack(spacing: 4) {
                                     Text(parameterDisplayName(for: key)?.prefix(1) ?? "")
                                         .font(.caption.bold())
                                         .frame(width: 24, height: 24)
-                                        .background(colorForParameter(key).opacity(0.2))
-                                        .clipShape(Circle())
-                                    
+                                        .background(AppColors.success.opacity(0.2))
+                                        .foregroundColor(AppColors.success)
+
                                     Text(formattedParameterValue(getValue(for: state, key: key), for: key))
                                         .font(.caption.monospaced())
                                         .foregroundColor(colorForParameter(key))
                                 }
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 8)
-                                .background(Color.gray.opacity(0.1))
+                                .background(AppColors.adaptiveGray5)
                                 .cornerRadius(12)
                             }
                         }
@@ -332,13 +365,13 @@ struct PsychologicalStatesView: View {
             }
             .padding(12)
         }
-        .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+        .background(AppColors.secondaryBackground.opacity(0.5))
     }
-    
+
     private func parameterRow(state: PsychologicalState, key: String) -> some View {
         let value = getValue(for: state, key: key)
         _ = extractNumericValue(from: value) // Extract numeric value for potential future use
-        
+
         return HStack(spacing: 8) {
             // Parameter indicator
             Text(key.prefix(1).uppercased())
@@ -347,20 +380,20 @@ struct PsychologicalStatesView: View {
                 .background(colorForParameter(key).opacity(0.2))
                 .foregroundColor(colorForParameter(key))
                 .clipShape(Circle())
-            
+
             // Parameter name and value
             Text(parameterDisplayName(for: key) ?? key)
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
+
             Spacer()
-            
+
             // Value with visual indicator
             HStack(spacing: 4) {
                 Text(formattedParameterValue(value, for: key))
                     .font(.caption.monospaced())
                     .foregroundColor(colorForParameter(key))
-                
+
                 // Visual indicator (bar or circle)
                 if key != "threshold" && key != "somaticBias" {
                     Circle()
@@ -370,7 +403,7 @@ struct PsychologicalStatesView: View {
             }
         }
     }
-    
+
     private func allParametersRow(state: PsychologicalState) -> some View {
         HStack(spacing: 4) {
             ForEach(["predictionError", "precision", "threshold", "somaticBias"], id: \.self) { key in
@@ -380,16 +413,16 @@ struct PsychologicalStatesView: View {
                         .frame(width: 6, height: 6)
                 }
             }
-            
+
             Text("View details")
                 .font(.caption)
                 .foregroundColor(.blue)
                 .padding(.leading, 4)
         }
     }
-    
+
     // MARK: - Helper Functions
-    
+
     private func parameterKey(for option: String) -> String? {
         switch option {
         case "ε (Prediction Error)": return "predictionError"
@@ -399,7 +432,7 @@ struct PsychologicalStatesView: View {
         default: return nil
         }
     }
-    
+
     private func parameterDisplayName(for key: String) -> String? {
         switch key {
         case "predictionError": return "ε"
@@ -409,7 +442,7 @@ struct PsychologicalStatesView: View {
         default: return nil
         }
     }
-    
+
     private func parameterName(for key: String) -> String? {
         switch key {
         case "predictionError": return "Prediction Error"
@@ -419,7 +452,7 @@ struct PsychologicalStatesView: View {
         default: return nil
         }
     }
-    
+
     private func iconName(for key: String?) -> String {
         switch key {
         case "predictionError": return "exclamationmark.triangle"
@@ -439,7 +472,7 @@ struct PsychologicalStatesView: View {
         default: return ""
         }
     }
-    
+
     private func colorForState(_ state: PsychologicalState) -> Color {
         // This is a simple hash-based color generation
         // You might want to replace this with a more sophisticated approach

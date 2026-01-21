@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 // MARK: - Response Quality Analysis
 
@@ -180,12 +181,12 @@ class QuizReliabilityTracker {
     func recordTestRetest(firstTest: APGIProfile, secondTest: APGIProfile, timeBetween: TimeInterval) -> Double {
         // Validate time interval
         guard timeBetween >= minTestRetestInterval else {
-            print("Warning: Test-retest interval too short for reliable measurement")
+            os_log("Test-retest interval too short for reliable measurement", type: .error)
             return 0
         }
 
         guard timeBetween <= maxTestRetestInterval else {
-            print("Warning: Test-retest interval too long for reliable measurement")
+            os_log("Test-retest interval too long for reliable measurement", type: .error)
             return 0
         }
 

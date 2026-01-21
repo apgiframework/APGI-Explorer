@@ -4,14 +4,20 @@ import SwiftUI
 import UIKit
 #endif
 
+struct TrackedParameter {
+    let key: String
+    let label: String
+    let description: String
+}
+
 struct LiveScoreTracker: View {
     @ObservedObject var quizModel: QuizModel
 
-    private let trackedParameters: [(key: String, label: String, description: String)] = [
-        ("epsilon", "ε", "Prediction Error"),
-        ("precision", "π", "Precision"),
-        ("threshold", "θₜ", "Threshold"),
-        ("somatic", "β", "Somatic Bias")
+    private let trackedParameters: [TrackedParameter] = [
+        TrackedParameter(key: "epsilon", label: "ε", description: "Prediction Error"),
+        TrackedParameter(key: "precision", label: "π", description: "Precision"),
+        TrackedParameter(key: "threshold", label: "θₜ", description: "Threshold"),
+        TrackedParameter(key: "somatic", label: "β", description: "Somatic Bias")
     ]
 
     var body: some View {
@@ -128,9 +134,9 @@ struct SmallRadarChart: View {
 
         return zip(angles, values).map { angle, value in
             let normalizedValue = max(0, min(value, 1))
-            let x = center.x + cos(angle) * radius * normalizedValue
-            let y = center.y + sin(angle) * radius * normalizedValue
-            return CGPoint(x: x, y: y)
+            let coordX = center.x + cos(angle) * radius * normalizedValue
+            let coordY = center.y + sin(angle) * radius * normalizedValue
+            return CGPoint(x: coordX, y: coordY)
         }
     }
 

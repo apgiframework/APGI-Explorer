@@ -413,8 +413,7 @@ struct LazyLoadView<Data: Hashable, Content: View>: View {
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))
                     .overlay(
-                        ProgressView()
-                            .scaleEffect(0.8)
+                        LoadingIndicator(size: .small)
                     )
             }
         }

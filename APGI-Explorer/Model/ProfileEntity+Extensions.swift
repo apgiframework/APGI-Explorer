@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import Combine
 
 extension ProfileEntity {
     func toQuizProfile() throws -> QuizProfile {
@@ -7,7 +8,7 @@ extension ProfileEntity {
               let results = try? JSONDecoder().decode([String: Int].self, from: resultsData) else {
             throw PersistenceError.invalidData
         }
-        
+
         return QuizProfile(
             id: id,
             name: name,
@@ -16,14 +17,14 @@ extension ProfileEntity {
             results: results
         )
     }
-    
+
     func update(from profile: QuizProfile) throws {
         self.id = profile.id
         self.name = profile.name
         self.dateCreated = profile.dateCreated
         self.dateModified = profile.dateModified
         self.resultsData = try JSONEncoder().encode(profile.results)
-        
+
         // Calculate and store APGI values for quick filtering
         let apgiProfile = QuizModel.calculateAPGIProfile(from: profile.results)
         self.epsilon = apgiProfile.epsilon
@@ -38,7 +39,7 @@ enum PersistenceError: LocalizedError {
     case saveFailed(Error)
     case fetchFailed(Error)
     case deleteFailed(Error)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidData:

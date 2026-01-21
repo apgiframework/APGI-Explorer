@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 #if os(iOS)
 import UIKit
 #else
@@ -9,9 +10,9 @@ import AppKit
 
 /// Provides adaptive layouts and touch-optimized interactions for iOS/iPadOS
 struct AdaptiveLayoutSystem {
-    
+
     // MARK: - Device Detection
-    
+
     static var isiPad: Bool {
         #if os(iOS)
         return UIDevice.current.userInterfaceIdiom == .pad
@@ -19,7 +20,7 @@ struct AdaptiveLayoutSystem {
         return false
         #endif
     }
-    
+
     static var isiPhone: Bool {
         #if os(iOS)
         return UIDevice.current.userInterfaceIdiom == .phone
@@ -27,7 +28,7 @@ struct AdaptiveLayoutSystem {
         return false
         #endif
     }
-    
+
     static var deviceType: DeviceType {
         #if os(iOS)
         switch UIDevice.current.userInterfaceIdiom {
@@ -42,13 +43,13 @@ struct AdaptiveLayoutSystem {
         return .mac
         #endif
     }
-    
+
     enum DeviceType {
         case iPad
         case iPhone
         case mac
         case unknown
-        
+
         var name: String {
             switch self {
             case .iPad: return "iPad"
@@ -57,7 +58,7 @@ struct AdaptiveLayoutSystem {
             case .unknown: return "Unknown"
             }
         }
-        
+
         var recommendedColumns: Int {
             switch self {
             case .iPad: return 3
@@ -66,7 +67,7 @@ struct AdaptiveLayoutSystem {
             case .unknown: return 1
             }
         }
-        
+
         var recommendedItemHeight: CGFloat {
             switch self {
             case .iPad: return 200
@@ -76,9 +77,9 @@ struct AdaptiveLayoutSystem {
             }
         }
     }
-    
+
     // MARK: - Screen Size Detection
-    
+
     static var screenSize: CGSize {
         #if os(iOS)
         return UIScreen.main.bounds.size
@@ -86,21 +87,21 @@ struct AdaptiveLayoutSystem {
         return NSScreen.main?.frame.size ?? CGSize(width: 1920, height: 1080)
         #endif
     }
-    
+
     static var isLandscape: Bool {
         screenSize.width > screenSize.height
     }
-    
+
     static var isCompactWidth: Bool {
         screenSize.width < 400
     }
-    
+
     static var isRegularWidth: Bool {
         screenSize.width >= 400
     }
-    
+
     // MARK: - Layout Calculations
-    
+
     static func columnsForHorizontalSizeClass(_ sizeClass: UserInterfaceSizeClass?) -> Int {
         switch (deviceType, sizeClass) {
         case (.iPad, .regular):
@@ -115,7 +116,7 @@ struct AdaptiveLayoutSystem {
             return 1
         }
     }
-    
+
     static func spacingForDevice() -> CGFloat {
         switch deviceType {
         case .iPad:
@@ -128,7 +129,7 @@ struct AdaptiveLayoutSystem {
             return 12
         }
     }
-    
+
     static func paddingForDevice() -> EdgeInsets {
         switch deviceType {
         case .iPad:
@@ -141,9 +142,9 @@ struct AdaptiveLayoutSystem {
             return EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
         }
     }
-    
+
     // MARK: - Touch Interaction Optimization
-    
+
     static var minimumTouchTargetSize: CGFloat {
         switch deviceType {
         case .iPad:
@@ -156,7 +157,7 @@ struct AdaptiveLayoutSystem {
             return 44
         }
     }
-    
+
     static var buttonHeight: CGFloat {
         switch deviceType {
         case .iPad:
@@ -169,7 +170,7 @@ struct AdaptiveLayoutSystem {
             return 48
         }
     }
-    
+
     static var iconSize: CGFloat {
         switch deviceType {
         case .iPad:
@@ -191,12 +192,12 @@ struct AdaptiveGrid<Content: View, Item: Identifiable>: View {
     let content: (Item) -> Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    
+
     private var columns: [GridItem] {
         let columnCount = AdaptiveLayoutSystem.columnsForHorizontalSizeClass(horizontalSizeClass)
         return Array(repeating: GridItem(.flexible(), spacing: AdaptiveLayoutSystem.spacingForDevice()), count: columnCount)
     }
-    
+
     var body: some View {
         LazyVGrid(columns: columns, spacing: AdaptiveLayoutSystem.spacingForDevice()) {
             ForEach(items) { item in
@@ -213,11 +214,11 @@ struct AdaptiveGrid<Content: View, Item: Identifiable>: View {
 struct AdaptiveStack<Content: View>: View {
     let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-    
+
     var body: some View {
         if AdaptiveLayoutSystem.isRegularWidth && horizontalSizeClass == .regular {
             HStack(spacing: AdaptiveLayoutSystem.spacingForDevice()) {
@@ -236,14 +237,14 @@ struct AdaptiveStack<Content: View>: View {
 struct TouchOptimizedButton<Label: View>: View {
     let action: () -> Void
     let label: Label
-    
+
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     init(action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
         self.action = action
         self.label = label()
     }
-    
+
     var body: some View {
         Button(action: action) {
             label
@@ -257,13 +258,13 @@ struct TouchOptimizedButton<Label: View>: View {
 struct TouchOptimizedButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .padding(.horizontal, 16)
+            .padding(.horizontal, LayoutConstants.buttonPadding)
             .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(configuration.isPressed ? Color.blue.opacity(0.8) : Color.blue)
+                RoundedRectangle(cornerRadius: LayoutConstants.buttonCornerRadius)
+                    .fill(configuration.isPressed ? AppColors.buttonBackground.opacity(0.8) : AppColors.buttonBackground)
             )
-            .foregroundColor(.white)
+            .foregroundColor(AppColors.buttonText)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
@@ -274,11 +275,11 @@ struct TouchOptimizedButtonStyle: ButtonStyle {
 struct AdaptiveCard: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(16)
+            .padding(LayoutConstants.mediumSpacing)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: LayoutConstants.cardCornerRadius * 2)
                     .fill(PlatformColor.adaptiveBackground)
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .shadow(color: .black.opacity(ColorConstants.shadowOpacity), radius: LayoutConstants.buttonShadowRadius * 2, x: 0, y: 4)
             )
     }
 }
@@ -288,11 +289,11 @@ struct AdaptiveCard: ViewModifier {
 struct AdaptiveNavigationView<Content: View>: View {
     let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-    
+
     var body: some View {
         if AdaptiveLayoutSystem.isiPad && horizontalSizeClass == .regular {
             NavigationSplitView {
@@ -333,9 +334,9 @@ struct TouchOptimizedGesture<Content: View>: View {
     let content: Content
     let onTap: () -> Void
     let onLongPress: (() -> Void)?
-    
+
     @State private var isPressed = false
-    
+
     init(
         content: Content,
         onTap: @escaping () -> Void,
@@ -345,7 +346,7 @@ struct TouchOptimizedGesture<Content: View>: View {
         self.onTap = onTap
         self.onLongPress = onLongPress
     }
-    
+
     var body: some View {
         content
             .scaleEffect(isPressed ? 0.95 : 1.0)
@@ -380,7 +381,7 @@ struct TouchOptimizedGesture<Content: View>: View {
 struct AdaptiveSheet<SheetContent: View>: ViewModifier {
     let content: SheetContent
     let isPresented: Binding<Bool>
-    
+
     func body(content: Content) -> some View {
         if AdaptiveLayoutSystem.isiPad {
             content
@@ -419,22 +420,22 @@ extension View {
     ) -> some View {
         modifier(AdaptiveSheet(content: content(), isPresented: isPresented))
     }
-    
+
     func touchOptimized(
         onTap: @escaping () -> Void,
         onLongPress: (() -> Void)? = nil
     ) -> some View {
         TouchOptimizedGesture(content: self, onTap: onTap, onLongPress: onLongPress)
     }
-    
+
     func adaptiveCard() -> some View {
         modifier(AdaptiveCard())
     }
-    
+
     func adaptivePadding() -> some View {
         padding(AdaptiveLayoutSystem.paddingForDevice())
     }
-    
+
     func adaptiveSpacing() -> some View {
         padding(AdaptiveLayoutSystem.spacingForDevice())
     }

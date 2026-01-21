@@ -11,11 +11,11 @@ struct ProfileExport: Codable {
     let profile: QuizProfile
     let apgiScores: APGIProfile
     let profileType: String
-    
+
     enum CodingKeys: String, CodingKey {
         case version, timestamp, profile, apgiScores, profileType
     }
-    
+
     init(version: String, timestamp: Date, profile: QuizProfile, apgiScores: APGIProfile) {
         self.version = version
         self.timestamp = timestamp
@@ -33,7 +33,7 @@ enum ExportFormat: String, CaseIterable {
     case pdf = "PDF"
     case png = "PNG"
     case html = "HTML"
-    
+
     var fileExtension: String {
         switch self {
         case .pdf: return "pdf"
@@ -43,7 +43,7 @@ enum ExportFormat: String, CaseIterable {
         case .html: return "html"
         }
     }
-    
+
     var contentType: String {
         switch self {
         case .pdf: return "application/pdf"
@@ -62,7 +62,7 @@ enum ExportError: Error {
     case pdfGenerationFailed
     case fileCreationFailed
     case unknown
-    
+
     var localizedDescription: String {
         switch self {
         case .invalidData: return "Invalid data for export"
@@ -82,7 +82,7 @@ struct ExportUtilities {
         let timestamp = formatter.string(from: Date())
         return "\(profile.name.replacingOccurrences(of: " ", with: "_"))_\(timestamp).\(format.fileExtension)"
     }
-    
+
     static func getTemporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory
     }

@@ -8,35 +8,24 @@ import UIKit
 struct QuizView: View {
     @StateObject private var quizModel = QuizModel()
     @State private var currentQuestionIndex = 0
-    @State private var showExitAlert = false
+    @State private var isNavigatingToResults = false
     @State private var handoffActivity: NSUserActivity?
-    @Environment(\.presentationMode) private var presentationMode
 
     var body: some View {
         mainContent
             .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Exit") {
-                        showExitAlert = true
-                    }
-                }
-            }
-            .alert("Exit Quiz?", isPresented: $showExitAlert) {
-                Button("Continue Quiz", role: .cancel) { }
-                Button("Exit", role: .destructive) {
-                    presentationMode.wrappedValue.dismiss()
-                }
-            } message: {
-                Text("Your progress will be saved.")
-                Text("Your progress will be lost if you exit now.")
-            }
             .onAppear {
                 setupHandoffActivity()
             }
             .onDisappear {
                 handoffActivity?.invalidate()
                 handoffActivity = nil
+            }
+            .onChange(of: isNavigatingToResults) { _, isNavigating in
+                if isNavigating {
+                    handoffActivity?.invalidate()
+                    handoffActivity = nil
+                }
             }
             .onChange(of: currentQuestionIndex) { oldValue, newValue in
                 // HIGH-001 Fix: Prevent rapid navigation issues
@@ -77,6 +66,8 @@ struct QuizView: View {
                 navigationButtonsSection
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
     }
 
     private var progressBarSection: some View {
@@ -123,7 +114,7 @@ struct QuizView: View {
                         Label("Previous", systemImage: "chevron.left")
                     }
                 )
-                .buttonStyle(.bordered)
+                .buttonStyle(SecondaryButtonStyle())
             }
 
             Spacer()
@@ -139,7 +130,7 @@ struct QuizView: View {
                         Label("Next", systemImage: "chevron.right")
                     }
                 )
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
                 .disabled(quizModel.answers[quizModel.questions[currentQuestionIndex].id] == nil)
             } else {
                 NavigationLink(
@@ -148,8 +139,11 @@ struct QuizView: View {
                         Label("See Results", systemImage: "chart.bar.fill")
                     }
                 )
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
                 .disabled(!quizModel.isComplete)
+                .onTapGesture {
+                    isNavigatingToResults = true
+                }
             }
         }
         .padding()
@@ -224,7 +218,7 @@ private struct QuestionOptionRow: View {
                             .font(.title3)
                             .foregroundColor(.blue.opacity(0.7))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPlainButtonStyle())
                 }
                 .padding()
                 .background(
@@ -236,7 +230,7 @@ private struct QuestionOptionRow: View {
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPlainButtonStyle())
 
             if tooltipOptionID == option.id {
                 Text(option.tooltip)
@@ -284,6 +278,8 @@ struct QuestionView: View {
                 }
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

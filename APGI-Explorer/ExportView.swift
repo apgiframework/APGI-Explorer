@@ -8,7 +8,8 @@ struct ExportView: View {
     @State private var isExporting = false
     @State private var showShareSheet = false
     @State private var exportFileURL: URL?
-    
+    @State private var toast: ToastMessage?
+
     var body: some View {
         NavigationView {
             Form {
@@ -22,25 +23,25 @@ struct ExportView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
-                
+
                 Section(header: Text("Preview")) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Profile: \(profile.name)")
                             .font(.headline)
-                        
+
                         let profileType = profileManager.determineProfileType(for: profile.results)
                         Text("Type: \(profileType.rawValue)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        
+
                         Divider()
-                        
+
                         Text(profileType.description)
                             .font(.body)
                             .padding(.vertical, 4)
-                        
+
                         Divider()
-                        
+
                         // Show a preview of the scores
                         let apgiProfile = profileManager.profile(from: profile.results)
                         VStack(alignment: .leading, spacing: 4) {
@@ -61,14 +62,7 @@ struct ExportView: View {
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: exportProfile) {
-                        if isExporting {
-                            ProgressView()
-                        } else {
-                            Text("Export")
-                        }
-                    }
-                    .disabled(isExporting)
+                    LoadingButton(title: "Export", isLoading: isExporting, action: exportProfile)
                 }
             }
             .sheet(isPresented: $showShareSheet) {
@@ -76,25 +70,28 @@ struct ExportView: View {
                     ShareSheet(items: [url])
                 }
             }
+            .toast($toast)
         }
     }
-    
+
     private func exportProfile() {
         isExporting = true
-        
+
         Task { @MainActor in
             do {
                 // MED-002 Fix: Add progress indication for large datasets
                 let startTime = Date()
-                
+
                 if let url = profileManager.getExportURL(for: profile, format: exportFormat) {
                     exportFileURL = url
                     showShareSheet = true
-                    
+
                     let duration = Date().timeIntervalSince(startTime)
                     if duration > 2.0 {
                         print("Export completed in \(String(format: "%.2f", duration)) seconds")
                     }
+
+                    toast = .success("Profile exported successfully as \(exportFormat.rawValue.uppercased())")
                 } else {
                     throw AppError.exportFailed(underlying: NSError(domain: "ExportError", code: 1, userInfo: [
                         NSLocalizedDescriptionKey: "Failed to generate export file"
@@ -102,10 +99,9 @@ struct ExportView: View {
                 }
             } catch {
                 // Handle export errors gracefully
-                print("Export failed: \(error)")
-                // Could show an alert here in a real implementation
+                toast = .error("Export failed: \(error.localizedDescription)")
             }
-            
+
             isExporting = false
         }
     }
@@ -114,7 +110,7 @@ struct ExportView: View {
 struct ScoreRow: View {
     let parameter: String
     let value: Double
-    
+
     var body: some View {
         HStack {
             Text(parameter)
@@ -125,7 +121,7 @@ struct ScoreRow: View {
                 .foregroundColor(scoreColor)
         }
     }
-    
+
     private var scoreColor: Color {
         switch value {
         case 0..<25: return .red
@@ -150,7 +146,7 @@ struct ExportView_Previews: PreviewProvider {
             dateModified: Date(),
             results: ["epsilon": 75, "precision": 60, "threshold": 45, "somatic": 30]
         )
-        
+
         return ExportView(profileManager: profileManager, profile: testProfile)
     }
 }

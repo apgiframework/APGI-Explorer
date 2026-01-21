@@ -93,7 +93,7 @@ class UserDefaultsManager {
     }
 
     var analyticsEnabled: Bool {
-        get { defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? true }
+        get { defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? false }
         set { defaults.set(newValue, forKey: Keys.analyticsEnabled) }
     }
 

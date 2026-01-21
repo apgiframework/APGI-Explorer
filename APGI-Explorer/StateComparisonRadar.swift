@@ -5,15 +5,15 @@ import Charts
 struct StateComparisonRadar: View {
     let primary: PsychologicalState
     let comparisons: [PsychologicalState]
-    
+
     private var allStates: [PsychologicalState] {
         [primary] + comparisons
     }
-    
+
     private func valueForState(_ state: PsychologicalState, parameter: String) -> Double {
         switch parameter {
         case "Prediction Error": return Double(state.parameters.predictionError.accuracy.min) / 100.0
-        case "Precision": 
+        case "Precision":
             if case let .veryHigh(value) = state.parameters.precision.task {
                 return value / 5.0
             }
@@ -23,12 +23,12 @@ struct StateComparisonRadar: View {
         default: return 0.5
         }
     }
-    
+
     var body: some View {
         VStack {
             Text("State Comparison")
                 .font(.headline)
-            
+
             Chart {
                 ForEach(allStates) { state in
                     ForEach(["Prediction Error", "Precision", "Threshold", "Somatic Bias"], id: \.self) { parameter in

@@ -1,6 +1,16 @@
 import Foundation
 import CoreData
+import Combine
 
+/// Core Data entity representing a user's psychological profile
+/// 
+/// This class stores APGI profile data including the four main parameters:
+/// - epsilon: prediction error
+/// - precision: precision weighting
+/// - threshold: action threshold
+/// - somaticBias: somatic bias factor
+/// 
+/// Also includes metadata like creation date, modification date, and user preferences.
 @objc(ProfileEntity)
 public class ProfileEntity: NSManagedObject {
     @NSManaged public var id: UUID

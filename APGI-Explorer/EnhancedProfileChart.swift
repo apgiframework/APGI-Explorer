@@ -55,10 +55,10 @@ struct HistoricalDataPoint: Identifiable {
 struct EnhancedProfileChart: View {
     let profile: APGIProfile
     let comparisonProfiles: [APGIProfile]
-    
+
     @StateObject private var performanceManager = PerformanceManager.shared
     @StateObject private var performanceTracker = PerformanceTracker()
-    
+
     @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
     @AppStorage("showDataPoints") private var showDataPoints: Bool = true
     @AppStorage("showValuesOnBars") private var showValuesOnBars: Bool = true
@@ -66,26 +66,26 @@ struct EnhancedProfileChart: View {
     @AppStorage("normalizeValues") private var normalizeValues: Bool = true
     @AppStorage("showAverageProfile") private var showAverageProfile: Bool = false
     @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
-    
+
     // Performance optimization: Cache computed properties
-    @State private var cachedHistoricalData: [HistoricalDataPoint]? = nil
-    @State private var cachedProfileDataPoints: [ChartDataPoint]? = nil
-    @State private var cachedComparisonData: [ChartDataPoint]? = nil
-    
+    @State private var cachedHistoricalData: [HistoricalDataPoint]?
+    @State private var cachedProfileDataPoints: [ChartDataPoint]?
+    @State private var cachedComparisonData: [ChartDataPoint]?
+
     // Memory management: Track view visibility
     @State private var isVisible = false
-    
+
     // Performance optimization: Lazy load and cache historical data
     private var historicalData: [HistoricalDataPoint] {
         if let cached = cachedHistoricalData {
             return cached
         }
-        
+
         let data = performanceTracker.track("historicalDataGeneration") {
             // Generate sample data for last 7 days
             var data: [HistoricalDataPoint] = []
-            for i in 0..<7 {
-                let date = Calendar.current.date(byAdding: .day, value: -i, to: Date())!
+            for dayIndex in 0..<7 {
+                let date = Calendar.current.date(byAdding: .day, value: -dayIndex, to: Date())!
                 let variation = Double.random(in: -10...10)
                 data.append(HistoricalDataPoint(
                     date: date,
@@ -97,37 +97,37 @@ struct EnhancedProfileChart: View {
             }
             return data.sorted { $0.date < $1.date }
         }
-        
+
         cachedHistoricalData = data
         return data
     }
-    
+
     // Performance optimization: Cache profile data points
     private var profileDataPoints: [ChartDataPoint] {
         if let cached = cachedProfileDataPoints {
             return cached
         }
-        
+
         let data = [
             ChartDataPoint(parameter: "ε (Epsilon)", value: profile.epsilon, profileName: String(describing: profile.epsilonCategory).capitalized),
             ChartDataPoint(parameter: "π (Precision)", value: profile.precision, profileName: String(describing: profile.precisionCategory).capitalized),
             ChartDataPoint(parameter: "θₜ (Threshold)", value: profile.threshold, profileName: String(describing: profile.thresholdCategory).capitalized),
             ChartDataPoint(parameter: "β (Somatic Bias)", value: profile.somaticBias, profileName: String(describing: profile.somaticCategory).capitalized)
         ]
-        
+
         cachedProfileDataPoints = data
         return data
     }
-    
+
     // Performance optimization: Cache comparison data and limit comparisons
     private var comparisonData: [ChartDataPoint] {
         if let cached = cachedComparisonData {
             return cached
         }
-        
+
         let data = performanceTracker.track("comparisonDataGeneration") {
             var data: [ChartDataPoint] = []
-            
+
             // Add main profile data
             data.append(contentsOf: [
                 ChartDataPoint(parameter: "ε (Epsilon)", value: profile.epsilon, profileName: "Current"),
@@ -135,10 +135,10 @@ struct EnhancedProfileChart: View {
                 ChartDataPoint(parameter: "θₜ (Threshold)", value: profile.threshold, profileName: "Current"),
                 ChartDataPoint(parameter: "β (Somatic Bias)", value: profile.somaticBias, profileName: "Current")
             ])
-            
+
             // Limit comparisons based on performance mode
             let maxComparisons = performanceManager.performanceMode == .memory ? 1 : 3
-            
+
             // Add comparison profiles data
             for (index, compProfile) in comparisonProfiles.prefix(maxComparisons).enumerated() {
                 let profileName = "Comparison \(index + 1)"
@@ -149,14 +149,14 @@ struct EnhancedProfileChart: View {
                     ChartDataPoint(parameter: "β (Somatic Bias)", value: compProfile.somaticBias, profileName: profileName)
                 ])
             }
-            
+
             return data
         }
-        
+
         cachedComparisonData = data
         return data
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Customization Toolbar
@@ -165,17 +165,17 @@ struct EnhancedProfileChart: View {
                 .padding(.vertical, 8)
                 .background(Color.gray.opacity(0.05))
                 .memoryEfficient()
-            
+
             // Performance optimization: Use TabView with lazy loading
             TabView {
                 // Default Chart Style (based on user preference)
-                lazyLoad(data: defaultChartStyle) { chartStyle in
+                lazyLoad(data: defaultChartStyle) { _ in
                     defaultChartView
                         .tabItem {
                             Label(defaultChartStyleName, systemImage: defaultChartStyleIcon)
                         }
                 }
-                
+
                 // Radar Chart Tab
                 lazyLoad(data: "radar") { _ in
                     radarChartView
@@ -183,19 +183,19 @@ struct EnhancedProfileChart: View {
                             Label("Radar", systemImage: "circle.hexagonpath")
                         }
                 }
-                
+
                 // 3D Visualization
                 chart3DView
                     .tabItem {
                         Label("3D View", systemImage: "cube")
                     }
-                
+
                 // Time Series
                 timeSeriesView
                     .tabItem {
                         Label("Trends", systemImage: "chart.xyaxis.line")
                     }
-                
+
                 // Comparison Matrix
                 comparisonMatrixView
                     .tabItem {
@@ -206,9 +206,9 @@ struct EnhancedProfileChart: View {
         }
         .platformNavigationTitle("Profile Analytics")
     }
-    
+
     // MARK: - Customization Toolbar
-    
+
     private var customizationToolbar: some View {
         VStack(spacing: 12) {
             // Chart Style Selector
@@ -216,7 +216,7 @@ struct EnhancedProfileChart: View {
                 Text("Chart Style:")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 Picker("Style", selection: $defaultChartStyle) {
                     ForEach(ChartStyle.allCases, id: \.self) { style in
                         Text(style.rawValue.capitalized).tag(style)
@@ -224,33 +224,33 @@ struct EnhancedProfileChart: View {
                 }
                 .pickerStyle(.segmented)
             }
-            
+
             // Options Row
             HStack(spacing: 20) {
                 // Show Data Points Toggle
                 Toggle("Data Points", isOn: $showDataPoints)
                     .toggleStyle(.switch)
-                
+
                 // Show Values on Bars Toggle
                 Toggle("Values", isOn: $showValuesOnBars)
                     .toggleStyle(.switch)
-                
+
                 // Allow Zooming Toggle
                 Toggle("Zoom", isOn: $allowZooming)
                     .toggleStyle(.switch)
             }
             .font(.caption)
-            
+
             // Advanced Options Row
             HStack(spacing: 20) {
                 // Normalize Values Toggle
                 Toggle("Normalize", isOn: $normalizeValues)
                     .toggleStyle(.switch)
-                
+
                 // Show Average Profile Toggle
                 Toggle("Average", isOn: $showAverageProfile)
                     .toggleStyle(.switch)
-                
+
                 // Show Differences Only Toggle
                 Toggle("Differences", isOn: $showDifferencesOnly)
                     .toggleStyle(.switch)
@@ -258,7 +258,7 @@ struct EnhancedProfileChart: View {
             .font(.caption)
         }
     }
-    
+
     private var defaultChartView: some View {
         switch defaultChartStyle {
         case .radar:
@@ -271,7 +271,7 @@ struct EnhancedProfileChart: View {
             return AnyView(areaChartView)
         }
     }
-    
+
     private var defaultChartStyleName: String {
         switch defaultChartStyle {
         case .radar: return "Radar"
@@ -280,7 +280,7 @@ struct EnhancedProfileChart: View {
         case .area: return "Area"
         }
     }
-    
+
     private var defaultChartStyleIcon: String {
         switch defaultChartStyle {
         case .radar: return "circle.hexagonpath"
@@ -289,15 +289,15 @@ struct EnhancedProfileChart: View {
         case .area: return "chart.area.stack"
         }
     }
-    
+
     // MARK: - Tab Views
-    
+
     private var radarChartView: some View {
         VStack {
             Text("Cognitive Profile Radar")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             // Using the existing StateComparisonRadar if available, or a placeholder
             if let stateComparisonRadar = createStateComparisonRadar() {
                 stateComparisonRadar
@@ -306,9 +306,9 @@ struct EnhancedProfileChart: View {
                 Text("Radar chart not available")
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(profileDataPoints) { point in
                     HStack {
@@ -325,13 +325,13 @@ struct EnhancedProfileChart: View {
             .padding()
         }
     }
-    
+
     private var chart3DView: some View {
         VStack {
             Text("3D Profile Visualization")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             Chart(profileDataPoints) { point in
                 PointMark(
                     x: .value("Parameter", point.parameter),
@@ -356,14 +356,14 @@ struct EnhancedProfileChart: View {
                     .shadow(radius: 5)
             )
             .padding()
-            
+
             Spacer()
-            
+
             VStack(alignment: .leading) {
                 Text("3D Visualization")
                     .font(.headline)
                     .padding(.bottom, 4)
-                
+
                 Text("This visualization shows the relative strengths of each cognitive parameter. The higher the point, the stronger that parameter is in your profile.")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -371,13 +371,13 @@ struct EnhancedProfileChart: View {
             .padding()
         }
     }
-    
+
     private var timeSeriesView: some View {
         VStack {
             Text("Parameter Trends Over Time")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             Chart {
                 // Epsilon Line
                 ForEach(historicalData) { point in
@@ -395,7 +395,7 @@ struct EnhancedProfileChart: View {
                             .frame(width: 6, height: 6)
                     }
                 }
-                
+
                 // Precision Line
                 ForEach(historicalData) { point in
                     LineMark(
@@ -412,7 +412,7 @@ struct EnhancedProfileChart: View {
                             .frame(width: 6, height: 6)
                     }
                 }
-                
+
                 // Threshold Line
                 ForEach(historicalData) { point in
                     LineMark(
@@ -429,7 +429,7 @@ struct EnhancedProfileChart: View {
                             .frame(width: 6, height: 6)
                     }
                 }
-                
+
                 // Somatic Bias Line
                 ForEach(historicalData) { point in
                     LineMark(
@@ -462,7 +462,7 @@ struct EnhancedProfileChart: View {
             .chartYScale(domain: 0...100)
             .frame(height: 300)
             .padding()
-            
+
             // Legend
             HStack(spacing: 20) {
                 LegendItem(color: .blue, label: "ε (Epsilon)")
@@ -473,16 +473,16 @@ struct EnhancedProfileChart: View {
             .padding()
         }
     }
-    
+
     private var comparisonMatrixView: some View {
         let comparisonHeight = 200 + CGFloat(comparisonProfiles.count) * 40
         let effectiveComparisonData = showDifferencesOnly ? filterDifferencesOnly(comparisonData) : comparisonData
-        
+
         return VStack {
             Text("Profile Comparison")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             Chart(effectiveComparisonData) { dataPoint in
                 RectangleMark(
                     x: .value("Parameter", dataPoint.parameter),
@@ -501,7 +501,7 @@ struct EnhancedProfileChart: View {
                 }
             }
             .chartYAxis {
-                AxisMarks(preset: .aligned, position: .leading) { value in
+                AxisMarks(preset: .aligned, position: .leading) { _ in
                     AxisValueLabel()
                 }
             }
@@ -514,22 +514,22 @@ struct EnhancedProfileChart: View {
             )
             .frame(height: comparisonHeight)
             .padding()
-            
+
             Text("Comparison shows your current profile against up to 3 other profiles")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding()
         }
     }
-    
+
     // MARK: - Additional Chart Views
-    
+
     private var barChartView: some View {
         VStack {
             Text("Parameter Bar Chart")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             Chart(profileDataPoints) { point in
                 BarMark(
                     x: .value("Parameter", point.parameter),
@@ -555,9 +555,9 @@ struct EnhancedProfileChart: View {
                     .shadow(radius: 5)
             )
             .padding()
-            
+
             Spacer()
-            
+
             VStack(alignment: .leading) {
                 ForEach(profileDataPoints) { point in
                     HStack {
@@ -574,13 +574,13 @@ struct EnhancedProfileChart: View {
             .padding()
         }
     }
-    
+
     private var lineChartView: some View {
         VStack {
             Text("Parameter Line Chart")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             Chart(profileDataPoints) { point in
                 LineMark(
                     x: .value("Parameter", point.parameter),
@@ -606,9 +606,9 @@ struct EnhancedProfileChart: View {
                     .shadow(radius: 5)
             )
             .padding()
-            
+
             Spacer()
-            
+
             VStack(alignment: .leading) {
                 ForEach(profileDataPoints) { point in
                     HStack {
@@ -625,13 +625,13 @@ struct EnhancedProfileChart: View {
             .padding()
         }
     }
-    
+
     private var areaChartView: some View {
         VStack {
             Text("Parameter Area Chart")
                 .font(.headline)
                 .padding(.bottom)
-            
+
             Chart(profileDataPoints) { point in
                 AreaMark(
                     x: .value("Parameter", point.parameter),
@@ -655,9 +655,9 @@ struct EnhancedProfileChart: View {
                     .shadow(radius: 5)
             )
             .padding()
-            
+
             Spacer()
-            
+
             VStack(alignment: .leading) {
                 ForEach(profileDataPoints) { point in
                     HStack {
@@ -674,35 +674,35 @@ struct EnhancedProfileChart: View {
             .padding()
         }
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func filterDifferencesOnly(_ data: [ChartDataPoint]) -> [ChartDataPoint] {
         guard !data.isEmpty else { return data }
-        
+
         // Group data by parameter
         let groupedData = Dictionary(grouping: data) { $0.parameter }
         var filteredData: [ChartDataPoint] = []
-        
+
         for (_, points) in groupedData {
-            guard points.count >= 2 else { 
+            guard points.count >= 2 else {
                 filteredData.append(contentsOf: points)
-                continue 
+                continue
             }
-            
+
             let values = points.map { $0.value }
             guard let maxValue = values.max(), let minValue = values.min() else { continue }
             let range = maxValue - minValue
-            
+
             // Only include parameters with significant differences (> 20% difference)
             if range > 20.0 {
                 filteredData.append(contentsOf: points)
             }
         }
-        
+
         return filteredData
     }
-    
+
     private func colorForParameter(_ parameter: String) -> Color {
         switch parameter {
         case "ε (Epsilon)": return .blue
@@ -712,19 +712,19 @@ struct EnhancedProfileChart: View {
         default: return .gray
         }
     }
-    
+
     private func createStateComparisonRadar() -> StateComparisonRadar? {
         // Create a primary psychological state from the current profile
         let primaryState = createPsychologicalState(from: profile)
-        
+
         // Create comparison states from other profiles
         let comparisonStates = comparisonProfiles.prefix(3).map { otherProfile in
             createPsychologicalState(from: otherProfile)
         }
-        
+
         return StateComparisonRadar(primary: primaryState, comparisons: comparisonStates)
     }
-    
+
     private func createPsychologicalState(from profile: APGIProfile) -> PsychologicalState {
         // Map APGIProfile to PsychologicalState parameters
         return PsychologicalState(
@@ -776,7 +776,7 @@ struct EnhancedProfileChart: View {
 struct LegendItem: View {
     let color: Color
     let label: String
-    
+
     var body: some View {
         HStack(spacing: 4) {
             Rectangle()
@@ -801,7 +801,7 @@ struct EnhancedProfileChart_Previews: PreviewProvider {
             temporalStability: 60.0,
             environmentalFit: 70.0
         )
-        
+
         let comparisonProfiles = [
             APGIProfile(
                 epsilon: 45.0,
@@ -813,7 +813,7 @@ struct EnhancedProfileChart_Previews: PreviewProvider {
                 environmentalFit: 75.0
             )
         ]
-        
+
         return EnhancedProfileChart(profile: previewProfile, comparisonProfiles: comparisonProfiles)
             .preferredColorScheme(.dark)
     }

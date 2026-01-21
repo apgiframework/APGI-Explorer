@@ -833,7 +833,7 @@ class QuizModel: ObservableObject {
     }
 
     static func calculateAPGIProfile(from results: [String: Int]) -> APGIProfile {
-        // Create a temporary QuizModel instance to use existing calculation logic
+        // Create QuizModel instance to leverage existing scoring calculation logic
         let tempModel = QuizModel()
         // Convert String keys to Int keys for answers property
         let intKeyResults = Dictionary(uniqueKeysWithValues: results.compactMap { key, value in
@@ -892,7 +892,9 @@ class QuizModel: ObservableObject {
         return normalizedScores
     }
 
-    // Legacy method for backward compatibility
+    /// Returns raw scores as [String: Int] for backward compatibility with ProfileManager
+    /// Used by ResultsView.swift for profile creation where ProfileManager expects integer scores
+    /// New scoring methods return APGIProfile with Double values, but this method maintains compatibility
     func calculateRawScore() -> [String: Int] {
         var scores = [
             "epsilon": 0,

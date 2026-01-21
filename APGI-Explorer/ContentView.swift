@@ -5,33 +5,38 @@ struct ContentView: View {
         NavigationStack {
             ZStack {
                 // Background gradient
-                LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.2)]), 
-                             startPoint: .topLeading, 
-                             endPoint: .bottomTrailing)
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.blue.opacity(ColorConstants.backgroundOpacity),
+                        Color.purple.opacity(ColorConstants.backgroundOpacity)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
                     .edgesIgnoringSafeArea(.all)
-                
-                VStack(spacing: 30) {
+
+                VStack(spacing: LayoutConstants.largeSpacing) {
                     // App Title
-                    VStack(spacing: 10) {
+                    VStack(spacing: LayoutConstants.smallSpacing) {
                         Image(systemName: "brain.head.profile")
-                            .font(.system(size: 60))
+                            .font(.system(size: LayoutConstants.iconFontSize))
                             .foregroundColor(.blue)
-                        
+
                         Text("APGI Explorer")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(.primary)
-                        
+
                         Text("Discover your psychological patterns")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    .padding(.top, 40)
-                    .padding(.bottom, 20)
-                    
+                    .padding(.top, LayoutConstants.topPadding)
+                    .padding(.bottom, LayoutConstants.titleBottomPadding)
+
                     Spacer()
-                    
-                    VStack(spacing: 20) {
+
+                    VStack(spacing: LayoutConstants.mediumSpacing) {
                         NavigationLink(destination: IntroView()) {
                             HStack {
                                 Image(systemName: "play.fill")
@@ -40,13 +45,16 @@ struct ContentView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(15)
-                            .shadow(radius: 3)
+                            .background(AppColors.buttonBackground)
+                            .foregroundColor(AppColors.buttonText)
+                            .cornerRadius(LayoutConstants.buttonCornerRadius)
+                            .shadow(radius: LayoutConstants.buttonShadowRadius)
                         }
-                        
-                        NavigationLink(destination: PsychologicalStatesView()) {
+
+                        NavigationLink(
+                            destination: PsychologicalStatesView()
+                                .environment(\.appDependencies, AppDependencies.shared)
+                        ) {
                             HStack {
                                 Image(systemName: "book.fill")
                                 Text("Browse Psychological States")
@@ -54,24 +62,19 @@ struct ContentView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.purple)
-                            .foregroundColor(.white)
-                            .cornerRadius(15)
-                            .shadow(radius: 3)
+                            .background(AppColors.info)
+                            .foregroundColor(AppColors.buttonText)
+                            .cornerRadius(LayoutConstants.buttonCornerRadius)
+                            .shadow(radius: LayoutConstants.buttonShadowRadius)
                         }
                     }
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 50)
+                    .padding(.horizontal, LayoutConstants.horizontalPadding)
+                    .padding(.bottom, LayoutConstants.bottomPadding)
                 }
             }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("")
-                }
-            }
         }
         .accentColor(.blue)
     }

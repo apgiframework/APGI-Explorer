@@ -11,26 +11,26 @@ struct InteractiveStateView: View {
     private var analytics: AnalyticsService {
         dependencies.getAnalyticsService()
     }
-    
+
     @State private var comparisonStates: [Int] = []
     @State private var nearbyStates: [PsychologicalState] = []
     @State private var showingTransitions = false
-    
-    init(state: PsychologicalState, 
-         stateModel: StateModel, 
+
+    init(state: PsychologicalState,
+         stateModel: StateModel,
          transitionModel: StateTransitionModel) {
         self.state = state
         self.stateModel = stateModel
         self.transitionModel = transitionModel
     }
-    
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
                     // State header
                     stateHeaderView
-                    
+
                     // Radar chart comparing this state to others
                     StateComparisonRadar(
                         primary: state,
@@ -38,7 +38,7 @@ struct InteractiveStateView: View {
                     )
                     .frame(height: 300)
                     .padding()
-                    
+
                     // Interactive parameter explorer
                     ParameterSliderView(state: state) { parameter, value in
                         Task {
@@ -46,7 +46,7 @@ struct InteractiveStateView: View {
                         }
                     }
                     .padding()
-                    
+
                     // Nearby states visualization
                     if stateModel.isLoadingSimilarStates {
                         LoadingIndicator(message: "Finding similar states...", size: .medium)
@@ -57,10 +57,10 @@ struct InteractiveStateView: View {
                         EmptyStateView.noSimilarStates
                             .padding()
                     }
-                    
+
                     // Transition pathways
                     transitionSection
-                    
+
                     Spacer()
                 }
                 .padding()
@@ -89,20 +89,20 @@ struct InteractiveStateView: View {
     private var nearbyPreviewStates: [PsychologicalState] {
         Array(nearbyStates.prefix(6))
     }
-    
+
     // MARK: - Subviews
-    
+
     private var stateHeaderView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(state.name)
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.primaryText)
-            
+
             Text(state.description)
                 .font(.subheadline)
                 .foregroundColor(AppColors.secondaryText)
-            
+
             // Parameter summary
             VStack(alignment: .leading, spacing: 4) {
                 parameterSummaryRow("Prediction Error", state.predictionError)
@@ -118,25 +118,25 @@ struct InteractiveStateView: View {
         .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
-    
+
     private func parameterSummaryRow(_ title: String, _ value: String) -> some View {
         let titleText = Text("\(title):").fontWeight(.medium)
         let valueText = Text(value)
-        
+
         return HStack {
             titleText
             valueText
             Spacer()
         }
     }
-    
+
     private var nearbyStatesView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Similar States")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(AppColors.primaryText)
-            
+
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
@@ -153,12 +153,12 @@ struct InteractiveStateView: View {
                                 .fontWeight(.medium)
                                 .lineLimit(1)
                                 .foregroundColor(AppColors.primaryText)
-                            
+
                             Text(nearbyState.description)
                                 .font(.caption)
                                 .foregroundColor(AppColors.secondaryText)
                                 .lineLimit(2)
-                            
+
                             Text("ID: \(nearbyState.id)")
                                 .font(.caption2)
                                 .foregroundColor(AppColors.tertiaryText)
@@ -176,7 +176,7 @@ struct InteractiveStateView: View {
         .background(AppColors.secondaryBackground)
         .cornerRadius(12)
     }
-    
+
     private var transitionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -184,16 +184,16 @@ struct InteractiveStateView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText)
-                
+
                 Spacer()
-                
+
                 Button(showingTransitions ? "Hide" : "Show") {
                     showingTransitions.toggle()
                 }
                 .font(.caption)
                 .foregroundColor(AppColors.info)
             }
-            
+
             if showingTransitions {
                 if transitionsForState.isEmpty {
                     Text("No transition data available for this state.")
@@ -211,9 +211,9 @@ struct InteractiveStateView: View {
         .background(AppColors.secondaryBackground)
         .cornerRadius(12)
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private var transitionsForState: [StateTransitionModel.Transition] {
         transitionModel.possibleTransitions(from: state.id)
     }
@@ -223,18 +223,18 @@ struct InteractiveStateView: View {
         let similarStates = await findSimilarStates(to: state, limit: 3)
         comparisonStates = similarStates.map { $0.id }
     }
-    
+
     private func getState(_ id: Int) -> PsychologicalState? {
         return stateModel.states.first { $0.id == id }
     }
-    
+
     private func findSimilarStates(to state: PsychologicalState, limit: Int = 5) async -> [PsychologicalState] {
         return await stateModel.findSimilarStates(to: state, limit: limit)
     }
-    
+
     private func findStatesWithSimilarParameters(changing parameter: String, to value: Double) async {
         let allStates = stateModel.states
-        
+
         // This is a simplified version - in a real implementation, you would
         // parse the parameter values more accurately and calculate distances
         let filteredStates = allStates
@@ -244,15 +244,15 @@ struct InteractiveStateView: View {
             .sorted { $0.1 < $1.1 }
             .prefix(8)
             .map { $0.0 }
-        
+
         await MainActor.run {
             self.nearbyStates = filteredStates
         }
     }
-    
+
     private func calculateParameterDistance(state: PsychologicalState, parameter: String, targetValue: Double) -> Double {
     let currentValue: Double
-    
+
     switch parameter {
     case "predictionError":
         currentValue = state.parameters.predictionError.accuracy.average
@@ -265,7 +265,7 @@ struct InteractiveStateView: View {
     default:
         return Double.infinity
     }
-    
+
     return abs(currentValue - targetValue)
 }
 }

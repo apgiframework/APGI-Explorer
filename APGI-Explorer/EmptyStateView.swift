@@ -8,7 +8,7 @@ struct EmptyStateView: View {
     let message: String
     let actionTitle: String?
     let action: (() -> Void)?
-    
+
     init(icon: String, title: String, message: String, actionTitle: String? = nil, action: (() -> Void)? = nil) {
         self.icon = icon
         self.title = title
@@ -16,27 +16,27 @@ struct EmptyStateView: View {
         self.actionTitle = actionTitle
         self.action = action
     }
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: icon)
                 .font(.system(size: 60))
                 .foregroundColor(AppColors.secondaryText)
-            
+
             Text(title)
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(AppColors.primaryText)
-            
+
             Text(message)
                 .font(.body)
                 .foregroundColor(AppColors.secondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            
+
             if let actionTitle = actionTitle, let action = action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(PrimaryButtonStyle())
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -54,7 +54,7 @@ extension EmptyStateView {
         actionTitle: "Retry",
         action: nil // Will be set by the parent view
     )
-    
+
     static let noSimilarStates = EmptyStateView(
         icon: "magnifyingglass",
         title: "No Similar States",
@@ -62,7 +62,7 @@ extension EmptyStateView {
         actionTitle: nil,
         action: nil
     )
-    
+
     static let noTransitions = EmptyStateView(
         icon: "arrow.triangle.2.circlepath",
         title: "No Transitions Available",
@@ -70,7 +70,7 @@ extension EmptyStateView {
         actionTitle: nil,
         action: nil
     )
-    
+
     static let noQuizData = EmptyStateView(
         icon: "questionmark.circle",
         title: "No Quiz Data",
@@ -78,7 +78,7 @@ extension EmptyStateView {
         actionTitle: "Start Quiz",
         action: nil // Will be set by the parent view
     )
-    
+
     static let noProfiles = EmptyStateView(
         icon: "person.3.sequence",
         title: "No Profiles",
@@ -95,10 +95,10 @@ struct EmptyStateView_Previews: PreviewProvider {
         Group {
             EmptyStateView.noStates
                 .previewDisplayName("No States")
-            
+
             EmptyStateView.noSimilarStates
                 .previewDisplayName("No Similar States")
-            
+
             EmptyStateView(
                 icon: "tray",
                 title: "Custom Empty State",

@@ -5,31 +5,31 @@ struct MainTabView: View {
     @EnvironmentObject var stateModel: StateModel
     @EnvironmentObject var appState: AppState
     @StateObject private var themeManager = ThemeManager.shared
-    
+
     var body: some View {
         TabView {
             ContentView()
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
-            
+
             NavigationStack {
                 PsychologicalStatesView()
             }
                 .tabItem {
                     Label("States", systemImage: "brain.head.profile")
                 }
-            
+
             PsychologicalStatesVisualizationView()
                 .tabItem {
                     Label("Visualization", systemImage: "chart.scatter")
                 }
-            
+
             ProfileComparisonView()
                 .tabItem {
                     Label("Compare", systemImage: "person.2.fill")
                 }
-            
+
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
@@ -38,7 +38,7 @@ struct MainTabView: View {
         .frame(minWidth: 800, minHeight: 600)
         .preferredColorScheme(themeManager.currentTheme.getColorScheme())
         .environment(\.currentTheme, themeManager.currentTheme)
-        .onReceive(themeManager.$currentTheme) { theme in
+        .onReceive(themeManager.$currentTheme) { _ in
             // Theme will be applied automatically through preferredColorScheme
         }
     }

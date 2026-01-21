@@ -9,7 +9,7 @@ import UIKit
 #if os(macOS)
 struct ShareSheet: NSViewRepresentable {
     var items: [Any]
-    
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
@@ -18,7 +18,7 @@ struct ShareSheet: NSViewRepresentable {
         }
         return view
     }
-    
+
     func updateNSView(_ nsView: NSView, context: Context) {
         // No updates needed
     }
@@ -26,12 +26,12 @@ struct ShareSheet: NSViewRepresentable {
 #else
 struct ShareSheet: UIViewControllerRepresentable {
     var items: [Any]
-    
+
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
         return activityViewController
     }
-    
+
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         // No updates needed
     }

@@ -2,18 +2,18 @@ import SwiftUI
 
 struct PerformanceMetricsView: View {
     @AppStorage("showPerformanceMetrics") private var showPerformanceMetrics: Bool = false
-    
+
     let frameRate: Double
     let memoryUsage: UInt64
     let cpuUsage: Double
-    
+
     var body: some View {
         if showPerformanceMetrics {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Performance Metrics")
                     .font(.caption)
                     .fontWeight(.bold)
-                
+
                 HStack {
                     Text("FPS: \(String(format: "%.1f", frameRate))")
                     Spacer()
@@ -30,13 +30,13 @@ struct PerformanceMetricsView: View {
             .padding(8)
         }
     }
-    
+
     private func formatMemory(_ bytes: UInt64) -> String {
-        let mb = Double(bytes) / (1024 * 1024)
-        if mb < 1024 {
-            return "\(String(format: "%.1f", mb)) MB"
+        let megabytes = Double(bytes) / (1024 * 1024)
+        if megabytes < 1024 {
+            return "\(String(format: "%.1f", megabytes)) MB"
         } else {
-            return "\(String(format: "%.1f", mb / 1024)) GB"
+            return "\(String(format: "%.1f", megabytes / 1024)) GB"
         }
     }
 }
