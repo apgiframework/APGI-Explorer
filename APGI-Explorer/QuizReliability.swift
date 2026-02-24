@@ -23,14 +23,14 @@ class ResponseQualityAnalyzer {
         let modeCount = values.filter { $0 == mode }.count
         let modeRatio = Double(modeCount) / Double(values.count)
 
-        return modeRatio > straightLineThreshold
+        return modeRatio > self.straightLineThreshold
     }
 
     /// Identifies questions that were answered too quickly (potential random responding)
     /// - Parameter answerTimes: Dictionary of question IDs to time taken (in seconds)
     /// - Returns: Array of question IDs that were answered too quickly
     func detectSpeedingWarnings(answerTimes: [Int: TimeInterval]) -> [Int] {
-        return answerTimes.filter { $0.value < minAnswerTime }.map { $0.key }.sorted()
+        answerTimes.filter { $0.value < self.minAnswerTime }.map(\.key).sorted()
     }
 
     /// Calculates an engagement score based on response times
@@ -43,19 +43,19 @@ class ResponseQualityAnalyzer {
         var score: Double = 0
 
         for time in times {
-            if time < minAnswerTime {
+            if time < self.minAnswerTime {
                 // Severely penalize answers that are too fast
                 score += 0.1
-            } else if time < optimalMinTime {
+            } else if time < self.optimalMinTime {
                 // Linearly increase score from 0.5 to 1.0 in the sub-optimal range
-                let timeRatio = (time - minAnswerTime) / (optimalMinTime - minAnswerTime)
+                let timeRatio = (time - self.minAnswerTime) / (self.optimalMinTime - self.minAnswerTime)
                 score += 0.5 + (0.5 * timeRatio)
-            } else if time <= optimalMaxTime {
+            } else if time <= self.optimalMaxTime {
                 // Full points for optimal time range
                 score += 1.0
-            } else if time <= maxAnswerTime {
+            } else if time <= self.maxAnswerTime {
                 // Linearly decrease score from 1.0 to 0.5 in the sub-optimal range
-                let timeRatio = (time - optimalMaxTime) / (maxAnswerTime - optimalMaxTime)
+                let timeRatio = (time - self.optimalMaxTime) / (self.maxAnswerTime - self.optimalMaxTime)
                 score += 1.0 - (0.5 * timeRatio)
             } else {
                 // Severely penalize answers that are too slow
@@ -76,19 +76,19 @@ class ResponseQualityAnalyzer {
         var warnings: [String] = []
 
         // Check for straight-lining
-        if detectStraightLining(answers: answers) {
+        if self.detectStraightLining(answers: answers) {
             warnings.append("Response pattern suggests potential straight-lining (many identical answers).")
         }
 
         // Check for speeding
-        let fastQuestions = detectSpeedingWarnings(answerTimes: answerTimes)
+        let fastQuestions = self.detectSpeedingWarnings(answerTimes: answerTimes)
         if !fastQuestions.isEmpty {
             let questionList = fastQuestions.map(String.init).joined(separator: ", ")
-            warnings.append("Questions answered very quickly (less than \(Int(minAnswerTime))s): \(questionList)")
+            warnings.append("Questions answered very quickly (less than \(Int(self.minAnswerTime))s): \(questionList)")
         }
 
         // Calculate engagement score
-        let engagementScore = calculateEngagementScore(answerTimes: answerTimes)
+        let engagementScore = self.calculateEngagementScore(answerTimes: answerTimes)
 
         return (engagementScore, warnings)
     }
@@ -119,7 +119,7 @@ class QuizReliabilityTracker {
         let timestamp: Date
 
         var correlation: Double {
-            QuizReliabilityTracker.calculateCorrelation(profile1: firstTest, profile2: secondTest)
+            QuizReliabilityTracker.calculateCorrelation(profile1: self.firstTest, profile2: self.secondTest)
         }
 
         init(firstTest: APGIProfile, secondTest: APGIProfile, timeBetween: TimeInterval) {
@@ -134,7 +134,7 @@ class QuizReliabilityTracker {
     // MARK: - Properties
 
     private var testRetestData: [TestRetestData] = []
-    private let minTestRetestInterval: TimeInterval = 60 * 60 * 24 * 7  // 1 week minimum between tests
+    private let minTestRetestInterval: TimeInterval = 60 * 60 * 24 * 7 // 1 week minimum between tests
     private let maxTestRetestInterval: TimeInterval = 60 * 60 * 24 * 60 // 2 months maximum between tests
 
     // MARK: - Public Methods
@@ -145,7 +145,7 @@ class QuizReliabilityTracker {
     func calculateInternalConsistency(answers: [Int: Int]) -> Double {
         // Group questions by parameter
         let parameterGroups = Dictionary(grouping: answers) { questionId, _ in
-            parameterForQuestion(questionId)
+            self.parameterForQuestion(questionId)
         }
 
         // Calculate variance for each parameter group
@@ -180,18 +180,18 @@ class QuizReliabilityTracker {
     /// - Returns: Correlation between test scores (0-1)
     func recordTestRetest(firstTest: APGIProfile, secondTest: APGIProfile, timeBetween: TimeInterval) -> Double {
         // Validate time interval
-        guard timeBetween >= minTestRetestInterval else {
+        guard timeBetween >= self.minTestRetestInterval else {
             os_log("Test-retest interval too short for reliable measurement", type: .error)
             return 0
         }
 
-        guard timeBetween <= maxTestRetestInterval else {
+        guard timeBetween <= self.maxTestRetestInterval else {
             os_log("Test-retest interval too long for reliable measurement", type: .error)
             return 0
         }
 
         let data = TestRetestData(firstTest: firstTest, secondTest: secondTest, timeBetween: timeBetween)
-        testRetestData.append(data)
+        self.testRetestData.append(data)
 
         // Return the correlation for this specific pair
         return data.correlation
@@ -200,7 +200,7 @@ class QuizReliabilityTracker {
     /// Calculates the average test-retest reliability across all recorded pairs
     /// - Returns: Average correlation coefficient (0-1)
     func calculateTestRetestReliability() -> [String: Double] {
-        guard !testRetestData.isEmpty else {
+        guard !self.testRetestData.isEmpty else {
             return ["overall": 0]
         }
 
@@ -209,7 +209,7 @@ class QuizReliabilityTracker {
         var results: [String: Double] = [:]
 
         for dimension in dimensions {
-            let correlations = testRetestData.map { data -> Double in
+            let correlations = self.testRetestData.map { data -> Double in
                 let value1 = data.firstTest.value(for: dimension)
                 let value2 = data.secondTest.value(for: dimension)
                 return Self.pearsonCorrelation(firstValues: [value1], secondValues: [value2])
@@ -230,14 +230,14 @@ class QuizReliabilityTracker {
         // Map question IDs to parameters (epsilon, precision, threshold, etc.)
         // This is a simplified mapping - adjust based on your actual question structure
         switch questionId {
-        case 1...5: return "epsilon"
-        case 6...10: return "precision"
-        case 11...15: return "threshold"
-        case 16...20: return "somaticBias"
-        case 21...25: return "interactionScore"
-        case 26...30: return "temporalStability"
-        case 31...35: return "environmentalFit"
-        default: return "unknown"
+        case 1 ... 5: "epsilon"
+        case 6 ... 10: "precision"
+        case 11 ... 15: "threshold"
+        case 16 ... 20: "somaticBias"
+        case 21 ... 25: "interactionScore"
+        case 26 ... 30: "temporalStability"
+        case 31 ... 35: "environmentalFit"
+        default: "unknown"
         }
     }
 
@@ -250,7 +250,7 @@ class QuizReliabilityTracker {
             profile1.somaticBias,
             profile1.interactionScore,
             profile1.temporalStability,
-            profile1.environmentalFit
+            profile1.environmentalFit,
         ]
 
         let values2 = [
@@ -260,10 +260,10 @@ class QuizReliabilityTracker {
             profile2.somaticBias,
             profile2.interactionScore,
             profile2.temporalStability,
-            profile2.environmentalFit
+            profile2.environmentalFit,
         ]
 
-        return pearsonCorrelation(firstValues: values1, secondValues: values2)
+        return self.pearsonCorrelation(firstValues: values1, secondValues: values2)
     }
 
     // MARK: - Statistical Functions
@@ -275,9 +275,9 @@ class QuizReliabilityTracker {
 
     private static func variance(of values: [Double]) -> Double {
         guard values.count > 1 else { return 0 }
-        let meanValue = mean(values)
+        let meanValue = self.mean(values)
         let squaredDiffs = values.map { pow($0 - meanValue, 2) }
-        return mean(squaredDiffs)
+        return self.mean(squaredDiffs)
     }
 
     private static func pearsonCorrelation(firstValues: [Double], secondValues: [Double]) -> Double {
@@ -294,7 +294,7 @@ class QuizReliabilityTracker {
         let denominatorFirst = (count * sumFirstSquared - sumFirst * sumFirst)
         let denominatorSecond = (count * sumSecondSquared - sumSecond * sumSecond)
 
-        guard denominatorFirst > 0 && denominatorSecond > 0 else { return 0 }
+        guard denominatorFirst > 0, denominatorSecond > 0 else { return 0 }
 
         return numerator / sqrt(denominatorFirst * denominatorSecond)
     }
@@ -306,21 +306,21 @@ extension APGIProfile {
     /// Gets the value for a given dimension name
     func value(for dimension: String) -> Double {
         switch dimension {
-        case "epsilon": return epsilon
-        case "precision": return precision
-        case "threshold": return threshold
-        case "somaticBias": return somaticBias
-        case "interactionScore": return interactionScore
-        case "temporalStability": return temporalStability
-        case "environmentalFit": return environmentalFit
-        default: return 0
+        case "epsilon": epsilon
+        case "precision": precision
+        case "threshold": threshold
+        case "somaticBias": somaticBias
+        case "interactionScore": interactionScore
+        case "temporalStability": temporalStability
+        case "environmentalFit": environmentalFit
+        default: 0
         }
     }
 }
 
 // MARK: - Array Extension
 
-extension Array where Element == Double {
+extension [Double] {
     func average() -> Double {
         guard !isEmpty else { return 0 }
         return reduce(0, +) / Double(count)

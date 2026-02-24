@@ -1,15 +1,8 @@
-//
-//  ViewConstants.swift
-//  APGI Explorer
-//
-//  Centralized constants for UI dimensions, colors, and styling.
-//  This file contains magic numbers extracted from views to improve maintainability.
-//
-
 import SwiftUI
 
 // MARK: - Layout Constants
-struct LayoutConstants {
+
+enum LayoutConstants {
     // Spacing
     static let largeSpacing: CGFloat = 30
     static let mediumSpacing: CGFloat = 20
@@ -27,7 +20,7 @@ struct LayoutConstants {
     static let buttonCornerRadius: CGFloat = 15
     static let cardCornerRadius: CGFloat = 8
 
-    // Shadow
+    /// Shadow
     static let buttonShadowRadius: CGFloat = 3
 
     // Font Sizes
@@ -37,7 +30,8 @@ struct LayoutConstants {
 }
 
 // MARK: - Color Constants
-struct ColorConstants {
+
+enum ColorConstants {
     static let backgroundOpacity: Double = 0.2
     static let cardBackgroundOpacity: Double = 0.1
     static let shadowOpacity: Double = 0.1
@@ -53,7 +47,8 @@ struct ColorConstants {
 }
 
 // MARK: - Data Constants
-struct DataConstants {
+
+enum DataConstants {
     static let previewProfileCount: Int = 5
     static let fetchLimit: Int = 1
     static let probabilityMultiplier: Double = 100.0

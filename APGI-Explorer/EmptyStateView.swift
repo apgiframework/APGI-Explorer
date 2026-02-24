@@ -1,3 +1,4 @@
+import os.log
 import SwiftUI
 
 // MARK: - Empty State View
@@ -19,22 +20,22 @@ struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(.system(size: 60))
                 .foregroundColor(AppColors.secondaryText)
 
-            Text(title)
+            Text(self.title)
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(AppColors.primaryText)
 
-            Text(message)
+            Text(self.message)
                 .font(.body)
                 .foregroundColor(AppColors.secondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            if let actionTitle = actionTitle, let action = action {
+            if let actionTitle, let action {
                 Button(actionTitle, action: action)
                     .buttonStyle(PrimaryButtonStyle())
             }
@@ -104,7 +105,7 @@ struct EmptyStateView_Previews: PreviewProvider {
                 title: "Custom Empty State",
                 message: "This is a custom empty state with an action button.",
                 actionTitle: "Do Something",
-                action: { print("Action tapped") }
+                action: { os_log("Action tapped", log: OSLog.default, type: .info) }
             )
             .previewDisplayName("Custom with Action")
         }

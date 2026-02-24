@@ -1,31 +1,33 @@
-// PersistenceController.swift
-
-import CoreData
+import CloudKit
 import Combine
+import CoreData
+
+enum PersistenceControllerError: Error {
+    case directoryAccessFailed
+    case storeLoadFailed(Error)
+}
 
 class PersistenceController: ObservableObject {
     static let shared = PersistenceController()
 
     let container: NSPersistentContainer
 
-    @Published var lastError: PersistenceError?
+    @Published var lastError: PersistenceControllerError?
 
-    // Preview instance for SwiftUI previews
     static var preview: PersistenceController = {
         let controller = PersistenceController(inMemory: true)
         let viewContext = controller.container.viewContext
 
-        // Create sample data for previews
-        for index in 0..<DataConstants.previewProfileCount {
+        for index in 0 ..< DataConstants.previewProfileCount {
             let profile = ProfileEntity(context: viewContext)
             profile.id = UUID()
             profile.name = "Sample Profile \(index)"
             profile.dateCreated = Date()
             profile.dateModified = Date()
-            profile.epsilon = Double.random(in: ColorConstants.minPositiveValue...80)
-            profile.precision = Double.random(in: ColorConstants.minPositiveValue...80)
-            profile.threshold = Double.random(in: ColorConstants.minPositiveValue...80)
-            profile.somaticBias = Double.random(in: ColorConstants.minPositiveValue...80)
+            profile.epsilon = Double.random(in: ColorConstants.minPositiveValue ... 80)
+            profile.precision = Double.random(in: ColorConstants.minPositiveValue ... 80)
+            profile.threshold = Double.random(in: ColorConstants.minPositiveValue ... 80)
+            profile.somaticBias = Double.random(in: ColorConstants.minPositiveValue ... 80)
             profile.isFavorite = index == 0
         }
 
@@ -34,55 +36,60 @@ class PersistenceController: ObservableObject {
     }()
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "APGIExplorer")
+        self.container = NSPersistentCloudKitContainer(name: "APGIExplorer")
 
         if inMemory {
-            container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+            self.container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         } else {
-            // Set up store location in Application Support
-            guard let appSupportURL = FileManager.default.urls(
+            if let appSupportURL = FileManager.default.urls(
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
-            ).first else {
-                fatalError("Unable to access Application Support directory")
+            ).first {
+                let storeURL = appSupportURL.appendingPathComponent("APGIExplorer.sqlite")
+                let description = NSPersistentStoreDescription(url: storeURL)
+                description.shouldMigrateStoreAutomatically = true
+                description.shouldInferMappingModelAutomatically = true
+                self.container.persistentStoreDescriptions = [description]
+            } else {
+                self.lastError = .directoryAccessFailed
+                guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                    self.lastError = .directoryAccessFailed
+                    return
+                }
+                let storeURL = documentsURL.appendingPathComponent("APGIExplorer.sqlite")
+                let description = NSPersistentStoreDescription(url: storeURL)
+                description.shouldMigrateStoreAutomatically = true
+                description.shouldInferMappingModelAutomatically = true
+                self.container.persistentStoreDescriptions = [description]
             }
-            let storeURL = appSupportURL.appendingPathComponent("APGIExplorer.sqlite")
-
-            let description = NSPersistentStoreDescription(url: storeURL)
-            description.shouldMigrateStoreAutomatically = true
-            description.shouldInferMappingModelAutomatically = true
-
-            container.persistentStoreDescriptions = [description]
         }
 
-        container.loadPersistentStores { _, error in
-            if let error = error {
-                fatalError("Unable to load persistent stores: \(error)")
+        self.container.loadPersistentStores { _, error in
+            if let error {
+                self.lastError = .storeLoadFailed(error)
             }
         }
 
-        container.viewContext.automaticallyMergesChangesFromParent = true
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        self.container.viewContext.automaticallyMergesChangesFromParent = true
+        self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        // Enable persistent history tracking
-        container.viewContext.name = "viewContext"
-        container.viewContext.transactionAuthor = "app"
+        self.container.viewContext.name = "viewContext"
+        self.container.viewContext.transactionAuthor = "app"
     }
 
     // MARK: - Save Operations
 
     func saveProfile(_ profile: QuizProfile) async throws {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
 
-            let entity: ProfileEntity
-            if let existing = try? context.fetch(fetchRequest).first {
-                entity = existing
+            let entity: ProfileEntity = if let existing = try? context.fetch(fetchRequest).first {
+                existing
             } else {
-                entity = ProfileEntity(context: context)
+                ProfileEntity(context: context)
             }
 
             try entity.update(from: profile)
@@ -94,16 +101,15 @@ class PersistenceController: ObservableObject {
     }
 
     func saveProfileSync(_ profile: QuizProfile) throws {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
 
-        let entity: ProfileEntity
-        if let existing = try? context.fetch(fetchRequest).first {
-            entity = existing
+        let entity: ProfileEntity = if let existing = try? context.fetch(fetchRequest).first {
+            existing
         } else {
-            entity = ProfileEntity(context: context)
+            ProfileEntity(context: context)
         }
 
         try entity.update(from: profile)
@@ -119,7 +125,7 @@ class PersistenceController: ObservableObject {
         sortBy: ProfileSortOption = .dateModified,
         ascending: Bool = false
     ) async throws -> [QuizProfile] {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         return try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
@@ -131,7 +137,7 @@ class PersistenceController: ObservableObject {
     }
 
     func fetchProfile(id: UUID) async throws -> QuizProfile? {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         return try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
@@ -147,7 +153,7 @@ class PersistenceController: ObservableObject {
     }
 
     func searchProfiles(query: String) async throws -> [QuizProfile] {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         return try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
@@ -162,7 +168,7 @@ class PersistenceController: ObservableObject {
     // MARK: - Delete Operations
 
     func deleteProfile(_ profile: QuizProfile) async throws {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
@@ -176,7 +182,7 @@ class PersistenceController: ObservableObject {
     }
 
     func deleteAllProfiles() async throws {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         try await context.perform {
             let fetchRequest: NSFetchRequest<NSFetchRequestResult> = ProfileEntity.fetchRequest()
@@ -190,7 +196,7 @@ class PersistenceController: ObservableObject {
     // MARK: - Favorite Management
 
     func toggleFavorite(_ profile: QuizProfile) async throws {
-        let context = container.viewContext
+        let context = self.container.viewContext
 
         try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()

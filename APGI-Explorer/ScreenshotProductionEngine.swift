@@ -1,8 +1,9 @@
-import Foundation
 import AppKit
+import Foundation
 import os.log
 
 // MARK: - Production-Safe Screenshot Configuration
+
 struct ProductionScreenshotConfig {
     let isEnabled: Bool
     let requiresAuthentication: Bool
@@ -23,7 +24,7 @@ struct ProductionScreenshotConfig {
             "main_dashboard",
             "profile_results",
             "settings",
-            "data_export"
+            "data_export",
         ],
         allowedOutputFormats: ["png", "jpeg"],
         maxFileSize: 10 * 1024 * 1024, // 10MB
@@ -35,6 +36,7 @@ struct ProductionScreenshotConfig {
 }
 
 // MARK: - Environment
+
 enum ScreenshotEnvironment: String, CaseIterable {
     case development
     case staging
@@ -43,22 +45,23 @@ enum ScreenshotEnvironment: String, CaseIterable {
     var isProductionSafe: Bool {
         switch self {
         case .development, .staging:
-            return true
+            true
         case .production:
-            return false
+            false
         }
     }
 
     var displayName: String {
         switch self {
-        case .development: return "Development"
-        case .staging: return "Staging"
-        case .production: return "Production"
+        case .development: "Development"
+        case .staging: "Staging"
+        case .production: "Production"
         }
     }
 }
 
 // MARK: - Production-Safe Screenshot Automation Engine
+
 class ProductionScreenshotAutomationEngine {
     private let config: ProductionScreenshotConfig
     private let logger: Logger
@@ -72,58 +75,58 @@ class ProductionScreenshotAutomationEngine {
         self.logger = Logger(enabled: config.enableAuditLogging)
         self.sessionStartTime = Date()
 
-        logger.log("🏭 Production screenshot automation engine initialized")
-        logger.log("📊 Max screenshots per session: \(config.maxScreenshotsPerSession)")
-        logger.log("🔐 Authentication required: \(config.requiresAuthentication)")
-        logger.log("📋 Allowed screens: \(config.allowedScreens.joined(separator: ", "))")
+        self.logger.log("🏭 Production screenshot automation engine initialized")
+        self.logger.log("📊 Max screenshots per session: \(config.maxScreenshotsPerSession)")
+        self.logger.log("🔐 Authentication required: \(config.requiresAuthentication)")
+        self.logger.log("📋 Allowed screens: \(config.allowedScreens.joined(separator: ", "))")
     }
 
     func run() {
-        logger.log("🚀 Starting production-safe screenshot automation")
+        self.logger.log("🚀 Starting production-safe screenshot automation")
 
         // Validate environment
-        guard validateEnvironment() else {
-            logger.logError("❌ Environment validation failed")
+        guard self.validateEnvironment() else {
+            self.logger.logError("❌ Environment validation failed")
             return
         }
 
         // Check if enabled
-        guard config.isEnabled else {
-            logger.log("❌ Screenshot automation is disabled in production configuration")
+        guard self.config.isEnabled else {
+            self.logger.log("❌ Screenshot automation is disabled in production configuration")
             return
         }
 
         // Check authentication
-        if config.requiresAuthentication && !isAuthenticated {
-            logger.logError("❌ Authentication required but not provided")
+        if self.config.requiresAuthentication, !self.isAuthenticated {
+            self.logger.logError("❌ Authentication required but not provided")
             return
         }
 
         // Check consent
-        if config.requireExplicitConsent && !hasConsent {
-            logger.logError("❌ Explicit consent required but not granted")
+        if self.config.requireExplicitConsent, !self.hasConsent {
+            self.logger.logError("❌ Explicit consent required but not granted")
             return
         }
 
         // Check session timeout
         if let startTime = sessionStartTime {
             let elapsed = Date().timeIntervalSince(startTime)
-            if elapsed > config.sessionTimeout {
-                logger.logError("❌ Session timeout exceeded")
+            if elapsed > self.config.sessionTimeout {
+                self.logger.logError("❌ Session timeout exceeded")
                 return
             }
         }
 
         // Run screenshot automation with safety restrictions
-        runSafeScreenshotAutomation()
+        self.runSafeScreenshotAutomation()
     }
 
     private func validateEnvironment() -> Bool {
-        let currentEnvironment = getCurrentEnvironment()
-        let isValid = config.allowedEnvironments.contains(currentEnvironment)
+        let currentEnvironment = self.getCurrentEnvironment()
+        let isValid = self.config.allowedEnvironments.contains(currentEnvironment)
 
-        logger.log("🌍 Current environment: \(currentEnvironment.displayName)")
-        logger.log("✅ Environment validation: \(isValid)")
+        self.logger.log("🌍 Current environment: \(currentEnvironment.displayName)")
+        self.logger.log("✅ Environment validation: \(isValid)")
 
         return isValid
     }
@@ -136,19 +139,19 @@ class ProductionScreenshotAutomationEngine {
 
         // Check build configuration
         #if DEBUG
-        return .development
+            return .development
         #elseif STAGING
-        return .staging
+            return .staging
         #else
-        return .production
+            return .production
         #endif
     }
 
     private func runSafeScreenshotAutomation() {
-        logger.log("📸 Running safe screenshot automation")
+        self.logger.log("📸 Running safe screenshot automation")
 
         // Create a safe configuration based on production restrictions
-        let safeConfig = createSafeConfig()
+        let safeConfig = self.createSafeConfig()
 
         // Use the regular automation engine with safe configuration
         let engine = ScreenshotAutomationEngine(
@@ -169,15 +172,15 @@ class ProductionScreenshotAutomationEngine {
     }
 
     private func createSafeConfig() -> ScreenshotConfig {
-        return ScreenshotConfig(
-            outputDirectory: getSafeOutputDirectory(),
+        ScreenshotConfig(
+            outputDirectory: self.getSafeOutputDirectory(),
             imageFormat: .png, // Force PNG for consistency
             quality: 0.8, // Lower quality for smaller files
             appearanceModes: [.light], // Only light mode for consistency
             resolutions: [.default], // Only default resolution
             delayBetweenScreens: 1.0, // Shorter delay for efficiency
             maxRetries: 1, // Fewer retries to avoid loops
-            enableLogging: config.enableAuditLogging,
+            enableLogging: self.config.enableAuditLogging,
             captureScrollableContent: false, // Disable for safety
             captureInteractiveStates: false, // Disable for safety
             includeAccessibilityInfo: false, // Disable for privacy
@@ -192,7 +195,7 @@ class ProductionScreenshotAutomationEngine {
         do {
             try FileManager.default.createDirectory(at: screenshotsDir, withIntermediateDirectories: true)
         } catch {
-            logger.logError("Failed to create safe output directory: \(error)")
+            self.logger.logError("Failed to create safe output directory: \(error)")
             return tempDir.path
         }
 
@@ -201,52 +204,52 @@ class ProductionScreenshotAutomationEngine {
 
     private func captureSafeScreenshot(named screenshotName: String) -> Bool {
         // Check screenshot limits
-        guard screenshotsTaken < config.maxScreenshotsPerSession else {
-            logger.logError("❌ Maximum screenshots per session exceeded")
+        guard self.screenshotsTaken < self.config.maxScreenshotsPerSession else {
+            self.logger.logError("❌ Maximum screenshots per session exceeded")
             return false
         }
 
         // Check if screen is allowed
-        guard config.allowedScreens.contains(screenshotName) else {
-            logger.logError("❌ Screen not allowed for screenshots: \(screenshotName)")
+        guard self.config.allowedScreens.contains(screenshotName) else {
+            self.logger.logError("❌ Screen not allowed for screenshots: \(screenshotName)")
             return false
         }
 
         // Capture screenshot with safety checks
-        logger.log("📸 Capturing safe screenshot: \(screenshotName)")
-        screenshotsTaken += 1
+        self.logger.log("📸 Capturing safe screenshot: \(screenshotName)")
+        self.screenshotsTaken += 1
 
         // Implementation would depend on the specific screenshot capture framework
         let success = true // Placeholder
-        logger.logSuccess("✅ Screenshot captured successfully: \(screenshotName) (\(screenshotsTaken)/\(config.maxScreenshotsPerSession))")
+        self.logger.logSuccess("✅ Screenshot captured successfully: \(screenshotName) (\(self.screenshotsTaken)/\(self.config.maxScreenshotsPerSession))")
         return success
     }
 
     // MARK: - Authentication and Consent
 
     func authenticate(with token: String) -> Bool {
-        guard config.requiresAuthentication else { return true }
+        guard self.config.requiresAuthentication else { return true }
 
         // Simple token validation - in production this would be more robust
         let validTokens = ["APGI-Screenshot-2024", "PROD-SCREENSHOT-AUTH"]
-        isAuthenticated = validTokens.contains(token)
+        self.isAuthenticated = validTokens.contains(token)
 
-        if isAuthenticated {
-            logger.logSuccess("✅ Authentication successful")
+        if self.isAuthenticated {
+            self.logger.logSuccess("✅ Authentication successful")
         } else {
-            logger.logError("❌ Authentication failed")
+            self.logger.logError("❌ Authentication failed")
         }
 
-        return isAuthenticated
+        return self.isAuthenticated
     }
 
     func grantConsent() {
-        hasConsent = true
-        logger.logSuccess("✅ Explicit consent granted")
+        self.hasConsent = true
+        self.logger.logSuccess("✅ Explicit consent granted")
     }
 
     func revokeConsent() {
-        hasConsent = false
-        logger.log("⚠️ Consent revoked")
+        self.hasConsent = false
+        self.logger.log("⚠️ Consent revoked")
     }
 }

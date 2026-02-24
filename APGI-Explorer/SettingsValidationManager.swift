@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Settings Validation Manager
 
@@ -56,7 +56,7 @@ class SettingsValidationManager: ObservableObject {
             )
         }
 
-        if days > 3650 && days != 9999 { // 10 years max, except for "Forever"
+        if days > 3650, days != 9999 { // 10 years max, except for "Forever"
             return ValidationError(
                 field: "Data Retention",
                 message: "Data retention period cannot exceed 10 years",
@@ -152,15 +152,15 @@ struct ValidationError: Identifiable, Equatable {
 
         var color: Color {
             switch self {
-            case .warning: return .orange
-            case .error: return .red
+            case .warning: .orange
+            case .error: .red
             }
         }
 
         var icon: String {
             switch self {
-            case .warning: return "exclamationmark.triangle.fill"
-            case .error: return "xmark.circle.fill"
+            case .warning: "exclamationmark.triangle.fill"
+            case .error: "xmark.circle.fill"
             }
         }
     }
@@ -178,7 +178,7 @@ struct ValidatedTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(title)
+                Text(self.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
 
@@ -192,17 +192,17 @@ struct ValidatedTextField: View {
                 Spacer()
             }
 
-            TextField(title, text: $text)
+            TextField(self.title, text: self.$text)
                 .textFieldStyle(.roundedBorder)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(validationError?.severity.color ?? Color.clear, lineWidth: 1)
+                        .stroke(self.validationError?.severity.color ?? Color.clear, lineWidth: 1)
                 )
                 .onAppear {
-                    validate()
+                    self.validate()
                 }
-                .onChange(of: text) { _, _ in
-                    validate()
+                .onChange(of: self.text) { _, _ in
+                    self.validate()
                 }
 
             if let error = validationError, !isEditing {
@@ -215,7 +215,7 @@ struct ValidatedTextField: View {
     }
 
     private func validate() {
-        validationError = validator(text)
+        self.validationError = self.validator(self.text)
     }
 }
 
@@ -231,7 +231,7 @@ struct ValidatedPicker<T: Hashable>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(title)
+                Text(self.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
 
@@ -245,21 +245,21 @@ struct ValidatedPicker<T: Hashable>: View {
                 Spacer()
             }
 
-            Picker(title, selection: $selection) {
-                ForEach(options, id: \.0) { option in
+            Picker(self.title, selection: self.$selection) {
+                ForEach(self.options, id: \.0) { option in
                     Text(option.1).tag(option.0)
                 }
             }
             .pickerStyle(.menu)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(validationError?.severity.color ?? Color.clear, lineWidth: 1)
+                    .stroke(self.validationError?.severity.color ?? Color.clear, lineWidth: 1)
             )
             .onAppear {
-                validate()
+                self.validate()
             }
-            .onChange(of: selection) { _, _ in
-                validate()
+            .onChange(of: self.selection) { _, _ in
+                self.validate()
                 HapticFeedback.shared.selectionChanged()
             }
 
@@ -273,7 +273,7 @@ struct ValidatedPicker<T: Hashable>: View {
     }
 
     private func validate() {
-        validationError = validator(selection)
+        self.validationError = self.validator(self.selection)
     }
 }
 
@@ -283,18 +283,18 @@ struct SettingsValidationFeedback: View {
     let errors: [ValidationError]
 
     var body: some View {
-        if !errors.isEmpty {
+        if !self.errors.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: errors.contains(where: { $0.severity == .error }) ? "xmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundColor(errors.contains(where: { $0.severity == .error }) ? .red : .orange)
+                    Image(systemName: self.errors.contains(where: { $0.severity == .error }) ? "xmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(self.errors.contains(where: { $0.severity == .error }) ? .red : .orange)
 
                     Text("Settings Validation")
                         .font(.headline)
                         .foregroundColor(.primary)
                 }
 
-                ForEach(errors) { error in
+                ForEach(self.errors) { error in
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: error.severity.icon)
                             .foregroundColor(error.severity.color)
@@ -321,10 +321,10 @@ struct SettingsValidationFeedback: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(errors.contains(where: { $0.severity == .error }) ? Color.red.opacity(0.1) : Color.orange.opacity(0.1))
+                    .fill(self.errors.contains(where: { $0.severity == .error }) ? Color.red.opacity(0.1) : Color.orange.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(errors.contains(where: { $0.severity == .error }) ? Color.red.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 1)
+                            .stroke(self.errors.contains(where: { $0.severity == .error }) ? Color.red.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 1)
                     )
             )
         }

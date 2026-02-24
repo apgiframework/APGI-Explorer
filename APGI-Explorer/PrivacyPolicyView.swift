@@ -1,3 +1,4 @@
+import os.log
 import SwiftUI
 
 struct PrivacyPolicyView: View {
@@ -26,51 +27,50 @@ struct PrivacyPolicyView: View {
                     .padding(.bottom)
 
                     // Privacy Policy Content
-                    privacyPolicyContent
+                    self.privacyPolicyContent
 
                     // Data Collection Section
-                    dataCollectionSection
+                    self.dataCollectionSection
 
                     // Consent Section
-                    consentSection
+                    self.consentSection
 
                     // Action Buttons
-                    actionButtons
+                    self.actionButtons
                 }
                 .padding()
             }
             .navigationTitle("Privacy Policy")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                #if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                    .accessibilityLabel("Close privacy policy")
+                .toolbar {
+                    #if os(iOS)
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Close") {
+                                self.dismiss()
+                            }
+                            .accessibilityLabel("Close privacy policy")
+                        }
+                    #else
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("Close") {
+                                self.dismiss()
+                            }
+                            .accessibilityLabel("Close privacy policy")
+                        }
+                    #endif
                 }
-                #else
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                    .accessibilityLabel("Close privacy policy")
-                }
-                #endif
-            }
         }
     }
 
-    @ViewBuilder
     private var privacyPolicyContent: some View {
         VStack(alignment: .leading, spacing: LayoutConstants.mediumSpacing) {
             // Introduction
             InfoCard(title: "Our Commitment to Privacy") {
                 Text("APGI Explorer is committed to protecting your privacy and ensuring the security " +
-                     "of your personal data. This privacy policy explains how we collect, use, and protect " +
-                     "your information when you use our application.")
+                    "of your personal data. This privacy policy explains how we collect, use, and protect " +
+                    "your information when you use our application.")
                     .font(.body)
             }
 
@@ -121,7 +121,6 @@ struct PrivacyPolicyView: View {
         }
     }
 
-    @ViewBuilder
     private var dataCollectionSection: some View {
         VStack(alignment: .leading, spacing: LayoutConstants.mediumSpacing) {
             Text("Data Collection Preferences")
@@ -133,14 +132,14 @@ struct PrivacyPolicyView: View {
                 ToggleRow(
                     title: "Anonymous Analytics",
                     description: "Help improve APGI Explorer by sharing anonymous usage data",
-                    isOn: $consentToAnalytics
+                    isOn: self.$consentToAnalytics
                 )
 
                 // Crash Reporting Consent
                 ToggleRow(
                     title: "Crash Reports",
                     description: "Automatically send crash reports to help us fix bugs",
-                    isOn: $consentToCrashReporting
+                    isOn: self.$consentToCrashReporting
                 )
             }
             .padding()
@@ -149,7 +148,6 @@ struct PrivacyPolicyView: View {
         }
     }
 
-    @ViewBuilder
     private var consentSection: some View {
         VStack(alignment: .leading, spacing: LayoutConstants.mediumSpacing) {
             Text("Consent & Agreement")
@@ -157,20 +155,19 @@ struct PrivacyPolicyView: View {
                 .foregroundColor(AppColors.primaryText)
 
             Text("By using APGI Explorer, you acknowledge that you have read and understood this privacy " +
-                 "policy. You can change your data sharing preferences at any time in Settings.")
+                "policy. You can change your data sharing preferences at any time in Settings.")
                 .font(.body)
                 .foregroundColor(AppColors.secondaryText)
         }
     }
 
-    @ViewBuilder
     private var actionButtons: some View {
         VStack(spacing: LayoutConstants.smallSpacing) {
             Button(action: {
-                saveConsentPreferences()
-                privacyPolicyAccepted = true
+                self.saveConsentPreferences()
+                self.privacyPolicyAccepted = true
                 HapticFeedback.shared.lightImpact()
-                dismiss()
+                self.dismiss()
             }, label: {
                 Text("Accept & Continue")
                     .frame(maxWidth: .infinity)
@@ -179,13 +176,13 @@ struct PrivacyPolicyView: View {
             .accessibilityLabel("Accept privacy policy and continue")
 
             Button("Export My Data") {
-                exportUserData()
+                self.exportUserData()
             }
             .buttonStyle(SecondaryButtonStyle())
             .accessibilityLabel("Export all my data")
 
             Button("Delete All Data") {
-                deleteAllData()
+                self.deleteAllData()
             }
             .buttonStyle(DestructiveButtonStyle())
             .accessibilityLabel("Delete all my data")
@@ -194,22 +191,22 @@ struct PrivacyPolicyView: View {
     }
 
     private func saveConsentPreferences() {
-        analyticsConsent = consentToAnalytics
-        crashReportingConsent = consentToCrashReporting
+        self.analyticsConsent = self.consentToAnalytics
+        self.crashReportingConsent = self.consentToCrashReporting
 
         // Update analytics settings
-        if consentToAnalytics {
+        if self.consentToAnalytics {
             #if os(iOS)
-            AnalyticsService.shared.enableAnalytics()
+                AnalyticsService.shared.enableAnalytics()
             #endif
         } else {
             #if os(iOS)
-            AnalyticsService.shared.disableAnalytics()
+                AnalyticsService.shared.disableAnalytics()
             #endif
         }
 
         // Update crash reporting settings
-        if consentToCrashReporting {
+        if self.consentToCrashReporting {
             CrashReportingManager.shared.enableCrashReporting()
         } else {
             CrashReportingManager.shared.disableCrashReporting()
@@ -223,13 +220,13 @@ struct PrivacyPolicyView: View {
                 let url = try await profileManager.exportAllUserData()
 
                 #if os(iOS)
-                HapticFeedback.shared.notification(.success)
+                    HapticFeedback.shared.notification(.success)
                 #endif
                 // Show share sheet or save file
-                print("Data exported to: \(url)")
+                os_log("Data exported to: %@", url.absoluteString)
             } catch {
                 #if os(iOS)
-                HapticFeedback.shared.notification(.error)
+                    HapticFeedback.shared.notification(.error)
                 #endif
                 ErrorHandlingManager.shared.handle(error, context: "Privacy Policy Export")
             }
@@ -244,12 +241,12 @@ struct PrivacyPolicyView: View {
                 let profileManager = ProfileManager()
                 try await profileManager.deleteAllUserData()
                 #if os(iOS)
-                HapticFeedback.shared.notification(.success)
+                    HapticFeedback.shared.notification(.success)
                 #endif
-                print("All user data deleted")
+                os_log("All user data deleted")
             } catch {
                 #if os(iOS)
-                HapticFeedback.shared.notification(.error)
+                    HapticFeedback.shared.notification(.error)
                 #endif
                 ErrorHandlingManager.shared.handle(error, context: "Privacy Policy Delete")
             }
@@ -265,20 +262,20 @@ struct ToggleRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: LayoutConstants.tinySpacing) {
             HStack {
-                Text(title)
+                Text(self.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.primaryText)
 
                 Spacer()
 
-                Toggle("", isOn: $isOn)
+                Toggle("", isOn: self.$isOn)
                     .labelsHidden()
-                    .accessibilityLabel(title)
-                    .accessibilityHint(description)
+                    .accessibilityLabel(self.title)
+                    .accessibilityHint(self.description)
             }
 
-            Text(description)
+            Text(self.description)
                 .font(.caption)
                 .foregroundColor(AppColors.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)

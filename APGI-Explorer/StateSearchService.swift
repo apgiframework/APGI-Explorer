@@ -10,7 +10,7 @@ final class StateSearchService {
         let lowercasedQuery = query.lowercased()
 
         // Check cache first if enabled
-        if cacheSearchResults && !query.isEmpty {
+        if self.cacheSearchResults, !query.isEmpty {
             if let cachedResults = searchCache[query] {
                 return cachedResults
             }
@@ -18,19 +18,19 @@ final class StateSearchService {
 
         let results = states.filter { state in
             state.name.lowercased().contains(lowercasedQuery) ||
-            state.description.lowercased().contains(lowercasedQuery)
+                state.description.lowercased().contains(lowercasedQuery)
         }
 
         // Cache results if enabled
-        if cacheSearchResults && !query.isEmpty {
-            searchCache[query] = results
+        if self.cacheSearchResults, !query.isEmpty {
+            self.searchCache[query] = results
         }
 
         return results
     }
 
     func clearCache() {
-        searchCache.removeAll()
+        self.searchCache.removeAll()
     }
 
     func searchByParameters(
@@ -41,14 +41,10 @@ final class StateSearchService {
         in states: [PsychologicalState]
     ) -> [PsychologicalState] {
         states.filter { state in
-            let predictionErrorMatch = predictionError == nil ||
-                matchesParameterLevel(state.parameters.predictionError.accuracy, level: predictionError!)
-            let precisionMatch = precision == nil ||
-                matchesPrecisionLevel(state.parameters.precision, level: precision!)
-            let thresholdMatch = threshold == nil ||
-                matchesThresholdLevel(state.parameters.threshold, level: threshold!)
-            let somaticBiasMatch = somaticBias == nil ||
-                matchesBiasLevel(state.parameters.somaticBias, level: somaticBias!)
+            let predictionErrorMatch = predictionError.map { self.matchesParameterLevel(state.parameters.predictionError.accuracy, level: $0) } ?? true
+            let precisionMatch = precision.map { self.matchesPrecisionLevel(state.parameters.precision, level: $0) } ?? true
+            let thresholdMatch = threshold.map { self.matchesThresholdLevel(state.parameters.threshold, level: $0) } ?? true
+            let somaticBiasMatch = somaticBias.map { self.matchesBiasLevel(state.parameters.somaticBias, level: $0) } ?? true
 
             return predictionErrorMatch && precisionMatch && thresholdMatch && somaticBiasMatch
         }
@@ -78,11 +74,11 @@ final class StateSearchService {
 
     private func matchesThresholdLevel(_ range: ThresholdRange, level: ParameterLevel) -> Bool {
         switch level {
-        case .veryLow: return range.adjustment < 20
-        case .low: return range.adjustment >= 20 && range.adjustment < 40
-        case .moderate: return range.adjustment >= 40 && range.adjustment < 60
-        case .high: return range.adjustment >= 60 && range.adjustment < 80
-        case .veryHigh: return range.adjustment >= 80
+        case .veryLow: range.adjustment < 20
+        case .low: range.adjustment >= 20 && range.adjustment < 40
+        case .moderate: range.adjustment >= 40 && range.adjustment < 60
+        case .high: range.adjustment >= 60 && range.adjustment < 80
+        case .veryHigh: range.adjustment >= 80
         }
     }
 

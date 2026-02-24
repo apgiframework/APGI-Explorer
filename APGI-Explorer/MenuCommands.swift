@@ -1,5 +1,4 @@
-// MenuCommands.swift
-
+import os.log
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -21,7 +20,7 @@ struct MenuCommands: Commands {
                         results: [:]
                     ) {
                         await MainActor.run {
-                            profileManager.currentProfile = newProfile
+                            self.profileManager.currentProfile = newProfile
                         }
                     }
                 }
@@ -30,9 +29,9 @@ struct MenuCommands: Commands {
 
             Button("New Quiz Session") {
                 #if os(macOS)
-                WindowManager.shared.openWindow(type: .quiz) {
-                    IntroView()
-                }
+                    WindowManager.shared.openWindow(type: .quiz) {
+                        IntroView()
+                    }
                 #endif
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
@@ -42,26 +41,26 @@ struct MenuCommands: Commands {
             Button("Open Recent Profile") {
                 // Show recent profiles submenu
             }
-            .disabled(profileManager.profiles.isEmpty)
+            .disabled(self.profileManager.profiles.isEmpty)
         }
 
         CommandGroup(after: .newItem) {
             Button("Import Profile...") {
-                showImportPanel()
+                self.showImportPanel()
             }
             .keyboardShortcut("i", modifiers: [.command, .shift])
 
             Button("Export Profile...") {
-                showExportPanel()
+                self.showExportPanel()
             }
             .keyboardShortcut("e", modifiers: .command)
-            .disabled(profileManager.currentProfile == nil)
+            .disabled(self.profileManager.currentProfile == nil)
 
             Divider()
 
             Button("Export All Profiles...") {
                 Task {
-                    _ = try? await profileManager.exportAllProfiles()
+                    _ = try? await self.profileManager.exportAllProfiles()
                 }
             }
             .keyboardShortcut("e", modifiers: [.command, .option])
@@ -82,22 +81,22 @@ struct MenuCommands: Commands {
             Button("Duplicate Profile") {
                 Task {
                     if let current = profileManager.currentProfile {
-                        _ = try? await profileManager.duplicateProfile(current)
+                        _ = try? await self.profileManager.duplicateProfile(current)
                     }
                 }
             }
             .keyboardShortcut("d", modifiers: .command)
-            .disabled(profileManager.currentProfile == nil)
+            .disabled(self.profileManager.currentProfile == nil)
 
             Button("Delete Profile") {
                 Task {
                     if let current = profileManager.currentProfile {
-                        try? await profileManager.deleteProfile(current)
+                        try? await self.profileManager.deleteProfile(current)
                     }
                 }
             }
             .keyboardShortcut(.delete, modifiers: .command)
-            .disabled(profileManager.currentProfile == nil)
+            .disabled(self.profileManager.currentProfile == nil)
         }
 
         // MARK: - View Menu
@@ -105,30 +104,30 @@ struct MenuCommands: Commands {
         CommandMenu("View") {
             Button("Show State Explorer") {
                 #if os(macOS)
-                WindowManager.shared.openWindow(type: .stateExplorer) {
-                    PsychologicalStatesView()
-                        .environmentObject(stateModel)
-                }
+                    WindowManager.shared.openWindow(type: .stateExplorer) {
+                        PsychologicalStatesView()
+                            .environmentObject(self.stateModel)
+                    }
                 #endif
             }
             .keyboardShortcut("1", modifiers: .command)
 
             Button("Show Profile Comparison") {
                 #if os(macOS)
-                WindowManager.shared.openWindow(type: .profileComparison) {
-                    ProfileComparisonView()
-                        .environmentObject(profileManager)
-                }
+                    WindowManager.shared.openWindow(type: .profileComparison) {
+                        ProfileComparisonView()
+                            .environmentObject(self.profileManager)
+                    }
                 #endif
             }
             .keyboardShortcut("2", modifiers: .command)
 
             Button("Show Reports") {
                 #if os(macOS)
-                WindowManager.shared.openWindow(type: .reports) {
-                    ResultsView(quizModel: QuizModel())
-                        .environmentObject(profileManager)
-                }
+                    WindowManager.shared.openWindow(type: .reports) {
+                        ResultsView(quizModel: QuizModel())
+                            .environmentObject(self.profileManager)
+                    }
                 #endif
             }
             .keyboardShortcut("3", modifiers: .command)
@@ -137,17 +136,17 @@ struct MenuCommands: Commands {
 
             Button("Toggle Sidebar") {
                 #if os(macOS)
-                NSApp.keyWindow?.firstResponder?.tryToPerform(
-                    #selector(NSSplitViewController.toggleSidebar(_:)),
-                    with: nil
-                )
+                    NSApp.keyWindow?.firstResponder?.tryToPerform(
+                        #selector(NSSplitViewController.toggleSidebar(_:)),
+                        with: nil
+                    )
                 #endif
             }
             .keyboardShortcut("s", modifiers: [.command, .control])
 
             Button("Enter Full Screen") {
                 #if os(macOS)
-                NSApp.keyWindow?.toggleFullScreen(nil)
+                    NSApp.keyWindow?.toggleFullScreen(nil)
                 #endif
             }
             .keyboardShortcut("f", modifiers: [.command, .control])
@@ -175,8 +174,8 @@ struct MenuCommands: Commands {
 
             Button("Refresh Data") {
                 Task {
-                    await profileManager.loadProfiles()
-                    await stateModel.loadStates()
+                    await self.profileManager.loadProfiles()
+                    await self.stateModel.loadStates()
                 }
             }
             .keyboardShortcut("r", modifiers: .command)
@@ -187,21 +186,23 @@ struct MenuCommands: Commands {
         CommandMenu("Navigate") {
             Button("Previous Profile") {
                 if let currentIndex = profileManager.profiles.firstIndex(where: { $0.id == profileManager.currentProfile?.id }),
-                   currentIndex > 0 {
-                    profileManager.currentProfile = profileManager.profiles[currentIndex - 1]
+                   currentIndex > 0
+                {
+                    self.profileManager.currentProfile = self.profileManager.profiles[currentIndex - 1]
                 }
             }
             .keyboardShortcut("[", modifiers: .command)
-            .disabled(profileManager.profiles.isEmpty)
+            .disabled(self.profileManager.profiles.isEmpty)
 
             Button("Next Profile") {
                 if let currentIndex = profileManager.profiles.firstIndex(where: { $0.id == profileManager.currentProfile?.id }),
-                   currentIndex < profileManager.profiles.count - 1 {
-                    profileManager.currentProfile = profileManager.profiles[currentIndex + 1]
+                   currentIndex < profileManager.profiles.count - 1
+                {
+                    self.profileManager.currentProfile = self.profileManager.profiles[currentIndex + 1]
                 }
             }
             .keyboardShortcut("]", modifiers: .command)
-            .disabled(profileManager.profiles.isEmpty)
+            .disabled(self.profileManager.profiles.isEmpty)
 
             Divider()
 
@@ -221,9 +222,9 @@ struct MenuCommands: Commands {
         CommandMenu("Quiz") {
             Button("Start New Quiz") {
                 #if os(macOS)
-                WindowManager.shared.openWindow(type: .quiz) {
-                    IntroView()
-                }
+                    WindowManager.shared.openWindow(type: .quiz) {
+                        IntroView()
+                    }
                 #endif
             }
             .keyboardShortcut("q", modifiers: [.command, .shift])
@@ -249,14 +250,14 @@ struct MenuCommands: Commands {
         CommandGroup(replacing: .windowArrangement) {
             Button("Minimize") {
                 #if os(macOS)
-                NSApp.keyWindow?.miniaturize(nil)
+                    NSApp.keyWindow?.miniaturize(nil)
                 #endif
             }
             .keyboardShortcut("m", modifiers: .command)
 
             Button("Zoom") {
                 #if os(macOS)
-                NSApp.keyWindow?.zoom(nil)
+                    NSApp.keyWindow?.zoom(nil)
                 #endif
             }
 
@@ -264,14 +265,14 @@ struct MenuCommands: Commands {
 
             Button("Close Window") {
                 #if os(macOS)
-                NSApp.keyWindow?.close()
+                    NSApp.keyWindow?.close()
                 #endif
             }
             .keyboardShortcut("w", modifiers: .command)
 
             Button("Close All Windows") {
                 #if os(macOS)
-                WindowManager.shared.closeAllWindows()
+                    WindowManager.shared.closeAllWindows()
                 #endif
             }
             .keyboardShortcut("w", modifiers: [.command, .option])
@@ -282,7 +283,9 @@ struct MenuCommands: Commands {
         CommandGroup(replacing: .help) {
             Button("APGI Explorer Help") {
                 #if os(macOS)
-                NSWorkspace.shared.open(URL(string: "https://apgi-explorer.com/help")!)
+                    if let helpURL = URL(string: "https://apgi-explorer.com/help") {
+                        NSWorkspace.shared.open(helpURL)
+                    }
                 #endif
             }
             .keyboardShortcut("?", modifiers: .command)
@@ -295,13 +298,17 @@ struct MenuCommands: Commands {
 
             Button("Report a Bug") {
                 #if os(macOS)
-                NSWorkspace.shared.open(URL(string: "https://github.com/yourrepo/issues")!)
+                    if let bugReportURL = URL(string: "https://github.com/yourrepo/issues") {
+                        NSWorkspace.shared.open(bugReportURL)
+                    }
                 #endif
             }
 
             Button("Contact Support") {
                 #if os(macOS)
-                NSWorkspace.shared.open(URL(string: "mailto:support@apgi-explorer.com")!)
+                    if let supportURL = URL(string: "mailto:support@apgi-explorer.com") {
+                        NSWorkspace.shared.open(supportURL)
+                    }
                 #endif
             }
         }
@@ -311,41 +318,41 @@ struct MenuCommands: Commands {
 
     private func showExportPanel() {
         #if os(macOS)
-        guard let profile = profileManager.currentProfile else { return }
+            guard let profile = profileManager.currentProfile else { return }
 
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "\(profile.name).json"
-        panel.title = "Export Profile"
-        panel.message = "Choose a location to save the profile"
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue = "\(profile.name).json"
+            panel.title = "Export Profile"
+            panel.message = "Choose a location to save the profile"
 
-        panel.begin { response in
-            if response == .OK, let url = panel.url {
-                do {
-                    _ = try FileStorageManager.shared.exportProfile(profile, to: url)
-                } catch {
-                    print("Export failed: \(error)")
+            panel.begin { response in
+                if response == .OK, let url = panel.url {
+                    do {
+                        _ = try FileStorageManager.shared.exportProfile(profile, to: url)
+                    } catch {
+                        os_log("Export failed: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+                    }
                 }
             }
-        }
         #endif
     }
 
     private func showImportPanel() {
         #if os(macOS)
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.json]
-        panel.allowsMultipleSelection = false
-        panel.title = "Import Profile"
-        panel.message = "Select a profile file to import"
+            let panel = NSOpenPanel()
+            panel.allowedContentTypes = [.json]
+            panel.allowsMultipleSelection = false
+            panel.title = "Import Profile"
+            panel.message = "Select a profile file to import"
 
-        panel.begin { response in
-            if response == .OK, let url = panel.url {
-                Task {
-                    try? await profileManager.importProfile(from: url)
+            panel.begin { response in
+                if response == .OK, let url = panel.url {
+                    Task {
+                        try? await self.profileManager.importProfile(from: url)
+                    }
                 }
             }
-        }
         #endif
     }
 }

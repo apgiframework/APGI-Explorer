@@ -8,17 +8,17 @@ struct QuizNavigationView: View {
             QuizView()
                 .toolbar {
                     #if os(iOS)
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            presentationMode.wrappedValue.dismiss()
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                self.presentationMode.wrappedValue.dismiss()
+                            }
                         }
-                    }
                     #else
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Done") {
-                            presentationMode.wrappedValue.dismiss()
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("Done") {
+                                self.presentationMode.wrappedValue.dismiss()
+                            }
                         }
-                    }
                     #endif
                 }
         }

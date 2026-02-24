@@ -29,7 +29,7 @@ let steps: [OnboardingStep] = [
             "Take the assessment to discover your cognitive profile",
             "Explore how different psychological states are mapped",
             "Compare your results with various cognitive patterns",
-            "Track changes in your profile over time"
+            "Track changes in your profile over time",
         ],
         highlightColor: .blue
     ),
@@ -45,7 +45,7 @@ let steps: [OnboardingStep] = [
             "Takes about 15-20 minutes to complete",
             "Save and resume your progress anytime",
             "Questions adapt based on your responses",
-            "Get immediate results upon completion"
+            "Get immediate results upon completion",
         ],
         highlightColor: .teal
     ),
@@ -61,7 +61,7 @@ let steps: [OnboardingStep] = [
             "ε (Prediction Error): Your sensitivity to unexpected events",
             "π (Precision): How you weigh sensory vs. prior information",
             "θₜ (Threshold): Your awareness threshold for stimuli",
-            "β (Somatic Bias): How bodily states influence your perception"
+            "β (Somatic Bias): How bodily states influence your perception",
         ],
         highlightColor: .indigo
     ),
@@ -77,7 +77,7 @@ let steps: [OnboardingStep] = [
             "Search by state name or description",
             "Filter by APGI parameters",
             "View detailed parameter breakdowns",
-            "Save favorite states for quick reference"
+            "Save favorite states for quick reference",
         ],
         highlightColor: .purple
     ),
@@ -93,7 +93,7 @@ let steps: [OnboardingStep] = [
             "Visual representation of your cognitive patterns",
             "Personalized insights and observations",
             "Actionable recommendations",
-            "Exportable reports for professional review"
+            "Exportable reports for professional review",
         ],
         highlightColor: .orange
     ),
@@ -109,7 +109,7 @@ let steps: [OnboardingStep] = [
             "Save unlimited profiles",
             "Visual timeline of your progress",
             "Detailed comparison tools",
-            "Set reminders for follow-up assessments"
+            "Set reminders for follow-up assessments",
         ],
         highlightColor: .green
     ),
@@ -125,7 +125,7 @@ let steps: [OnboardingStep] = [
             "Daily cognitive exercises",
             "Mindfulness practices",
             "Coping strategies",
-            "Growth opportunities"
+            "Growth opportunities",
         ],
         highlightColor: .pink
     ),
@@ -141,10 +141,10 @@ let steps: [OnboardingStep] = [
             "Take the assessment first for personalized insights",
             "Bookmark interesting states to explore later",
             "Check back regularly for new content",
-            "Your data is private and secure"
+            "Your data is private and secure",
         ],
         highlightColor: .blue
-    )
+    ),
 ]
 
 struct OnboardingView: View {
@@ -153,8 +153,8 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack {
-            mainContent
-            bottomIndicator
+            self.mainContent
+            self.bottomIndicator
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.windowBackgroundColor))
@@ -163,7 +163,7 @@ struct OnboardingView: View {
     private var mainContent: some View {
         ZStack {
             ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                stepView(for: step, at: index)
+                self.stepView(for: step, at: index)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -172,23 +172,23 @@ struct OnboardingView: View {
     private func stepView(for step: OnboardingStep, at index: Int) -> some View {
         OnboardingStepView(step: step, isLastStep: index == steps.count - 1) {
             if index == steps.count - 1 {
-                appState.completeOnboarding()
+                self.appState.completeOnboarding()
             } else {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    currentStep += 1
+                    self.currentStep += 1
                 }
             }
         }
-        .opacity(index == currentStep ? 1 : 0)
-        .scaleEffect(index == currentStep ? 1 : 0.95)
-        .animation(.easeInOut(duration: 0.25), value: currentStep)
+        .opacity(index == self.currentStep ? 1 : 0)
+        .scaleEffect(index == self.currentStep ? 1 : 0.95)
+        .animation(.easeInOut(duration: 0.25), value: self.currentStep)
         .id("step-\(index)")
     }
 
     private var bottomIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<steps.count, id: \.self) { index in
-                indicatorCircle(for: index)
+            ForEach(0 ..< steps.count, id: \.self) { index in
+                self.indicatorCircle(for: index)
             }
         }
         .padding(.bottom, 20)
@@ -196,18 +196,18 @@ struct OnboardingView: View {
 
     private func indicatorCircle(for index: Int) -> some View {
         Circle()
-            .fill(index == currentStep ? Color.blue : Color.gray.opacity(0.5))
+            .fill(index == self.currentStep ? Color.blue : Color.gray.opacity(0.5))
             .frame(width: 8, height: 8)
-            .scaleEffect(index == currentStep ? 1.2 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: currentStep)
+            .scaleEffect(index == self.currentStep ? 1.2 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: self.currentStep)
             .accessibleTap(
                 action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        currentStep = index
+                        self.currentStep = index
                     }
                 },
                 accessibilityLabel: "Go to step \(index + 1)",
-                accessibilityHint: index == currentStep ? "Current step" : "Navigate to onboarding step \(index + 1)"
+                accessibilityHint: index == self.currentStep ? "Current step" : "Navigate to onboarding step \(index + 1)"
             )
     }
 }
@@ -222,12 +222,12 @@ struct OnboardingStepView: View {
         VStack(spacing: 20) {
             // Image
             Group {
-                if step.imageType == .system {
-                    Image(systemName: step.imageName)
+                if self.step.imageType == .system {
+                    Image(systemName: self.step.imageName)
                         .font(.system(size: 80))
-                        .foregroundColor(step.highlightColor)
+                        .foregroundColor(self.step.highlightColor)
                 } else {
-                    Image(step.imageName)
+                    Image(self.step.imageName)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 200)
@@ -237,11 +237,11 @@ struct OnboardingStepView: View {
 
             // Title and Subtitle
             VStack(spacing: 8) {
-                Text(step.title)
+                Text(self.step.title)
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text(step.subtitle)
+                Text(self.step.subtitle)
                     .font(.title3)
                     .foregroundColor(.secondary)
             }
@@ -249,7 +249,7 @@ struct OnboardingStepView: View {
             .multilineTextAlignment(.center)
 
             // Description
-            Text(step.description)
+            Text(self.step.description)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -257,12 +257,12 @@ struct OnboardingStepView: View {
                 .padding(.vertical, 20)
 
             // Tips
-            if !step.tips.isEmpty {
+            if !self.step.tips.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(step.tips, id: \.self) { tip in
+                    ForEach(self.step.tips, id: \.self) { tip in
                         HStack(alignment: .top) {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(step.highlightColor)
+                                .foregroundColor(self.step.highlightColor)
                             Text(tip)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -279,19 +279,19 @@ struct OnboardingStepView: View {
             // Buttons
             HStack(spacing: 16) {
                 // Close button (only on last step)
-                if isLastStep {
+                if self.isLastStep {
                     Button(action: {
-                        dismiss()
+                        self.dismiss()
                     }, label: {
                         Text("Close")
                             .font(.headline)
-                            .foregroundColor(step.highlightColor)
+                            .foregroundColor(self.step.highlightColor)
                             .frame(maxWidth: 120)
                             .padding()
                             .background(Color.clear)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(step.highlightColor, lineWidth: 2)
+                                    .stroke(self.step.highlightColor, lineWidth: 2)
                             )
                             .cornerRadius(10)
                     })
@@ -299,13 +299,13 @@ struct OnboardingStepView: View {
                 }
 
                 // Continue/Get Started Button
-                Button(action: action, label: {
-                    Text(isLastStep ? "Get Started" : "Continue")
+                Button(action: self.action, label: {
+                    Text(self.isLastStep ? "Get Started" : "Continue")
                         .font(.headline)
                         .foregroundColor(.white)
-                        .frame(maxWidth: isLastStep ? 120 : 200)
+                        .frame(maxWidth: self.isLastStep ? 120 : 200)
                         .padding()
-                        .background(step.highlightColor)
+                        .background(self.step.highlightColor)
                         .cornerRadius(10)
                 })
                 .buttonStyle(PlainButtonStyle())

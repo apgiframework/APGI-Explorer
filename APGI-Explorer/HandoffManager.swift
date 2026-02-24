@@ -1,8 +1,8 @@
-import SwiftUI
-import Intents
 import CoreSpotlight
+import Intents
+import SwiftUI
 
-struct HandoffActivity {
+enum HandoffActivity {
     static let activityType = "com.apgi.continue-quiz"
 
     static func createUserActivity(quizModel: QuizModel, currentQuestionIndex: Int) -> NSUserActivity {
@@ -16,7 +16,7 @@ struct HandoffActivity {
         activity.userInfo = [
             "questionIndex": currentQuestionIndex,
             "answers": quizModel.answers,
-            "timestamp": Date().timeIntervalSince1970
+            "timestamp": Date().timeIntervalSince1970,
         ]
 
         // Add content attributes for search
@@ -31,11 +31,12 @@ struct HandoffActivity {
     }
 
     static func restoreUserActivity(_ activity: NSUserActivity, currentQuestionIndex: Binding<Int>) -> [Int: Int]? {
-        guard activity.activityType == activityType,
+        guard activity.activityType == self.activityType,
               let userInfo = activity.userInfo,
               let answers = userInfo["answers"] as? [Int: Int],
               let questionIndex = userInfo["questionIndex"] as? Int,
-              let timestamp = userInfo["timestamp"] as? TimeInterval else {
+              let timestamp = userInfo["timestamp"] as? TimeInterval
+        else {
             return nil
         }
 
@@ -54,6 +55,7 @@ struct HandoffActivity {
 }
 
 // MARK: - View Modifier for Handoff Support
+
 struct HandoffModifier: ViewModifier {
     let activity: NSUserActivity
     @State private var isActive = false
@@ -68,8 +70,8 @@ struct HandoffModifier: ViewModifier {
                 self.isActive = false
                 self.activity.invalidate()
             }
-            .onChange(of: isActive) {
-                if isActive {
+            .onChange(of: self.isActive) {
+                if self.isActive {
                     self.activity.becomeCurrent()
                 } else {
                     self.activity.invalidate()

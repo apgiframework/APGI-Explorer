@@ -1,7 +1,7 @@
-import SwiftUI
 import Combine
+import SwiftUI
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #endif
 
 // MARK: - Accessibility Manager
@@ -20,108 +20,107 @@ class AccessibilityManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
-        setupAccessibilityObservers()
-        loadAccessibilitySettings()
+        self.setupAccessibilityObservers()
+        self.loadAccessibilitySettings()
     }
 
     private func setupAccessibilityObservers() {
         #if canImport(UIKit)
-        // Monitor accessibility settings changes
-        NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)
-            .sink { [weak self] _ in
-                self?.updateContentSize()
-            }
-            .store(in: &cancellables)
+            // Monitor accessibility settings changes
+            NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)
+                .sink { [weak self] _ in
+                    self?.updateContentSize()
+                }
+                .store(in: &self.cancellables)
 
-        // Monitor voice over status
-        NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)
-            .sink { [weak self] _ in
-                self?.updateVoiceOverStatus()
-            }
-            .store(in: &cancellables)
+            // Monitor voice over status
+            NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)
+                .sink { [weak self] _ in
+                    self?.updateVoiceOverStatus()
+                }
+                .store(in: &self.cancellables)
 
-        // Monitor reduce motion status
-        NotificationCenter.default.publisher(for: UIAccessibility.reduceMotionStatusDidChangeNotification)
-            .sink { [weak self] _ in
-                self?.updateReduceMotionStatus()
-            }
-            .store(in: &cancellables)
+            // Monitor reduce motion status
+            NotificationCenter.default.publisher(for: UIAccessibility.reduceMotionStatusDidChangeNotification)
+                .sink { [weak self] _ in
+                    self?.updateReduceMotionStatus()
+                }
+                .store(in: &self.cancellables)
         #endif
     }
 
     private func loadAccessibilitySettings() {
         #if canImport(UIKit)
-        highContrastEnabled = UIAccessibility.isDarkerSystemColorsEnabled
-        reducedMotionEnabled = UIAccessibility.isReduceMotionEnabled
-        largeTextEnabled = UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory
-        voiceOverEnabled = UIAccessibility.isVoiceOverRunning
-        preferredContentSize = UIApplication.shared.preferredContentSizeCategory
+            self.highContrastEnabled = UIAccessibility.isDarkerSystemColorsEnabled
+            self.reducedMotionEnabled = UIAccessibility.isReduceMotionEnabled
+            self.largeTextEnabled = UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory
+            self.voiceOverEnabled = UIAccessibility.isVoiceOverRunning
+            self.preferredContentSize = UIApplication.shared.preferredContentSizeCategory
         #else
-        // macOS defaults
-        highContrastEnabled = false
-        reducedMotionEnabled = false
-        largeTextEnabled = false
-        voiceOverEnabled = false
-        preferredContentSize = .medium
+            // macOS defaults
+            self.highContrastEnabled = false
+            self.reducedMotionEnabled = false
+            self.largeTextEnabled = false
+            self.voiceOverEnabled = false
+            self.preferredContentSize = .medium
         #endif
     }
 
     private func updateContentSize() {
         #if canImport(UIKit)
-        preferredContentSize = UIApplication.shared.preferredContentSizeCategory
-        largeTextEnabled = preferredContentSize.isAccessibilityCategory
+            self.preferredContentSize = UIApplication.shared.preferredContentSizeCategory
+            self.largeTextEnabled = self.preferredContentSize.isAccessibilityCategory
         #endif
     }
 
     private func updateVoiceOverStatus() {
         #if canImport(UIKit)
-        voiceOverEnabled = UIAccessibility.isVoiceOverRunning
+            self.voiceOverEnabled = UIAccessibility.isVoiceOverRunning
         #endif
     }
 
     private func updateReduceMotionStatus() {
         #if canImport(UIKit)
-        reducedMotionEnabled = UIAccessibility.isReduceMotionEnabled
+            self.reducedMotionEnabled = UIAccessibility.isReduceMotionEnabled
         #endif
     }
 
     // MARK: - Accessibility Utilities
 
     var shouldReduceMotion: Bool {
-        reducedMotionEnabled
+        self.reducedMotionEnabled
     }
 
     var shouldUseHighContrast: Bool {
-        highContrastEnabled
+        self.highContrastEnabled
     }
 
     var shouldUseLargeText: Bool {
-        largeTextEnabled
+        self.largeTextEnabled
     }
 
     var shouldAnnounceChanges: Bool {
-        voiceOverEnabled
+        self.voiceOverEnabled
     }
 
     func announce(_ message: String) {
         #if canImport(UIKit)
-        guard voiceOverEnabled else { return }
-        UIAccessibility.post(notification: .announcement, argument: message)
+            guard self.voiceOverEnabled else { return }
+            UIAccessibility.post(notification: .announcement, argument: message)
         #endif
     }
 
     func setAccessibilityFocus(to element: Any?) {
         #if canImport(UIKit)
-        guard voiceOverEnabled else { return }
-        UIAccessibility.post(notification: .screenChanged, argument: element)
+            guard self.voiceOverEnabled else { return }
+            UIAccessibility.post(notification: .screenChanged, argument: element)
         #endif
     }
 }
 
 // MARK: - Accessible Color System
 
-struct AccessibleColors {
-
+enum AccessibleColors {
     // MARK: - High Contrast Colors
 
     static var primaryText: Color {
@@ -184,8 +183,7 @@ struct AccessibleColors {
 
 // MARK: - Accessible Animation
 
-struct AccessibleAnimation {
-
+enum AccessibleAnimation {
     static func defaultAnimation(_ animation: Animation? = nil) -> Animation {
         if AccessibilityManager.shared.shouldReduceMotion {
             return Animation.linear(duration: 0)
@@ -222,13 +220,13 @@ struct AccessibleButtonStyle: ButtonStyle {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isHighContrast ? Color.black : Color.blue)
+                    .fill(self.isHighContrast ? Color.black : Color.blue)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white, lineWidth: isHighContrast ? 2 : 0)
+                            .stroke(Color.white, lineWidth: self.isHighContrast ? 2 : 0)
                     )
             )
-            .foregroundColor(isHighContrast ? Color.white : Color.white)
+            .foregroundColor(self.isHighContrast ? Color.white : Color.white)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(AccessibleAnimation.defaultAnimation(), value: configuration.isPressed)
     }
@@ -246,17 +244,17 @@ struct AccessibleCardStyle: ViewModifier {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isHighContrast ? Color.gray.opacity(0.2) : Color.adaptiveBackground)
+                    .fill(self.isHighContrast ? Color.gray.opacity(0.2) : Color.adaptiveBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isHighContrast ? Color.white : Color.clear, lineWidth: isHighContrast ? 1 : 0)
+                            .stroke(self.isHighContrast ? Color.white : Color.clear, lineWidth: self.isHighContrast ? 1 : 0)
                     )
             )
             .shadow(
-                color: isHighContrast ? Color.clear : Color.black.opacity(0.1),
-                radius: isHighContrast ? 0 : 8,
+                color: self.isHighContrast ? Color.clear : Color.black.opacity(0.1),
+                radius: self.isHighContrast ? 0 : 8,
                 x: 0,
-                y: isHighContrast ? 0 : 4
+                y: self.isHighContrast ? 0 : 4
             )
     }
 }
@@ -273,13 +271,13 @@ struct AccessibleTextFieldStyle: TextFieldStyle {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHighContrast ? Color.black : AppColors.primaryBackground)
+                    .fill(self.isHighContrast ? Color.black : AppColors.primaryBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(isHighContrast ? Color.white : Color.gray, lineWidth: isHighContrast ? 2 : 1)
+                            .stroke(self.isHighContrast ? Color.white : Color.gray, lineWidth: self.isHighContrast ? 2 : 1)
                     )
             )
-            .foregroundColor(isHighContrast ? Color.white : Color.primary)
+            .foregroundColor(self.isHighContrast ? Color.white : Color.primary)
     }
 }
 
@@ -304,12 +302,12 @@ struct AccessibleButton<Label: View>: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            label
+        Button(action: self.action) {
+            self.label
         }
         .buttonStyle(AccessibleButtonStyle())
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint(accessibilityHint ?? "")
+        .accessibilityLabel(self.accessibilityLabel)
+        .accessibilityHint(self.accessibilityHint ?? "")
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -330,11 +328,11 @@ struct AccessibleCard<Content: View>: View {
     }
 
     var body: some View {
-        content
+        self.content
             .modifier(AccessibleCardStyle())
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(accessibilityLabel ?? "")
-            .accessibilityHint(accessibilityHint ?? "")
+            .accessibilityLabel(self.accessibilityLabel ?? "")
+            .accessibilityHint(self.accessibilityHint ?? "")
     }
 }
 
@@ -344,22 +342,22 @@ struct AccessibleProgressView: View {
     let label: String
 
     private var percentage: Double {
-        guard total > 0 else { return 0 }
-        return (progress / total) * 100
+        guard self.total > 0 else { return 0 }
+        return (self.progress / self.total) * 100
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(label)
+            Text(self.label)
                 .font(.caption)
                 .foregroundColor(AccessibleColors.secondaryText)
 
-            ProgressView(value: progress, total: total)
+            ProgressView(value: self.progress, total: self.total)
                 .progressViewStyle(
                     LinearProgressViewStyle(tint: AccessibleColors.accent)
                 )
-                .accessibilityLabel("\(label): \(Int(percentage)) percent complete")
-                .accessibilityValue("\(Int(percentage)) percent")
+                .accessibilityLabel("\(self.label): \(Int(self.percentage)) percent complete")
+                .accessibilityValue("\(Int(self.percentage)) percent")
         }
     }
 }
@@ -381,18 +379,18 @@ struct AccessibleChart<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(self.title)
                 .font(.headline)
                 .foregroundColor(AccessibleColors.primaryText)
 
-            content
+            self.content
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel(title)
-                .accessibilityHint(description)
+                .accessibilityLabel(self.title)
+                .accessibilityHint(self.description)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(title)
-        .accessibilityHint(description)
+        .accessibilityLabel(self.title)
+        .accessibilityHint(self.description)
     }
 }
 
@@ -405,27 +403,27 @@ struct AccessibilitySettingsView: View {
         NavigationView {
             Form {
                 Section(header: Text("Visual")) {
-                    Toggle("High Contrast", isOn: .constant(accessibilityManager.highContrastEnabled))
+                    Toggle("High Contrast", isOn: .constant(self.accessibilityManager.highContrastEnabled))
                         .disabled(true) // System setting
                         .accessibilityHint("High contrast is controlled in system settings")
 
-                    Toggle("Large Text", isOn: .constant(accessibilityManager.largeTextEnabled))
+                    Toggle("Large Text", isOn: .constant(self.accessibilityManager.largeTextEnabled))
                         .disabled(true) // System setting
                         .accessibilityHint("Large text is controlled in system settings")
                 }
 
                 Section(header: Text("Motion")) {
-                    Toggle("Reduce Motion", isOn: .constant(accessibilityManager.reducedMotionEnabled))
+                    Toggle("Reduce Motion", isOn: .constant(self.accessibilityManager.reducedMotionEnabled))
                         .disabled(true) // System setting
                         .accessibilityHint("Reduce motion is controlled in system settings")
                 }
 
                 Section(header: Text("Audio")) {
-                    Toggle("VoiceOver", isOn: .constant(accessibilityManager.voiceOverEnabled))
+                    Toggle("VoiceOver", isOn: .constant(self.accessibilityManager.voiceOverEnabled))
                         .disabled(true) // System setting
                         .accessibilityHint("VoiceOver is controlled in system settings")
 
-                    Toggle("Accessibility Labels", isOn: $accessibilityManager.accessibilityLabelsEnabled)
+                    Toggle("Accessibility Labels", isOn: self.$accessibilityManager.accessibilityLabelsEnabled)
                         .accessibilityHint("Enable additional accessibility labels throughout the app")
                 }
 
@@ -437,7 +435,7 @@ struct AccessibilitySettingsView: View {
                             accessibilityLabel: "Sample button",
                             accessibilityHint: "This is a sample accessible button"
                         ) {
-                            accessibilityManager.announce("Sample button tapped")
+                            self.accessibilityManager.announce("Sample button tapped")
                         } label: {
                             Text("Tap Me")
                         }
@@ -492,7 +490,7 @@ extension View {
             .background(AccessibleColors.background)
     }
 
-    func accessibilityAnnounceOnChange<T: Equatable>(_ value: T, announcement: String) -> some View {
+    func accessibilityAnnounceOnChange(_ value: some Equatable, announcement: String) -> some View {
         self.onChange(of: value) { _, _ in
             AccessibilityManager.shared.announce(announcement)
         }
@@ -501,8 +499,7 @@ extension View {
 
 // MARK: - Accessibility Helpers
 
-struct AccessibilityHelper {
-
+enum AccessibilityHelper {
     static func announceProgress(_ current: Int, total: Int, item: String) {
         let percentage = Int((Double(current) / Double(total)) * 100)
         let message = "\(item) \(current) of \(total), \(percentage) percent complete"

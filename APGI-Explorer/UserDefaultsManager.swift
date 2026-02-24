@@ -30,8 +30,8 @@ class UserDefaultsManager {
     // MARK: - Onboarding
 
     var hasCompletedOnboarding: Bool {
-        get { defaults.bool(forKey: Keys.hasCompletedOnboarding) }
-        set { defaults.set(newValue, forKey: Keys.hasCompletedOnboarding) }
+        get { self.defaults.bool(forKey: Keys.hasCompletedOnboarding) }
+        set { self.defaults.set(newValue, forKey: Keys.hasCompletedOnboarding) }
     }
 
     // MARK: - Profile Settings
@@ -42,13 +42,13 @@ class UserDefaultsManager {
             return UUID(uuidString: string)
         }
         set {
-            defaults.set(newValue?.uuidString, forKey: Keys.lastActiveProfileID)
+            self.defaults.set(newValue?.uuidString, forKey: Keys.lastActiveProfileID)
         }
     }
 
     var defaultProfileName: String {
-        get { defaults.string(forKey: Keys.defaultProfileName) ?? "My Profile" }
-        set { defaults.set(newValue, forKey: Keys.defaultProfileName) }
+        get { self.defaults.string(forKey: Keys.defaultProfileName) ?? "My Profile" }
+        set { self.defaults.set(newValue, forKey: Keys.defaultProfileName) }
     }
 
     // MARK: - UI Preferences
@@ -56,55 +56,57 @@ class UserDefaultsManager {
     var preferredChartStyle: ChartStyle {
         get {
             guard let rawValue = defaults.string(forKey: Keys.preferredChartStyle),
-                  let style = ChartStyle(rawValue: rawValue) else {
+                  let style = ChartStyle(rawValue: rawValue)
+            else {
                 return .radar
             }
             return style
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.preferredChartStyle) }
+        set { self.defaults.set(newValue.rawValue, forKey: Keys.preferredChartStyle) }
     }
 
     var theme: AppTheme {
         get {
             guard let rawValue = defaults.string(forKey: Keys.theme),
-                  let theme = AppTheme(rawValue: rawValue) else {
+                  let theme = AppTheme(rawValue: rawValue)
+            else {
                 return .system
             }
             return theme
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.theme) }
+        set { self.defaults.set(newValue.rawValue, forKey: Keys.theme) }
     }
 
     var showConfidenceIndicators: Bool {
-        get { defaults.bool(forKey: Keys.showConfidenceIndicators) }
-        set { defaults.set(newValue, forKey: Keys.showConfidenceIndicators) }
+        get { self.defaults.bool(forKey: Keys.showConfidenceIndicators) }
+        set { self.defaults.set(newValue, forKey: Keys.showConfidenceIndicators) }
     }
 
     // MARK: - Feature Flags
 
     var autoSaveEnabled: Bool {
-        get { defaults.object(forKey: Keys.autoSaveEnabled) as? Bool ?? true }
-        set { defaults.set(newValue, forKey: Keys.autoSaveEnabled) }
+        get { self.defaults.object(forKey: Keys.autoSaveEnabled) as? Bool ?? true }
+        set { self.defaults.set(newValue, forKey: Keys.autoSaveEnabled) }
     }
 
     var quizReminderEnabled: Bool {
-        get { defaults.bool(forKey: Keys.quizReminderEnabled) }
-        set { defaults.set(newValue, forKey: Keys.quizReminderEnabled) }
+        get { self.defaults.bool(forKey: Keys.quizReminderEnabled) }
+        set { self.defaults.set(newValue, forKey: Keys.quizReminderEnabled) }
     }
 
     var analyticsEnabled: Bool {
-        get { defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? false }
-        set { defaults.set(newValue, forKey: Keys.analyticsEnabled) }
+        get { self.defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? false }
+        set { self.defaults.set(newValue, forKey: Keys.analyticsEnabled) }
     }
 
     var soundEffectsEnabled: Bool {
-        get { defaults.object(forKey: Keys.soundEffectsEnabled) as? Bool ?? true }
-        set { defaults.set(newValue, forKey: Keys.soundEffectsEnabled) }
+        get { self.defaults.object(forKey: Keys.soundEffectsEnabled) as? Bool ?? true }
+        set { self.defaults.set(newValue, forKey: Keys.soundEffectsEnabled) }
     }
 
     var hapticsEnabled: Bool {
-        get { defaults.object(forKey: Keys.hapticsEnabled) as? Bool ?? true }
-        set { defaults.set(newValue, forKey: Keys.hapticsEnabled) }
+        get { self.defaults.object(forKey: Keys.hapticsEnabled) as? Bool ?? true }
+        set { self.defaults.set(newValue, forKey: Keys.hapticsEnabled) }
     }
 
     // MARK: - Backup Settings
@@ -112,59 +114,65 @@ class UserDefaultsManager {
     var backupFrequency: BackupFrequency {
         get {
             guard let rawValue = defaults.string(forKey: Keys.backupFrequency),
-                  let frequency = BackupFrequency(rawValue: rawValue) else {
+                  let frequency = BackupFrequency(rawValue: rawValue)
+            else {
                 return .weekly
             }
             return frequency
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.backupFrequency) }
+        set { self.defaults.set(newValue.rawValue, forKey: Keys.backupFrequency) }
     }
 
     var lastBackupDate: Date? {
-        get { defaults.object(forKey: Keys.lastBackupDate) as? Date }
-        set { defaults.set(newValue, forKey: Keys.lastBackupDate) }
+        get { self.defaults.object(forKey: Keys.lastBackupDate) as? Date }
+        set { self.defaults.set(newValue, forKey: Keys.lastBackupDate) }
     }
 
     var statesDisplayMode: DisplayMode {
         get {
             guard let rawValue = defaults.string(forKey: Keys.statesDisplayMode),
-                  let mode = DisplayMode(rawValue: rawValue) else {
+                  let mode = DisplayMode(rawValue: rawValue)
+            else {
                 return .list
             }
             return mode
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.statesDisplayMode) }
+        set { self.defaults.set(newValue.rawValue, forKey: Keys.statesDisplayMode) }
     }
 
     var defaultComparisonMode: ComparisonMode {
         get {
             guard let rawValue = defaults.string(forKey: Keys.defaultComparisonMode),
-                  let mode = ComparisonMode(rawValue: rawValue) else {
+                  let mode = ComparisonMode(rawValue: rawValue)
+            else {
                 return .radar
             }
             return mode
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.defaultComparisonMode) }
+        set { self.defaults.set(newValue.rawValue, forKey: Keys.defaultComparisonMode) }
     }
 
     // MARK: - Statistics
 
     var lastQuizDate: Date? {
-        get { defaults.object(forKey: Keys.lastQuizDate) as? Date }
-        set { defaults.set(newValue, forKey: Keys.lastQuizDate) }
+        get { self.defaults.object(forKey: Keys.lastQuizDate) as? Date }
+        set { self.defaults.set(newValue, forKey: Keys.lastQuizDate) }
     }
 
     var totalQuizzesCompleted: Int {
-        get { defaults.integer(forKey: Keys.totalQuizzesCompleted) }
-        set { defaults.set(newValue, forKey: Keys.totalQuizzesCompleted) }
+        get { self.defaults.integer(forKey: Keys.totalQuizzesCompleted) }
+        set { self.defaults.set(newValue, forKey: Keys.totalQuizzesCompleted) }
     }
 
     // MARK: - Reset
 
     func resetToDefaults() {
-        let domain = Bundle.main.bundleIdentifier!
-        defaults.removePersistentDomain(forName: domain)
-        defaults.synchronize()
+        guard let domain = Bundle.main.bundleIdentifier else {
+            print("Warning: Unable to get bundle identifier for reset")
+            return
+        }
+        self.defaults.removePersistentDomain(forName: domain)
+        self.defaults.synchronize()
     }
 }
 
@@ -190,11 +198,11 @@ enum BackupFrequency: String, CaseIterable {
 
     var timeInterval: TimeInterval {
         switch self {
-        case .daily: return 24 * 60 * 60 // 1 day
-        case .weekly: return 7 * 24 * 60 * 60 // 7 days
-        case .monthly: return 30 * 24 * 60 * 60 // 30 days
-        case .never: return 0 // No automatic backup
-        case .manual: return 0 // No automatic backup
+        case .daily: 24 * 60 * 60 // 1 day
+        case .weekly: 7 * 24 * 60 * 60 // 7 days
+        case .monthly: 30 * 24 * 60 * 60 // 30 days
+        case .never: 0 // No automatic backup
+        case .manual: 0 // No automatic backup
         }
     }
 }
@@ -209,11 +217,14 @@ enum ExportQuality: String, CaseIterable {
 enum DisplayMode: String, CaseIterable, Identifiable {
     case list = "List"
     case grid = "Grid"
-    var id: Self { self }
+    var id: Self {
+        self
+    }
+
     var icon: String {
         switch self {
-        case .list: return "list.bullet"
-        case .grid: return "square.grid.2x2"
+        case .list: "list.bullet"
+        case .grid: "square.grid.2x2"
         }
     }
 }
@@ -224,14 +235,16 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
     case table = "Table"
     case line = "Line"
 
-    var id: String { self.rawValue }
+    var id: String {
+        self.rawValue
+    }
 
     var icon: String {
         switch self {
-        case .radar: return "chart.radar"
-        case .bar: return "chart.bar"
-        case .table: return "tablecells"
-        case .line: return "chart.line.uptrend.xyaxis"
+        case .radar: "chart.radar"
+        case .bar: "chart.bar"
+        case .table: "tablecells"
+        case .line: "chart.line.uptrend.xyaxis"
         }
     }
 }

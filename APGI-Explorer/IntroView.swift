@@ -1,8 +1,8 @@
 import SwiftUI
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 struct IntroView: View {
@@ -10,36 +10,36 @@ struct IntroView: View {
 
     var body: some View {
         NavigationStack {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Header with icon
-                VStack(spacing: 16) {
-                    Image(systemName: "brain.head.profile")
-                        .font(.system(size: 60))
-                        .foregroundColor(.blue)
-                        .padding()
-                        .background(Circle().fill(Color.blue.opacity(0.1)))
-                        .padding(.top, 20)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header with icon
+                    VStack(spacing: 16) {
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 60))
+                            .foregroundColor(.blue)
+                            .padding()
+                            .background(Circle().fill(Color.blue.opacity(0.1)))
+                            .padding(.top, 20)
 
-                    Text("APGI Consciousness Assessment")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        Text("APGI Consciousness Assessment")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
 
-                    Text("Understand Your Mind's Explorer")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                }
+                        Text("Understand Your Mind's Explorer")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                    }
 
-                // Introduction section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Welcome to the APGI Assessment")
-                        .font(.title2)
+                    // Introduction section
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Welcome to the APGI Assessment")
+                            .font(.title2)
 
-                    Text("""
-                    This quiz measures four fundamental parameters of consciousness that shape your experience:
-                    """)
+                        Text("""
+                        This quiz measures four fundamental parameters of consciousness that shape your experience:
+                        """)
                         .font(.body)
-                }
+                    }
                 }
 
                 StandardCard {
@@ -108,7 +108,7 @@ struct IntroView: View {
 
                 // Start button
                 Button(action: {
-                    showQuiz = true
+                    self.showQuiz = true
                 }, label: {
                     Text("Begin Assessment")
                         .font(.headline)
@@ -119,14 +119,14 @@ struct IntroView: View {
                 .buttonStyle(PrimaryButtonStyle())
                 .padding(.bottom, 30)
                 #if os(iOS)
-                .fullScreenCover(isPresented: $showQuiz) {
-                    QuizNavigationView()
-                }
+                    .fullScreenCover(isPresented: self.$showQuiz) {
+                        QuizNavigationView()
+                    }
                 #else
-                .sheet(isPresented: $showQuiz) {
-                    QuizNavigationView()
-                        .frame(minWidth: 800, minHeight: 600)
-                }
+                    .sheet(isPresented: self.$showQuiz) {
+                            QuizNavigationView()
+                                .frame(minWidth: 800, minHeight: 600)
+                        }
                 #endif
 
                 // Footer
@@ -144,54 +144,54 @@ struct IntroView: View {
         }
         .navigationTitle("Introduction")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        }
+    }
 
-// MARK: - Helper Views
+    // MARK: - Helper Views
 
-private struct ParameterCard: View {
-    let symbol: String
-    let color: Color
-    let title: String
-    let description: String
+    private struct ParameterCard: View {
+        let symbol: String
+        let color: Color
+        let title: String
+        let description: String
 
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.title2)
-                .foregroundColor(color)
-                .frame(width: 40)
+        var body: some View {
+            HStack(spacing: 12) {
+                Image(systemName: self.symbol)
+                    .font(.title2)
+                    .foregroundColor(self.color)
+                    .frame(width: 40)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(self.title)
+                        .font(.headline)
+                    Text(self.description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
             }
+        }
+    }
 
-            Spacer()
+    private struct BenefitItem: View {
+        let symbol: String
+        let text: String
+
+        var body: some View {
+            HStack(spacing: 12) {
+                Image(systemName: self.symbol)
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .frame(width: 20)
+
+                Text(self.text)
+                    .font(.subheadline)
+
+                Spacer()
+            }
         }
     }
 }
-
-private struct BenefitItem: View {
-    let symbol: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.subheadline)
-                .foregroundColor(.blue)
-                .frame(width: 20)
-
-            Text(text)
-                .font(.subheadline)
-
-            Spacer()
-        }
-    }
-}
-        }

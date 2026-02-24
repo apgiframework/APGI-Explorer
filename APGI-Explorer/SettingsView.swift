@@ -1,11 +1,11 @@
-import SwiftUI
-import Foundation
 import CoreData
+import Foundation
+import SwiftUI
 import UniformTypeIdentifiers
 #if os(macOS)
-import AppKit
+    import AppKit
 #else
-import UIKit
+    import UIKit
 #endif
 
 struct SettingsView: View {
@@ -14,7 +14,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             // Sidebar
-            List(selection: $selectedTab) {
+            List(selection: self.$selectedTab) {
                 Label("General", systemImage: "gear")
                     .tag(0)
                 Label("Appearance", systemImage: "paintbrush")
@@ -31,7 +31,7 @@ struct SettingsView: View {
         } detail: {
             // Detail view
             Group {
-                switch selectedTab {
+                switch self.selectedTab {
                 case 0:
                     GeneralSettingsView()
                 case 1:

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Validation Models
 
@@ -10,28 +10,28 @@ struct ValidationResult {
     let completionRate: Double
 
     var formattedConfidence: String {
-        "\(Int(confidence * 100))%"
+        "\(Int(self.confidence * 100))%"
     }
 
     var formattedCompletionRate: String {
-        "\(Int(completionRate * 100))%"
+        "\(Int(self.completionRate * 100))%"
     }
 }
 
 // MARK: - Scoring System
 
-struct ScoringWeights {
+enum ScoringWeights {
     static let parameterWeights: [String: Double] = [
         "epsilon": 1.0,
         "precision": 1.0,
         "threshold": 1.0,
         "somatic": 1.0,
-        "interactions": 0.5,  // Meta-questions have different weight
+        "interactions": 0.5, // Meta-questions have different weight
         "temporal": 0.3,
-        "environment": 0.3
+        "environment": 0.3,
     ]
 
-    // Question-specific weights based on reliability
+    /// Question-specific weights based on reliability
     static let questionReliability: [Int: Double] = [
         // Epsilon questions (1-4) - Core direct questions
         1: 0.95,
@@ -80,7 +80,7 @@ struct ScoringWeights {
         32: 0.60,
         33: 0.65,
         34: 0.60,
-        35: 0.55
+        35: 0.55,
     ]
 }
 
@@ -89,7 +89,7 @@ struct ScoringWeights {
 // Using ParameterLevel from ParameterValueTypes.swift instead of separate enums
 
 struct APGIProfile: Codable {
-    var epsilon: Double          // 0-100 normalized
+    var epsilon: Double // 0-100 normalized
     var precision: Double
     var threshold: Double
     var somaticBias: Double
@@ -98,79 +98,101 @@ struct APGIProfile: Codable {
     var environmentalFit: Double
 
     var epsilonCategory: ParameterLevel {
-        switch epsilon {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.epsilon {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
     }
 
     var precisionCategory: ParameterLevel {
-        switch precision {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.precision {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
     }
 
     var thresholdCategory: ParameterLevel {
-        switch threshold {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.threshold {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
     }
 
     var somaticCategory: ParameterLevel {
-        switch somaticBias {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.somaticBias {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
     }
 
     var interactionCategory: ParameterLevel {
-        switch interactionScore {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.interactionScore {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
     }
 
     var temporalCategory: ParameterLevel {
-        switch temporalStability {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.temporalStability {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
     }
 
     var environmentalCategory: ParameterLevel {
-        switch environmentalFit {
-        case 0..<25: return .veryLow
-        case 25..<40: return .low
-        case 40..<60: return .moderate
-        case 60..<75: return .high
-        default: return .veryHigh
+        switch self.environmentalFit {
+        case 0 ..< 25: .veryLow
+        case 25 ..< 40: .low
+        case 40 ..< 60: .moderate
+        case 60 ..< 75: .high
+        default: .veryHigh
         }
+    }
+
+    /// Computed properties for export compatibility
+    var overall: Double {
+        (self.epsilon + self.precision + self.threshold + self.somaticBias) / 4.0
+    }
+
+    var autonomy: Double {
+        self.precision
+    }
+
+    var purposefulness: Double {
+        self.threshold
+    }
+
+    var selfAcceptance: Double {
+        self.somaticBias
+    }
+
+    var personalGrowth: Double {
+        self.environmentalFit
     }
 }
 
 class QuizModel: ObservableObject {
     @Published var questions: [QuizQuestion] = [
         // MARK: - Prediction Error Sensitivity (ε)
+
         QuizQuestion(
             id: 1,
             text: "When plans change unexpectedly, how do you react initially?",
@@ -178,7 +200,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Hardly notice—just adapt smoothly", note: "Very Low ε", value: 1),
                 QuizOption(text: "Notice but adapt quickly", note: "Low ε", value: 2),
                 QuizOption(text: "Feel disrupted, need to recalibrate", note: "Moderate ε", value: 3),
-                QuizOption(text: "Strong reaction—feels like system failure", note: "High ε", value: 4)
+                QuizOption(text: "Strong reaction—feels like system failure", note: "High ε", value: 4),
             ],
             parameter: "epsilon"
         ),
@@ -189,7 +211,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Rarely—things seem consistent", note: "Low ε", value: 1),
                 QuizOption(text: "Sometimes notice obvious ones", note: "Moderate-Low ε", value: 2),
                 QuizOption(text: "Frequently notice subtle mismatches", note: "Moderate-High ε", value: 3),
-                QuizOption(text: "Constantly—my brain flags inconsistencies", note: "Very High ε", value: 4)
+                QuizOption(text: "Constantly—my brain flags inconsistencies", note: "Very High ε", value: 4),
             ],
             parameter: "epsilon"
         ),
@@ -200,7 +222,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Hardly notice errors—keep going", note: "Low ε", value: 1),
                 QuizOption(text: "Notice but don't dwell on errors", note: "Moderate ε", value: 2),
                 QuizOption(text: "Errors feel significant—motivate correction", note: "High ε", value: 3),
-                QuizOption(text: "Errors feel painful—strong urge to fix immediately", note: "Very High ε", value: 4)
+                QuizOption(text: "Errors feel painful—strong urge to fix immediately", note: "Very High ε", value: 4),
             ],
             parameter: "epsilon"
         ),
@@ -211,7 +233,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Often miss these mismatches", note: "Low ε", value: 1),
                 QuizOption(text: "Notice only large discrepancies", note: "Moderate-Low ε", value: 2),
                 QuizOption(text: "Quickly detect subtle incongruences", note: "Moderate-High ε", value: 3),
-                QuizOption(text: "Immediately sense any mismatch", note: "Very High ε", value: 4)
+                QuizOption(text: "Immediately sense any mismatch", note: "Very High ε", value: 4),
             ],
             parameter: "epsilon"
         ),
@@ -222,12 +244,13 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Mostly comforting routine preferred", note: "Low ε", value: 1),
                 QuizOption(text: "Enjoy some novelty in moderation", note: "Moderate ε", value: 2),
                 QuizOption(text: "Seek novelty—it's energizing", note: "High ε", value: 3),
-                QuizOption(text: "Need constant novelty—routine feels stifling", note: "Very High ε", value: 4)
+                QuizOption(text: "Need constant novelty—routine feels stifling", note: "Very High ε", value: 4),
             ],
             parameter: "epsilon"
         ),
 
         // MARK: - Precision Allocation (π)
+
         QuizQuestion(
             id: 6,
             text: "When you feel a physical sensation (like a twinge or ache), how do you interpret it?",
@@ -235,7 +258,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Probably nothing—ignore it", note: "Low body precision", value: 1),
                 QuizOption(text: "Note it but wait to see if continues", note: "Moderate body precision", value: 2),
                 QuizOption(text: "Pay close attention—could be important", note: "High body precision", value: 3),
-                QuizOption(text: "Immediately concerned—might be serious", note: "Very high body precision", value: 4)
+                QuizOption(text: "Immediately concerned—might be serious", note: "Very high body precision", value: 4),
             ],
             parameter: "precision"
         ),
@@ -246,7 +269,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "To potential opportunities", note: "High reward precision", value: 1),
                 QuizOption(text: "To gathering more information", note: "Balanced precision", value: 2),
                 QuizOption(text: "To potential problems or threats", note: "High threat precision", value: 3),
-                QuizOption(text: "To how my body feels about it", note: "High interoceptive precision", value: 4)
+                QuizOption(text: "To how my body feels about it", note: "High interoceptive precision", value: 4),
             ],
             parameter: "precision"
         ),
@@ -257,7 +280,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Minimal—I trust my own judgment", note: "Low social precision", value: 1),
                 QuizOption(text: "Consider but don't overvalue", note: "Moderate social precision", value: 2),
                 QuizOption(text: "Strongly influence my choices", note: "High social precision", value: 3),
-                QuizOption(text: "Often override my own judgment", note: "Very high social precision", value: 4)
+                QuizOption(text: "Often override my own judgment", note: "Very high social precision", value: 4),
             ],
             parameter: "precision"
         ),
@@ -268,7 +291,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Almost entirely logical analysis", note: "High analytical precision", value: 1),
                 QuizOption(text: "Mostly logic with some intuition", note: "Moderate balance", value: 2),
                 QuizOption(text: "Equal weight to both", note: "Balanced precision", value: 3),
-                QuizOption(text: "Intuition guides, logic confirms", note: "High intuitive precision", value: 4)
+                QuizOption(text: "Intuition guides, logic confirms", note: "High intuitive precision", value: 4),
             ],
             parameter: "precision"
         ),
@@ -279,12 +302,13 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Slowly—prefer to stay uncertain", note: "Low confidence precision", value: 1),
                 QuizOption(text: "Moderately—after some consideration", note: "Moderate confidence", value: 2),
                 QuizOption(text: "Fairly quickly with moderate confidence", note: "High confidence", value: 3),
-                QuizOption(text: "Very quickly with high certainty", note: "Very high confidence precision", value: 4)
+                QuizOption(text: "Very quickly with high certainty", note: "Very high confidence precision", value: 4),
             ],
             parameter: "precision"
         ),
 
         // MARK: - Ignition Threshold (θₜ)
+
         QuizQuestion(
             id: 11,
             text: "When working deeply, how easily do background sounds interrupt your focus?",
@@ -292,7 +316,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Almost never—deeply absorbed", note: "Very High θₜ", value: 4),
                 QuizOption(text: "Only loud or salient sounds", note: "High θₜ", value: 3),
                 QuizOption(text: "Moderate sounds break through", note: "Moderate θₜ", value: 2),
-                QuizOption(text: "Almost any sound distracts me", note: "Low θₜ", value: 1)
+                QuizOption(text: "Almost any sound distracts me", note: "Low θₜ", value: 1),
             ],
             parameter: "threshold"
         ),
@@ -303,7 +327,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Just one or two focused elements", note: "High θₜ", value: 4),
                 QuizOption(text: "A few related elements", note: "Moderate-High θₜ", value: 3),
                 QuizOption(text: "Several different elements", note: "Moderate-Low θₜ", value: 2),
-                QuizOption(text: "Many elements simultaneously", note: "Low θₜ", value: 1)
+                QuizOption(text: "Many elements simultaneously", note: "Low θₜ", value: 1),
             ],
             parameter: "threshold"
         ),
@@ -314,7 +338,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Often miss until emotions are strong", note: "High θₜ", value: 1),
                 QuizOption(text: "Notice moderate emotional shifts", note: "Moderate-High θₜ", value: 2),
                 QuizOption(text: "Notice subtle emotional fluctuations", note: "Moderate-Low θₜ", value: 3),
-                QuizOption(text: "Immediately aware of slightest shifts", note: "Low θₜ", value: 4)
+                QuizOption(text: "Immediately aware of slightest shifts", note: "Low θₜ", value: 4),
             ],
             parameter: "threshold"
         ),
@@ -325,7 +349,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Very little—I focus selectively", note: "High θₜ", value: 4),
                 QuizOption(text: "Some relevant information", note: "Moderate-High θₜ", value: 3),
                 QuizOption(text: "Quite a lot of the environment", note: "Moderate-Low θₜ", value: 2),
-                QuizOption(text: "Almost everything registers", note: "Low θₜ", value: 1)
+                QuizOption(text: "Almost everything registers", note: "Low θₜ", value: 1),
             ],
             parameter: "threshold"
         ),
@@ -336,12 +360,13 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Very easily and frequently", note: "High θₜ", value: 4),
                 QuizOption(text: "Fairly easily when conditions right", note: "Moderate-High θₜ", value: 3),
                 QuizOption(text: "Occasionally with effort", note: "Moderate-Low θₜ", value: 2),
-                QuizOption(text: "Rarely—always self-aware", note: "Low θₜ", value: 1)
+                QuizOption(text: "Rarely—always self-aware", note: "Low θₜ", value: 1),
             ],
             parameter: "threshold"
         ),
 
         // MARK: - Somatic Bias (β)
+
         QuizQuestion(
             id: 16,
             text: "When you experience an emotion, where do you primarily feel it?",
@@ -349,7 +374,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Mostly as thoughts about the emotion", note: "Very Low β", value: 1),
                 QuizOption(text: "Some physical sensation but mostly thoughts", note: "Low β", value: 2),
                 QuizOption(text: "Equal physical sensations and thoughts", note: "Moderate β", value: 3),
-                QuizOption(text: "Overwhelmingly as physical sensations", note: "High β", value: 4)
+                QuizOption(text: "Overwhelmingly as physical sensations", note: "High β", value: 4),
             ],
             parameter: "somatic"
         ),
@@ -360,7 +385,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Logical analysis and pros/cons", note: "Low β", value: 1),
                 QuizOption(text: "Mostly logic with some gut feeling", note: "Moderate-Low β", value: 2),
                 QuizOption(text: "Equal logic and bodily intuition", note: "Moderate-High β", value: 3),
-                QuizOption(text: "Bodily feeling of rightness/wrongness", note: "High β", value: 4)
+                QuizOption(text: "Bodily feeling of rightness/wrongness", note: "High β", value: 4),
             ],
             parameter: "somatic"
         ),
@@ -371,7 +396,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Rarely notice unless pointed out", note: "Low β", value: 1),
                 QuizOption(text: "Occasionally notice when resting", note: "Moderate-Low β", value: 2),
                 QuizOption(text: "Frequently aware throughout day", note: "Moderate-High β", value: 3),
-                QuizOption(text: "Constantly aware of multiple signals", note: "High β", value: 4)
+                QuizOption(text: "Constantly aware of multiple signals", note: "High β", value: 4),
             ],
             parameter: "somatic"
         ),
@@ -382,7 +407,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Worried thoughts and mental analysis", note: "Low β", value: 1),
                 QuizOption(text: "Mostly thoughts with some body tension", note: "Moderate-Low β", value: 2),
                 QuizOption(text: "Equal mental and physical symptoms", note: "Moderate β", value: 3),
-                QuizOption(text: "Overwhelming physical sensations", note: "High β", value: 4)
+                QuizOption(text: "Overwhelming physical sensations", note: "High β", value: 4),
             ],
             parameter: "somatic"
         ),
@@ -393,12 +418,13 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "As purely mental constructs", note: "Low β", value: 1),
                 QuizOption(text: "Mostly mental with slight bodily sense", note: "Moderate-Low β", value: 2),
                 QuizOption(text: "With clear bodily correlates", note: "Moderate-High β", value: 3),
-                QuizOption(text: "As distinct bodily experiences", note: "High β", value: 4)
+                QuizOption(text: "As distinct bodily experiences", note: "High β", value: 4),
             ],
             parameter: "somatic"
         ),
 
         // MARK: - Parameter Interactions
+
         QuizQuestion(
             id: 21,
             text: "When something surprises you (high ε event), what happens next?",
@@ -406,7 +432,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Quickly moves out of awareness", note: "High θₜ dominates", value: 1),
                 QuizOption(text: "Stays in awareness but doesn't spiral", note: "Balanced interaction", value: 2),
                 QuizOption(text: "Triggers bodily reactions that amplify it", note: "ε + β interaction", value: 3),
-                QuizOption(text: "Becomes highly significant and urgent", note: "ε + π interaction", value: 4)
+                QuizOption(text: "Becomes highly significant and urgent", note: "ε + π interaction", value: 4),
             ],
             parameter: "interactions"
         ),
@@ -417,7 +443,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "It often fades quickly", note: "Low π on body signals", value: 1),
                 QuizOption(text: "I note it but don't amplify it", note: "Moderate body precision", value: 2),
                 QuizOption(text: "It captures attention and feels important", note: "High body π", value: 3),
-                QuizOption(text: "It can trigger cascade of other sensations", note: "High β + high body π", value: 4)
+                QuizOption(text: "It can trigger cascade of other sensations", note: "High β + high body π", value: 4),
             ],
             parameter: "interactions"
         ),
@@ -428,7 +454,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Overwhelmed quickly—need to leave", note: "Low θₜ + high ε", value: 1),
                 QuizOption(text: "Manageable but draining", note: "Moderate parameters", value: 2),
                 QuizOption(text: "Engaging and energizing", note: "High θₜ + moderate ε", value: 3),
-                QuizOption(text: "Either overwhelming or engaging depending", note: "Context-dependent", value: 4)
+                QuizOption(text: "Either overwhelming or engaging depending", note: "Context-dependent", value: 4),
             ],
             parameter: "interactions"
         ),
@@ -439,7 +465,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Barely registers—move on quickly", note: "Low ε + high θₜ", value: 1),
                 QuizOption(text: "Notice it, correct, move on", note: "Balanced response", value: 2),
                 QuizOption(text: "Feel it physically as discomfort", note: "ε + β interaction", value: 3),
-                QuizOption(text: "Becomes significant—dwell on it", note: "High ε + high π on errors", value: 4)
+                QuizOption(text: "Becomes significant—dwell on it", note: "High ε + high π on errors", value: 4),
             ],
             parameter: "interactions"
         ),
@@ -450,12 +476,13 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Start cognitive, may become physical if intense", note: "Low β initially", value: 1),
                 QuizOption(text: "Simultaneous cognitive and physical", note: "Balanced", value: 2),
                 QuizOption(text: "Start physical, then cognitive interpretation", note: "High β", value: 3),
-                QuizOption(text: "Physical sensations amplify into feedback loops", note: "High β + low θₜ", value: 4)
+                QuizOption(text: "Physical sensations amplify into feedback loops", note: "High β + low θₜ", value: 4),
             ],
             parameter: "interactions"
         ),
 
         // MARK: - Temporal Stability
+
         QuizQuestion(
             id: 26,
             text: "How consistent is your mental/emotional style across different contexts?",
@@ -463,7 +490,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Varies dramatically with situation", note: "Highly context-dependent", value: 1),
                 QuizOption(text: "Some variation but core style consistent", note: "Moderate stability", value: 2),
                 QuizOption(text: "Fairly consistent across situations", note: "High stability", value: 3),
-                QuizOption(text: "Extremely consistent regardless of context", note: "Very high stability", value: 4)
+                QuizOption(text: "Extremely consistent regardless of context", note: "Very high stability", value: 4),
             ],
             parameter: "temporal"
         ),
@@ -474,7 +501,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Minutes to hours—shift quickly", note: "Transient", value: 1),
                 QuizOption(text: "Hours to a day or two", note: "Moderate duration", value: 2),
                 QuizOption(text: "Days to weeks—lingering states", note: "Enduring", value: 3),
-                QuizOption(text: "Weeks to months—chronic patterns", note: "Entrenched", value: 4)
+                QuizOption(text: "Weeks to months—chronic patterns", note: "Entrenched", value: 4),
             ],
             parameter: "temporal"
         ),
@@ -485,7 +512,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Very easily with simple techniques", note: "Highly malleable", value: 1),
                 QuizOption(text: "Moderately easy with effort", note: "Malleable", value: 2),
                 QuizOption(text: "Difficult—requires sustained practice", note: "Stable", value: 3),
-                QuizOption(text: "Very difficult—feels fixed", note: "Highly stable/entrenched", value: 4)
+                QuizOption(text: "Very difficult—feels fixed", note: "Highly stable/entrenched", value: 4),
             ],
             parameter: "temporal"
         ),
@@ -496,7 +523,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Changes dramatically day to day", note: "Low temporal stability", value: 1),
                 QuizOption(text: "Somewhat variable but recognizable", note: "Moderate stability", value: 2),
                 QuizOption(text: "Quite consistent—they know what to expect", note: "High stability", value: 3),
-                QuizOption(text: "Extremely consistent over years", note: "Very high stability", value: 4)
+                QuizOption(text: "Extremely consistent over years", note: "Very high stability", value: 4),
             ],
             parameter: "temporal"
         ),
@@ -507,12 +534,13 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Immediate effects", note: "Highly responsive", value: 1),
                 QuizOption(text: "Days to weeks of practice", note: "Moderately responsive", value: 2),
                 QuizOption(text: "Months of consistent practice", note: "Slow response", value: 3),
-                QuizOption(text: "Minimal change despite effort", note: "Resistant to change", value: 4)
+                QuizOption(text: "Minimal change despite effort", note: "Resistant to change", value: 4),
             ],
             parameter: "temporal"
         ),
 
         // MARK: - Environmental Fit
+
         QuizQuestion(
             id: 31,
             text: "In what environments do you feel most mentally effective?",
@@ -520,7 +548,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Quiet, predictable, low-stimulation", note: "Fits low ε/high θₜ", value: 1),
                 QuizOption(text: "Structured but with some novelty", note: "Balanced fit", value: 2),
                 QuizOption(text: "Dynamic, changing, stimulating", note: "Fits high ε", value: 3),
-                QuizOption(text: "Socially rich, emotionally engaged", note: "Fits high β/social π", value: 4)
+                QuizOption(text: "Socially rich, emotionally engaged", note: "Fits high β/social π", value: 4),
             ],
             parameter: "environment"
         ),
@@ -531,7 +559,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Highly unpredictable, chaotic", note: "Challenges low θₜ/high ε", value: 1),
                 QuizOption(text: "Emotionally intense, conflictual", note: "Challenges high β", value: 2),
                 QuizOption(text: "Boring, repetitive, monotonous", note: "Challenges high ε", value: 3),
-                QuizOption(text: "Socially complex, ambiguous", note: "Challenges low social π", value: 4)
+                QuizOption(text: "Socially complex, ambiguous", note: "Challenges low social π", value: 4),
             ],
             parameter: "environment"
         ),
@@ -542,7 +570,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Minimal effect—can work through discomfort", note: "Low β", value: 1),
                 QuizOption(text: "Some effect but can override", note: "Moderate β", value: 2),
                 QuizOption(text: "Significant effect—need reasonable comfort", note: "High β", value: 3),
-                QuizOption(text: "Critical—cannot function if uncomfortable", note: "Very high β", value: 4)
+                QuizOption(text: "Critical—cannot function if uncomfortable", note: "Very high β", value: 4),
             ],
             parameter: "environment"
         ),
@@ -553,7 +581,7 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Deep, focused, analytical work", note: "Fits high θₜ", value: 1),
                 QuizOption(text: "Creative, novel problem-solving", note: "Fits high ε", value: 2),
                 QuizOption(text: "Social, collaborative, people-focused", note: "Fits high social π", value: 3),
-                QuizOption(text: "Practical, embodied, hands-on", note: "Fits high β", value: 4)
+                QuizOption(text: "Practical, embodied, hands-on", note: "Fits high β", value: 4),
             ],
             parameter: "environment"
         ),
@@ -564,16 +592,16 @@ class QuizModel: ObservableObject {
                 QuizOption(text: "Calm, focused, analytical", note: "High θₜ + low β", value: 1),
                 QuizOption(text: "Alert, responsive, adaptable", note: "Balanced parameters", value: 2),
                 QuizOption(text: "Physically activated, intuitive", note: "High β + moderate θₜ", value: 3),
-                QuizOption(text: "Either extremely effective or overwhelmed", note: "Depends on parameter interaction", value: 4)
+                QuizOption(text: "Either extremely effective or overwhelmed", note: "Depends on parameter interaction", value: 4),
             ],
             parameter: "environment"
-        )
+        ),
     ]
 
     @Published var answers: [Int: Int] = [:] {
         didSet {
             // Update validation state when answers change
-            _validationResult = nil
+            self._validationResult = nil
         }
     }
 
@@ -581,54 +609,54 @@ class QuizModel: ObservableObject {
 
     // Cache for validation results
     private var _validationResult: ValidationResult?
-    private let validationThreshold: Double = 0.7  // Minimum confidence threshold for valid responses
+    private let validationThreshold: Double = 0.7 // Minimum confidence threshold for valid responses
 
     var isComplete: Bool {
-        answers.count == questions.count
+        self.answers.count == self.questions.count
     }
 
     func selectAnswer(for questionId: Int, answer: Int) {
-        answers[questionId] = answer
+        self.answers[questionId] = answer
         // Invalidate cached validation result
-        _validationResult = nil
+        self._validationResult = nil
     }
 
     func selectAnswer(_ answer: Int) {
-        guard currentQuestionIndex < questions.count else { return }
-        let questionId = questions[currentQuestionIndex].id
-        selectAnswer(for: questionId, answer: answer)
+        guard self.currentQuestionIndex < self.questions.count else { return }
+        let questionId = self.questions[self.currentQuestionIndex].id
+        self.selectAnswer(for: questionId, answer: answer)
     }
 
     func restoreAnswers(_ restoredAnswers: [Int: Int]) {
-        answers = restoredAnswers
+        self.answers = restoredAnswers
         // Invalidate cached validation result
-        _validationResult = nil
+        self._validationResult = nil
     }
 
     func nextQuestion() {
-        if currentQuestionIndex < questions.count - 1 {
-            currentQuestionIndex += 1
+        if self.currentQuestionIndex < self.questions.count - 1 {
+            self.currentQuestionIndex += 1
         }
     }
 
     func previousQuestion() {
-        if currentQuestionIndex > 0 {
-            currentQuestionIndex -= 1
+        if self.currentQuestionIndex > 0 {
+            self.currentQuestionIndex -= 1
         }
     }
 
     var hasAnsweredCurrentQuestion: Bool {
-        guard currentQuestionIndex < questions.count else { return false }
-        return answers[questions[currentQuestionIndex].id] != nil
+        guard self.currentQuestionIndex < self.questions.count else { return false }
+        return self.answers[self.questions[self.currentQuestionIndex].id] != nil
     }
 
     func questionsNeededForConfidence(target: Double = 0.9) -> Int? {
-        let currentConfidence = calculateResponseConfidence()
-        guard currentConfidence < target, answers.count < questions.count else {
+        let currentConfidence = self.calculateResponseConfidence()
+        guard currentConfidence < target, self.answers.count < self.questions.count else {
             return nil
         }
 
-        let remaining = questions.count - answers.count
+        let remaining = self.questions.count - self.answers.count
         guard remaining > 0 else { return nil }
 
         let shortfall = target - currentConfidence
@@ -638,11 +666,11 @@ class QuizModel: ObservableObject {
     }
 
     func confidenceLevel(for parameter: String) -> Double {
-        let parameterQuestions = questions.filter { $0.parameter == parameter }
+        let parameterQuestions = self.questions.filter { $0.parameter == parameter }
         guard !parameterQuestions.isEmpty else { return 0.0 }
-        let answered = parameterQuestions.filter { answers[$0.id] != nil }.count
+        let answered = parameterQuestions.filter { self.answers[$0.id] != nil }.count
         let completionRatio = Double(answered) / Double(parameterQuestions.count)
-        let globalConfidence = calculateResponseConfidence()
+        let globalConfidence = self.calculateResponseConfidence()
         return min(1, completionRatio * 0.7 + globalConfidence * 0.3)
     }
 
@@ -655,29 +683,29 @@ class QuizModel: ObservableObject {
         }
 
         var warnings: [String] = []
-        var confidence = calculateResponseConfidence()
+        var confidence = self.calculateResponseConfidence()
 
         // CRIT-002 Fix: Check completion rate first - require minimum 80%
-        let completionRate = Double(answers.count) / Double(questions.count)
+        let completionRate = Double(answers.count) / Double(self.questions.count)
         if completionRate < 0.8 {
             warnings.append("Quiz completion below 80% threshold. Please answer at least 28 of 35 questions for valid results.")
-            confidence *= 0.5  // Significant confidence reduction for low completion
+            confidence *= 0.5 // Significant confidence reduction for low completion
         }
 
         // Check for straight-lining (all same answers)
-        if isStraightLining() {
+        if self.isStraightLining() {
             warnings.append("Your responses show a pattern of straight-lining, which may indicate inattentive responding.")
-            confidence *= 0.8  // Reduce confidence for potential straight-lining
+            confidence *= 0.8 // Reduce confidence for potential straight-lining
         }
 
         // Check for inconsistent responses to similar questions
-        if hasInconsistentResponses() {
+        if self.hasInconsistentResponses() {
             warnings.append("Some of your responses to similar questions appear inconsistent.")
             confidence *= 0.85
         }
 
         // Check for response patterns that might indicate random responding
-        if showsRandomResponsePattern() {
+        if self.showsRandomResponsePattern() {
             warnings.append("Your response pattern suggests potential random or inattentive responding.")
             confidence *= 0.7
         }
@@ -688,42 +716,42 @@ class QuizModel: ObservableObject {
         }
 
         // Check for extreme responding (all high or all low)
-        if isExtremeResponding() {
+        if self.isExtremeResponding() {
             warnings.append("Your responses show a pattern of extreme responding (all high or all low).")
             confidence *= 0.85
         }
 
         let result = ValidationResult(
-            isValid: confidence >= validationThreshold && completionRate >= 0.8,
+            isValid: confidence >= self.validationThreshold && completionRate >= 0.8,
             warnings: warnings,
-            confidence: min(max(confidence, 0), 1),  // Ensure confidence is between 0 and 1
+            confidence: min(max(confidence, 0), 1), // Ensure confidence is between 0 and 1
             completionRate: completionRate
         )
 
-        _validationResult = result
+        self._validationResult = result
         return result
     }
 
     /// Calculates the confidence score based on response patterns
     private func calculateResponseConfidence() -> Double {
-        guard !answers.isEmpty else { return 0.0 }
+        guard !self.answers.isEmpty else { return 0.0 }
 
         var confidence = 0.0
-        let completionRate = Double(answers.count) / Double(questions.count)
+        let completionRate = Double(answers.count) / Double(self.questions.count)
 
         // Base confidence on completion rate (50% weight)
         confidence += completionRate * 0.5
 
         // Check response time consistency (if available)
         // This is a placeholder - in a real app, you'd track response times
-        let timeConsistencyScore = 0.9  // Assume good time consistency by default
+        let timeConsistencyScore = 0.9 // Assume good time consistency by default
         confidence += timeConsistencyScore * 0.3
 
         // Check for response variability (20% weight)
-        let responseVariability = calculateResponseVariability()
+        let responseVariability = self.calculateResponseVariability()
         confidence += responseVariability * 0.2
 
-        return min(max(confidence, 0), 1)  // Ensure between 0 and 1
+        return min(max(confidence, 0), 1) // Ensure between 0 and 1
     }
 
     private func calculateResponseVariability() -> Double {
@@ -735,14 +763,13 @@ class QuizModel: ObservableObject {
 
         // Normalize variance to 0-1 range (assuming 1-4 scale)
         // A variance of around 1.33 is considered good (not too consistent, not too random)
-        let normalizedVariance = min(variance / 1.33, 1.0)
-        return normalizedVariance
+        return min(variance / 1.33, 1.0)
     }
 
     private func isStraightLining() -> Bool {
         // If all answers are the same (except for unanswered questions)
         let answerValues = Set(answers.values)
-        return answerValues.count <= 2 && answers.count > 3
+        return answerValues.count <= 2 && self.answers.count > 3
     }
 
     private func hasInconsistentResponses() -> Bool {
@@ -750,14 +777,15 @@ class QuizModel: ObservableObject {
         // This is a simplified version - in a real app, you'd map related questions
 
         // Example: Check if questions about similar concepts have opposite answers
-        let epsilonQuestions = questions.filter { $0.parameter == "epsilon" }
+        let epsilonQuestions = self.questions.filter { $0.parameter == "epsilon" }
         var inconsistencyCount = 0
 
-        for firstIndex in 0..<(epsilonQuestions.count - 1) {
-            for secondIndex in (firstIndex + 1)..<epsilonQuestions.count {
+        for firstIndex in 0 ..< (epsilonQuestions.count - 1) {
+            for secondIndex in (firstIndex + 1) ..< epsilonQuestions.count {
                 if let answer1 = answers[epsilonQuestions[firstIndex].id],
                    let answer2 = answers[epsilonQuestions[secondIndex].id],
-                   abs(answer1 - answer2) >= 3 {  // Big difference in answers
+                   abs(answer1 - answer2) >= 3
+                { // Big difference in answers
                     inconsistencyCount += 1
                 }
             }
@@ -775,7 +803,7 @@ class QuizModel: ObservableObject {
 
         // Check for alternating patterns (e.g., 1, 4, 1, 4, 1, 4)
         var alternatingPattern = true
-        for index in 2..<answerValues.count where answerValues[index] != answerValues[index - 2] {
+        for index in 2 ..< answerValues.count where answerValues[index] != answerValues[index - 2] {
             alternatingPattern = false
             break
         }
@@ -785,17 +813,17 @@ class QuizModel: ObservableObject {
 
     private func isExtremeResponding() -> Bool {
         // Check if most answers are at the extremes (1 or 4)
-        let extremeCount = answers.values.filter { $0 == 1 || $0 == 4 }.count
-        return Double(extremeCount) / Double(answers.count) > 0.8  // More than 80% extreme responses
+        let extremeCount = self.answers.values.filter { $0 == 1 || $0 == 4 }.count
+        return Double(extremeCount) / Double(self.answers.count) > 0.8 // More than 80% extreme responses
     }
 
     // MARK: - Scoring
 
     func calculateScore() -> (profile: APGIProfile, validation: ValidationResult) {
-        let (rawScores, maxPossible) = accumulateScores()
-        let normalizedScores = normalizedPercentiles(rawScores: rawScores, maxPossible: maxPossible)
+        let (rawScores, maxPossible) = self.accumulateScores()
+        let normalizedScores = self.normalizedPercentiles(rawScores: rawScores, maxPossible: maxPossible)
 
-        let validation = validateResponses()
+        let validation = self.validateResponses()
 
         var adjustedScores = normalizedScores
         if !validation.isValid {
@@ -818,8 +846,8 @@ class QuizModel: ObservableObject {
     }
 
     func calculatePartialScore() -> APGIProfile {
-        let (rawScores, maxPossible) = accumulateScores()
-        let normalizedScores = normalizedPercentiles(rawScores: rawScores, maxPossible: maxPossible)
+        let (rawScores, maxPossible) = self.accumulateScores()
+        let normalizedScores = self.normalizedPercentiles(rawScores: rawScores, maxPossible: maxPossible)
 
         return APGIProfile(
             epsilon: normalizedScores["epsilon"] ?? 0,
@@ -867,7 +895,7 @@ class QuizModel: ObservableObject {
         var rawScores = [String: Double]()
         var maxPossible = [String: Double]()
 
-        for question in questions {
+        for question in self.questions {
             guard let answer = answers[question.id] else { continue }
 
             let weight = ScoringWeights.questionReliability[question.id] ?? 0.8
@@ -903,12 +931,12 @@ class QuizModel: ObservableObject {
             "somatic": 0,
             "interactions": 0,
             "temporal": 0,
-            "environment": 0
+            "environment": 0,
         ]
 
-        for question in questions {
+        for question in self.questions {
             if let answer = answers[question.id] {
-                scores[question.parameter]! += answer
+                scores[question.parameter, default: 0] += answer
             }
         }
 
@@ -953,16 +981,16 @@ struct QuizOption: Identifiable, Hashable {
     }
 
     var tooltip: String {
-        let basis = scientificBasis ?? "Additional scientific context is being compiled."
-        let exampleText = example.map { "Example: \($0)\n" } ?? ""
-        let related = relatedStates?
+        let basis = self.scientificBasis ?? "Additional scientific context is being compiled."
+        let exampleText = self.example.map { "Example: \($0)\n" } ?? ""
+        let related = self.relatedStates?
             .map { getStateName($0) }
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
         let relatedText = related ?? "No specific states linked yet."
 
         return """
-        This response suggests: \(note)
+        This response suggests: \(self.note)
 
         Scientific basis: \(basis)
 
@@ -975,7 +1003,7 @@ struct QuizOption: Identifiable, Hashable {
     }
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+        hasher.combine(self.id)
     }
 }
 

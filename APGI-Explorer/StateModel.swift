@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - State Model Cache
 
@@ -9,18 +9,18 @@ class StateModelCache {
 
     func getCachedSimilarity(state1: Int, state2: Int) -> Double? {
         let key = "\(min(state1, state2))-\(max(state1, state2))"
-        return queue.sync { similarityCache[key] }
+        return self.queue.sync { self.similarityCache[key] }
     }
 
     func cacheSimilarity(state1: Int, state2: Int, value: Double) {
         let key = "\(min(state1, state2))-\(max(state1, state2))"
-        queue.async(flags: .barrier) { [weak self] in
+        self.queue.async(flags: .barrier) { [weak self] in
             self?.similarityCache[key] = value
         }
     }
 
     func clearCache() {
-        queue.async(flags: .barrier) { [weak self] in
+        self.queue.async(flags: .barrier) { [weak self] in
             self?.similarityCache.removeAll()
         }
     }
@@ -39,31 +39,31 @@ class StateModel: ObservableObject {
     // MARK: - Data Loading
 
     func loadStates() async {
-        isLoadingStates = true
-        error = nil
+        self.isLoadingStates = true
+        self.error = nil
 
         do {
-            states = try await loadStatesFromSource()
+            self.states = try await self.loadStatesFromSource()
         } catch {
             self.error = .dataLoadingFailed(underlying: error)
         }
 
-        isLoadingStates = false
+        self.isLoadingStates = false
     }
 
     private func loadStatesFromSource() async throws -> [PsychologicalState] {
         // For now, return example states. In a real app, this would load from a data source
-        return PsychologicalState.exampleStates
+        PsychologicalState.exampleStates
     }
 
     // MARK: - Async Operations
 
     func findSimilarStates(to state: PsychologicalState, limit: Int = 5) async -> [PsychologicalState] {
-        isLoadingSimilarStates = true
+        self.isLoadingSimilarStates = true
         defer { isLoadingSimilarStates = false }
 
         return await withTaskGroup(of: (PsychologicalState, Double).self) { group in
-            for candidateState in states where candidateState.id != state.id {
+            for candidateState in self.states where candidateState.id != state.id {
                 group.addTask {
                     let similarity = await self.calculateSimilarity(between: state, and: candidateState)
                     return (candidateState, similarity)
@@ -78,7 +78,7 @@ class StateModel: ObservableObject {
             return results
                 .sorted { $0.1 > $1.1 }
                 .prefix(limit)
-                .map { $0.0 }
+                .map(\.0)
         }
     }
 
@@ -94,17 +94,17 @@ class StateModel: ObservableObject {
         }.value
 
         // Cache the result
-        cache.cacheSimilarity(state1: state1.id, state2: state2.id, value: similarity)
+        self.cache.cacheSimilarity(state1: state1.id, state2: state2.id, value: similarity)
 
         return similarity
     }
 
     private func performSimilarityCalculation(state1: PsychologicalState, state2: PsychologicalState) async -> Double {
         // Use the built-in similarity method from PsychologicalState
-        return state1.similarity(to: state2)
+        state1.similarity(to: state2)
     }
 
     func clearCache() {
-        cache.clearCache()
+        self.cache.clearCache()
     }
 }

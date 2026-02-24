@@ -8,18 +8,18 @@ struct PerformanceMetricsView: View {
     let cpuUsage: Double
 
     var body: some View {
-        if showPerformanceMetrics {
+        if self.showPerformanceMetrics {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Performance Metrics")
                     .font(.caption)
                     .fontWeight(.bold)
 
                 HStack {
-                    Text("FPS: \(String(format: "%.1f", frameRate))")
+                    Text("FPS: \(String(format: "%.1f", self.frameRate))")
                     Spacer()
-                    Text("Memory: \(formatMemory(memoryUsage))")
+                    Text("Memory: \(self.formatMemory(self.memoryUsage))")
                     Spacer()
-                    Text("CPU: \(String(format: "%.1f", cpuUsage))%")
+                    Text("CPU: \(String(format: "%.1f", self.cpuUsage))%")
                 }
                 .font(.system(size: 10, design: .monospaced))
             }

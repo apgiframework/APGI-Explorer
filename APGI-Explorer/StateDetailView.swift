@@ -1,8 +1,8 @@
 import SwiftUI
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 struct StateDetailView: View {
@@ -16,10 +16,10 @@ struct StateDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // State Name and Description
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(state.name)
+                    Text(self.state.name)
                         .font(.largeTitle)
                         .foregroundColor(.primary)
-                    Text(state.description)
+                    Text(self.state.description)
                         .font(.title3)
                         .foregroundColor(.secondary)
                 }
@@ -34,33 +34,33 @@ struct StateDetailView: View {
 
                     StateParameterRow(
                         label: "Prediction Error (ε)",
-                        value: state.parameters.predictionError.formattedAccuracy
+                        value: self.state.parameters.predictionError.formattedAccuracy
                     )
-                    StateParameterRow(label: "Precision (π)", value: "\(state.parameters.precision)")
-                    StateParameterRow(label: "Threshold (θₜ)", value: "\(state.parameters.threshold)")
-                    StateParameterRow(label: "Somatic Bias (β)", value: "\(state.parameters.somaticBias)")
+                    StateParameterRow(label: "Precision (π)", value: "\(self.state.parameters.precision)")
+                    StateParameterRow(label: "Threshold (θₜ)", value: "\(self.state.parameters.threshold)")
+                    StateParameterRow(label: "Somatic Bias (β)", value: "\(self.state.parameters.somaticBias)")
                 }
                 .padding()
                 .background(Color(.windowBackgroundColor))
                 .cornerRadius(10)
 
                 // Optional: Save this state to a profile for reference
-                if !profileManager.profiles.isEmpty {
+                if !self.profileManager.profiles.isEmpty {
                     Divider()
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Associate with Profile")
                             .font(.headline)
 
-                        Picker("Select Profile", selection: $selectedProfileName) {
-                            ForEach(profileManager.profiles, id: \.id) { profile in
+                        Picker("Select Profile", selection: self.$selectedProfileName) {
+                            ForEach(self.profileManager.profiles, id: \.id) { profile in
                                 Text(profile.name).tag(profile.name)
                             }
                         }
                         .pickerStyle(MenuPickerStyle())
                         .frame(maxWidth: 300)
 
-                        Button(action: saveStateToProfile) {
+                        Button(action: self.saveStateToProfile) {
                             HStack {
                                 Spacer()
                                 Text("Save to Selected Profile")
@@ -68,10 +68,10 @@ struct StateDetailView: View {
                                 Spacer()
                             }
                             .padding()
-                            .background(selectedProfileName.isEmpty ? Color.gray : Color.blue)
+                            .background(self.selectedProfileName.isEmpty ? Color.gray : Color.blue)
                             .cornerRadius(8)
                         }
-                        .disabled(selectedProfileName.isEmpty)
+                        .disabled(self.selectedProfileName.isEmpty)
                     }
                     .padding()
                     .background(Color(.windowBackgroundColor))
@@ -82,15 +82,16 @@ struct StateDetailView: View {
             }
             .padding()
         }
-        .navigationTitle(state.name)
-        .alert("State Saved!", isPresented: $showSavedAlert) {
-            Button("OK", role: .cancel) { }
+        .navigationTitle(self.state.name)
+        .alert("State Saved!", isPresented: self.$showSavedAlert) {
+            Button("OK", role: .cancel) {
+            }
         } message: {
-            Text("This state has been associated with '\(selectedProfileName)'.")
+            Text("This state has been associated with '\(self.selectedProfileName)'.")
         }
         .onAppear {
-            if !profileManager.profiles.isEmpty {
-                selectedProfileName = profileManager.profiles[0].name
+            if !self.profileManager.profiles.isEmpty {
+                self.selectedProfileName = self.profileManager.profiles[0].name
             }
         }
     }
@@ -98,7 +99,7 @@ struct StateDetailView: View {
     private func saveStateToProfile() {
         // In a real app, you would update the profile to include this state
         // For example: profileManager.addStateToProfile(state, profileName: selectedProfileName)
-        showSavedAlert = true
+        self.showSavedAlert = true
     }
 }
 
@@ -110,10 +111,10 @@ private struct StateParameterRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label)
+            Text(self.label)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-            Text(value)
+            Text(self.value)
                 .font(.body)
                 .fixedSize(horizontal: false, vertical: true)
         }

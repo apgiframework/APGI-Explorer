@@ -1,3 +1,4 @@
+import os.log
 import SwiftUI
 
 struct ExportView: View {
@@ -14,22 +15,28 @@ struct ExportView: View {
         NavigationView {
             Form {
                 Section(header: Text("Export Format")) {
-                    Picker("Format", selection: $exportFormat) {
-                        Text("PDF").tag(ExportFormat.pdf)
-                        Text("JSON").tag(ExportFormat.json)
-                        Text("CSV").tag(ExportFormat.csv)
-                        Text("HTML").tag(ExportFormat.html)
-                        Text("PNG").tag(ExportFormat.png)
+                    Picker("Format", selection: self.$exportFormat) {
+                        ForEach(ExportCategory.allCases, id: \.self) { category in
+                            Section(header: Text(category.rawValue)) {
+                                ForEach(category.formats, id: \.self) { format in
+                                    Text(format.rawValue).tag(format)
+                                }
+                            }
+                        }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    .pickerStyle(MenuPickerStyle())
+
+                    Text(self.exportFormat.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 Section(header: Text("Preview")) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Profile: \(profile.name)")
+                        Text("Profile: \(self.profile.name)")
                             .font(.headline)
 
-                        let profileType = profileManager.determineProfileType(for: profile.results)
+                        let profileType = self.profileManager.determineProfileType(for: self.profile.results)
                         Text("Type: \(profileType.rawValue)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -43,7 +50,7 @@ struct ExportView: View {
                         Divider()
 
                         // Show a preview of the scores
-                        let apgiProfile = profileManager.profile(from: profile.results)
+                        let apgiProfile = self.profileManager.profile(from: self.profile.results)
                         VStack(alignment: .leading, spacing: 4) {
                             ScoreRow(parameter: "ε (Epsilon)", value: apgiProfile.epsilon)
                             ScoreRow(parameter: "π (Precision)", value: apgiProfile.precision)
@@ -58,51 +65,71 @@ struct ExportView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
+                        self.presentationMode.wrappedValue.dismiss()
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    LoadingButton(title: "Export", isLoading: isExporting, action: exportProfile)
+                    LoadingButton(title: "Export", isLoading: self.isExporting, action: self.exportProfile)
                 }
             }
-            .sheet(isPresented: $showShareSheet) {
+            .sheet(isPresented: self.$showShareSheet) {
                 if let url = exportFileURL {
                     ShareSheet(items: [url])
                 }
             }
-            .toast($toast)
+            .toast(self.$toast)
         }
     }
 
     private func exportProfile() {
-        isExporting = true
+        self.isExporting = true
 
         Task { @MainActor in
             do {
-                // MED-002 Fix: Add progress indication for large datasets
                 let startTime = Date()
+                var url: URL?
 
-                if let url = profileManager.getExportURL(for: profile, format: exportFormat) {
-                    exportFileURL = url
-                    showShareSheet = true
+                // Use ResearchExportManager for specialized formats
+                if self.exportFormat.category == .statistical || self.exportFormat.category == .bibliography || self.exportFormat.category == .academic {
+                    let apgiScores = self.profileManager.profile(from: self.profile.results)
+                    let profileExport = ProfileExport(
+                        version: "1.0",
+                        timestamp: Date(),
+                        profile: profile,
+                        apgiScores: apgiScores
+                    )
+
+                    let exportData = try ResearchExportManager.shared.exportProfile(profileExport, format: self.exportFormat)
+                    let filename = ExportUtilities.generateExportFilename(profile: self.profile, format: self.exportFormat)
+                    let tempDir = ExportUtilities.getTemporaryDirectory()
+                    let url = tempDir.appendingPathComponent(filename)
+
+                    try exportData.write(to: url)
+                } else {
+                    // Use existing ProfileManager for basic formats
+                    url = self.profileManager.getExportURL(for: self.profile, format: self.exportFormat)
+                }
+
+                if let exportURL = url {
+                    self.exportFileURL = exportURL
+                    self.showShareSheet = true
 
                     let duration = Date().timeIntervalSince(startTime)
                     if duration > 2.0 {
-                        print("Export completed in \(String(format: "%.2f", duration)) seconds")
+                        os_log("Export completed in %.2f seconds", duration)
                     }
 
-                    toast = .success("Profile exported successfully as \(exportFormat.rawValue.uppercased())")
+                    self.toast = .success("Profile exported successfully as \(self.exportFormat.rawValue)")
                 } else {
                     throw AppError.exportFailed(underlying: NSError(domain: "ExportError", code: 1, userInfo: [
-                        NSLocalizedDescriptionKey: "Failed to generate export file"
+                        NSLocalizedDescriptionKey: "Failed to generate export file",
                     ]))
                 }
             } catch {
-                // Handle export errors gracefully
-                toast = .error("Export failed: \(error.localizedDescription)")
+                self.toast = .error("Export failed: \(error.localizedDescription)")
             }
 
-            isExporting = false
+            self.isExporting = false
         }
     }
 }
@@ -113,23 +140,23 @@ struct ScoreRow: View {
 
     var body: some View {
         HStack {
-            Text(parameter)
+            Text(self.parameter)
                 .font(.subheadline)
             Spacer()
-            Text("\(Int(value))")
+            Text("\(Int(self.value))")
                 .font(.body.monospacedDigit())
-                .foregroundColor(scoreColor)
+                .foregroundColor(self.scoreColor)
         }
     }
 
     private var scoreColor: Color {
-        switch value {
-        case 0..<25: return .red
-        case 25..<40: return .orange
-        case 40..<60: return .yellow
-        case 60..<75: return .green
-        case 75...100: return .blue
-        default: return .primary
+        switch self.value {
+        case 0 ..< 25: .red
+        case 25 ..< 40: .orange
+        case 40 ..< 60: .yellow
+        case 60 ..< 75: .green
+        case 75 ... 100: .blue
+        default: .primary
         }
     }
 }

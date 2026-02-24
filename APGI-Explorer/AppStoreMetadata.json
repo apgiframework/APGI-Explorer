@@ -1,0 +1,145 @@
+{
+  "app_store_connect": {
+    "app_id": "com.lesoto.APGI-Explorer",
+    "app_name": "APGI Explorer",
+    "subtitle": "Psychological Assessment Tool",
+    "description": "APGI Explorer is a comprehensive psychological assessment tool based on the Adult Psychological Growth Inventory. Discover your psychological growth profile through scientifically validated assessments, track your progress over time, and export detailed reports for research purposes.\n\nKey Features:\n• Comprehensive APGI assessment with validated psychological metrics\n• Visual charts and progress tracking\n• Cloud synchronization across all your devices\n• Export to multiple formats including PDF, CSV, SPSS, Stata, and R\n• Multi-language support (English, Spanish, French, German, Chinese)\n• Privacy-focused with local data storage\n• Research-grade export capabilities for academic use\n\nPerfect for psychologists, researchers, students, and individuals interested in personal psychological development and growth assessment.",
+    "keywords": ["psychology", "assessment", "APGI", "mental health", "research", "personal growth", "psychological inventory"],
+    "category": {
+      "primary": "public.app-category.reference",
+      "secondary": "public.app-category.education"
+    },
+    "privacy_policy_url": "https://lesoto.github.io/APGI-Explorer/privacy",
+    "support_url": "https://github.com/lesoto/APGI-Explorer/issues",
+    "marketing_url": "https://lesoto.github.io/APGI-Explorer",
+    "app_store_review_notes": "This is a psychological assessment tool designed for educational and research purposes. All data is stored locally and optionally synced via iCloud. No personal data is collected or transmitted without user consent.",
+    "whats_new": "Version 1.0 includes:\n• Complete APGI assessment implementation\n• Cloud synchronization support\n• Multi-language localization\n• Research export formats\n• Comprehensive privacy features"
+  },
+  "app_store_requirements": {
+    "minimum_os_version": "12.0",
+    "supported_devices": ["mac"],
+    "app_store_country": "US",
+    "content_rights": {
+      "made_for_kids": false,
+      "contains_third_party_content": false,
+      "content_advisories": []
+    },
+    "app_review_info": {
+      "contact_email": "support@lesoto.dev",
+      "contact_phone": "",
+      "demo_account": {
+        "username": "",
+        "password": ""
+      },
+      "notes": "This app is designed for psychological assessment and educational purposes. All assessments are based on validated psychological research instruments."
+    }
+  },
+  "pricing": {
+    "availability": "worldwide",
+    "base_country": "US",
+    "price_tier": 0,
+    "in_app_purchases": [
+      {
+        "product_id": "com.lesoto.APGI-Explorer.premium.monthly",
+        "reference_name": "Premium Monthly",
+        "price_tier": 4,
+        "availability": "worldwide"
+      },
+      {
+        "product_id": "com.lesoto.APGI-Explorer.premium.yearly",
+        "reference_name": "Premium Yearly",
+        "price_tier": 39,
+        "availability": "worldwide"
+      },
+      {
+        "product_id": "com.lesoto.APGI-Explorer.professional",
+        "reference_name": "Professional Features",
+        "price_tier": 19,
+        "availability": "worldwide"
+      },
+      {
+        "product_id": "com.lesoto.APGI-Explorer.research.pack",
+        "reference_name": "Research Pack",
+        "price_tier": 29,
+        "availability": "worldwide"
+      },
+      {
+        "product_id": "com.lesoto.APGI-Explorer.unlimited.profiles",
+        "reference_name": "Unlimited Profiles",
+        "price_tier": 9,
+        "availability": "worldwide"
+      }
+    ]
+  },
+  "localization": {
+    "default_language": "en-US",
+    "supported_languages": [
+      {
+        "language": "en-US",
+        "description": "APGI Explorer is a comprehensive psychological assessment tool based on the Adult Psychological Growth Inventory. Discover your psychological growth profile through scientifically validated assessments.",
+        "keywords": ["psychology", "assessment", "APGI", "mental health", "research", "personal growth"],
+        "whats_new": "Version 1.0 includes complete APGI assessment implementation with cloud sync and multi-language support."
+      },
+      {
+        "language": "es-ES",
+        "description": "APGI Explorer es una herramienta de evaluación psicológica integral basada en el Inventario de Crecimiento Psicológico para Adultos. Descubra su perfil de crecimiento psicológico a través de evaluaciones validadas científicamente.",
+        "keywords": ["psicología", "evaluación", "APGI", "salud mental", "investigación", "crecimiento personal"],
+        "whats_new": "La versión 1.0 incluye implementación completa de evaluación APGI con sincronización en la nube y soporte multiidioma."
+      },
+      {
+        "language": "fr-FR",
+        "description": "APGI Explorer est un outil d'évaluation psychologique complet basé sur l'Inventaire de Croissance Psychologique pour Adultes. Découvrez votre profil de croissance psychologique grâce à des évaluations validées scientifiquement.",
+        "keywords": ["psychologie", "évaluation", "APGI", "santé mentale", "recherche", "croissance personnelle"],
+        "whats_new": "La version 1.0 inclut une implémentation complète de l'évaluation APGI avec synchronisation cloud et support multilingue."
+      },
+      {
+        "language": "de-DE",
+        "description": "APGI Explorer ist ein umfassendes psychologisches Bewertungstool, das auf dem Adult Psychological Growth Inventory basiert. Entdecken Sie Ihr psychologisches Wachstumsprofil durch wissenschaftlich validierte Bewertungen.",
+        "keywords": ["Psychologie", "Bewertung", "APGI", "psychische Gesundheit", "Forschung", "persönliches Wachstum"],
+        "whats_new": "Version 1.0 umfasst vollständige APGI-Bewertungsimplementierung mit Cloud-Synchronisation und mehrsprachiger Unterstützung."
+      },
+      {
+        "language": "zh-Hans",
+        "description": "APGI Explorer 是一个基于成人心理成长清单的综合心理评估工具。通过科学验证的评估发现您的心理成长档案。",
+        "keywords": ["心理学", "评估", "APGI", "心理健康", "研究", "个人成长"],
+        "whats_new": "版本 1.0 包括完整的 APGI 评估实现，具有云同步和多语言支持。"
+      }
+    ]
+  },
+  "app_store_screenshots": {
+    "mac": [
+      {
+        "device": "mac13",
+        "file_name": "main_interface_mac.png",
+        "description": "Main assessment interface showing APGI questionnaire"
+      },
+      {
+        "device": "mac13", 
+        "file_name": "results_charts_mac.png",
+        "description": "Results visualization with interactive charts"
+      },
+      {
+        "device": "mac13",
+        "file_name": "profile_management_mac.png", 
+        "description": "Profile management and tracking interface"
+      },
+      {
+        "device": "mac13",
+        "file_name": "export_options_mac.png",
+        "description": "Research export format options"
+      }
+    ]
+  },
+  "build_settings": {
+    "configuration": "Release",
+    "code_signing": {
+      "identity": "Apple Distribution",
+      "provisioning_profile": "APGI_Explorer_Mac_App_Store"
+    },
+    "entitlements": "APGI-Explorer.entitlements",
+    "info_plist": "Info.plist",
+    "privacy_manifest": "PrivacyInfo.xcprivacy",
+    "build_number": 1,
+    "version": "1.0"
+  }
+}

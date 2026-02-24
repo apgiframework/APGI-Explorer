@@ -1,7 +1,7 @@
 import SwiftUI
 
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #endif
 
 struct TrackedParameter {
@@ -17,7 +17,7 @@ struct LiveScoreTracker: View {
         TrackedParameter(key: "epsilon", label: "ε", description: "Prediction Error"),
         TrackedParameter(key: "precision", label: "π", description: "Precision"),
         TrackedParameter(key: "threshold", label: "θₜ", description: "Threshold"),
-        TrackedParameter(key: "somatic", label: "β", description: "Somatic Bias")
+        TrackedParameter(key: "somatic", label: "β", description: "Somatic Bias"),
     ]
 
     var body: some View {
@@ -27,15 +27,15 @@ struct LiveScoreTracker: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.secondary)
 
-            SmallRadarChart(profile: quizModel.calculatePartialScore())
+            SmallRadarChart(profile: self.quizModel.calculatePartialScore())
                 .frame(height: 140)
                 .padding(.horizontal, 20)
 
             VStack(spacing: 10) {
-                ForEach(trackedParameters, id: \.key) { parameter in
+                ForEach(self.trackedParameters, id: \.key) { parameter in
                     ConfidenceBar(
                         parameter: parameter.label,
-                        confidence: quizModel.confidenceLevel(for: parameter.key),
+                        confidence: self.quizModel.confidenceLevel(for: parameter.key),
                         title: parameter.description
                     )
                 }
@@ -55,16 +55,16 @@ struct LiveScoreTracker: View {
         .padding(.horizontal)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(panelBackground)
+                .fill(self.panelBackground)
                 .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 3)
         )
     }
 
     private var panelBackground: Color {
         #if os(macOS)
-        Color(NSColor.windowBackgroundColor)
+            Color(NSColor.windowBackgroundColor)
         #else
-        Color(uiColor: .secondarySystemBackground)
+            Color(uiColor: .secondarySystemBackground)
         #endif
     }
 }
@@ -75,23 +75,23 @@ struct ConfidenceBar: View {
     let title: String
 
     private var barColor: Color {
-        switch parameter {
-        case "ε": return .orange
-        case "π": return .green
-        case "θₜ": return .purple
-        case "β": return .blue
-        default: return .gray
+        switch self.parameter {
+        case "ε": .orange
+        case "π": .green
+        case "θₜ": .purple
+        case "β": .blue
+        default: .gray
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("\(parameter) • \(title)")
+                Text("\(self.parameter) • \(self.title)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("\(Int(confidence * 100))%")
+                Text("\(Int(self.confidence * 100))%")
                     .font(.caption2)
                     .fontWeight(.semibold)
             }
@@ -103,7 +103,7 @@ struct ConfidenceBar: View {
                     .frame(height: 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(barColor)
+                            .fill(self.barColor)
                             .frame(width: width, height: 6),
                         alignment: .leading
                     )
@@ -117,22 +117,22 @@ struct SmallRadarChart: View {
     let profile: APGIProfile
 
     private var values: [Double] {
-        [profile.epsilon, profile.precision, profile.threshold, profile.somaticBias]
+        [self.profile.epsilon, self.profile.precision, self.profile.threshold, self.profile.somaticBias]
             .map { max(0, min($0 / 100, 1)) }
     }
 
     private func makeAngles(count: Int) -> [Double] {
         guard count > 0 else { return [] }
         let step = (2 * .pi) / Double(count)
-        return (0..<count).map { Double($0) * step - .pi / 2 }
+        return (0 ..< count).map { Double($0) * step - .pi / 2 }
     }
 
     private func radarPoints(in rect: CGRect) -> [CGPoint] {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radius = min(rect.width, rect.height) / 2
-        let angles = makeAngles(count: values.count)
+        let angles = self.makeAngles(count: self.values.count)
 
-        return zip(angles, values).map { angle, value in
+        return zip(angles, self.values).map { angle, value in
             let normalizedValue = max(0, min(value, 1))
             let coordX = center.x + cos(angle) * radius * normalizedValue
             let coordY = center.y + sin(angle) * radius * normalizedValue
@@ -142,15 +142,15 @@ struct SmallRadarChart: View {
 
     private var panelBackground: Color {
         #if os(macOS)
-        Color(NSColor.windowBackgroundColor)
+            Color(NSColor.windowBackgroundColor)
         #else
-        Color(uiColor: .secondarySystemBackground)
+            Color(uiColor: .secondarySystemBackground)
         #endif
     }
 
     private func radarPath(in rect: CGRect) -> Path {
         var path = Path()
-        let points = radarPoints(in: rect)
+        let points = self.radarPoints(in: rect)
         for (index, point) in points.enumerated() {
             if index == 0 {
                 path.move(to: point)
@@ -175,10 +175,10 @@ struct SmallRadarChart: View {
                         .position(center)
                 }
 
-                radarPath(in: rect)
+                self.radarPath(in: rect)
                     .fill(Color.blue.opacity(0.3))
 
-                radarPath(in: rect)
+                self.radarPath(in: rect)
                     .stroke(Color.blue, lineWidth: 1.5)
             }
         }

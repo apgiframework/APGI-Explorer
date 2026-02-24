@@ -1,13 +1,14 @@
-import Foundation
+import Accessibility
 import AppKit
 import CoreGraphics
+import Foundation
 import ImageIO
-import UniformTypeIdentifiers
-import Accessibility
-import ScreenCaptureKit
 import os.log
+import ScreenCaptureKit
+import UniformTypeIdentifiers
 
 // MARK: - Screenshot Automation Engine
+
 class ScreenshotAutomationEngine {
     private let config: ScreenshotConfig
     private let logger: Logger
@@ -27,18 +28,18 @@ class ScreenshotAutomationEngine {
 
     /// Run the complete screenshot automation
     func run() {
-        logger.log("🚀 Starting screenshot automation")
-        logger.log("📊 Configuration: \(config.imageFormat.rawValue), \(config.appearanceModes.count) modes, \(config.resolutions.count) resolutions")
+        self.logger.log("🚀 Starting screenshot automation")
+        self.logger.log("📊 Configuration: \(self.config.imageFormat.rawValue), \(self.config.appearanceModes.count) modes, \(self.config.resolutions.count) resolutions")
 
         // Validate configuration
-        guard validateConfiguration() else {
-            logger.logError("❌ Configuration validation failed")
+        guard self.validateConfiguration() else {
+            self.logger.logError("❌ Configuration validation failed")
             return
         }
 
         // Create output directory
-        guard createOutputDirectory() else {
-            logger.logError("❌ Failed to create output directory")
+        guard self.createOutputDirectory() else {
+            self.logger.logError("❌ Failed to create output directory")
             return
         }
 
@@ -47,65 +48,65 @@ class ScreenshotAutomationEngine {
 
         // Iterate through all screens
         for screen in ScreenNavigation.allScreens {
-            if !shouldCaptureScreen(screen) {
-                logger.log("⏭️ Skipping screen: \(screen.name)")
+            if !self.shouldCaptureScreen(screen) {
+                self.logger.log("⏭️ Skipping screen: \(screen.name)")
                 continue
             }
 
             // Navigate to screen
-            guard navigator.navigate(to: screen) else {
-                logger.logError("❌ Failed to navigate to screen: \(screen.name)")
+            guard self.navigator.navigate(to: screen) else {
+                self.logger.logError("❌ Failed to navigate to screen: \(screen.name)")
                 continue
             }
 
             // Capture screenshots for this screen
-            let screenScreenshots = captureScreenshotsForScreen(screen)
+            let screenScreenshots = self.captureScreenshotsForScreen(screen)
             totalScreenshots += screenScreenshots.total
             successfulScreenshots += screenScreenshots.successful
 
             // Wait between screens
-            if config.delayBetweenScreens > 0 {
-                Thread.sleep(forTimeInterval: config.delayBetweenScreens)
+            if self.config.delayBetweenScreens > 0 {
+                Thread.sleep(forTimeInterval: self.config.delayBetweenScreens)
             }
         }
 
         // Generate report
-        generateReport(totalScreenshots: totalScreenshots, successful: successfulScreenshots)
+        self.generateReport(totalScreenshots: totalScreenshots, successful: successfulScreenshots)
 
-        logger.logSuccess("✅ Screenshot automation completed")
-        logger.log("📊 Results: \(successfulScreenshots)/\(totalScreenshots) screenshots captured")
+        self.logger.logSuccess("✅ Screenshot automation completed")
+        self.logger.log("📊 Results: \(successfulScreenshots)/\(totalScreenshots) screenshots captured")
     }
 
     private func validateConfiguration() -> Bool {
         // Check output directory
-        _ = URL(fileURLWithPath: config.outputDirectory)
+        _ = URL(fileURLWithPath: self.config.outputDirectory)
         var isDirectory: ObjCBool = false
-        let exists = FileManager.default.fileExists(atPath: config.outputDirectory, isDirectory: &isDirectory)
+        let exists = FileManager.default.fileExists(atPath: self.config.outputDirectory, isDirectory: &isDirectory)
 
         if exists && !isDirectory.boolValue {
-            logger.logError("❌ Output path exists but is not a directory: \(config.outputDirectory)")
+            self.logger.logError("❌ Output path exists but is not a directory: \(self.config.outputDirectory)")
             return false
         }
 
         // Check quality range
-        if config.quality < 0.1 || config.quality > 1.0 {
-            logger.logError("❌ Quality must be between 0.1 and 1.0, got: \(config.quality)")
+        if self.config.quality < 0.1 || self.config.quality > 1.0 {
+            self.logger.logError("❌ Quality must be between 0.1 and 1.0, got: \(self.config.quality)")
             return false
         }
 
         // Check delay
-        if config.delayBetweenScreens < 0 {
-            logger.logError("❌ Delay cannot be negative: \(config.delayBetweenScreens)")
+        if self.config.delayBetweenScreens < 0 {
+            self.logger.logError("❌ Delay cannot be negative: \(self.config.delayBetweenScreens)")
             return false
         }
 
         // Check max retries
-        if config.maxRetries < 0 || config.maxRetries > 10 {
-            logger.logError("❌ Max retries must be between 0 and 10, got: \(config.maxRetries)")
+        if self.config.maxRetries < 0 || self.config.maxRetries > 10 {
+            self.logger.logError("❌ Max retries must be between 0 and 10, got: \(self.config.maxRetries)")
             return false
         }
 
-        logger.log("✅ Configuration validation passed")
+        self.logger.log("✅ Configuration validation passed")
         return true
     }
 
@@ -114,18 +115,18 @@ class ScreenshotAutomationEngine {
 
         do {
             try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
-            logger.log("✅ Output directory created: \(config.outputDirectory)")
+            self.logger.log("✅ Output directory created: \(self.config.outputDirectory)")
             return true
         } catch {
-            logger.logError("❌ Failed to create output directory: \(error)")
+            self.logger.logError("❌ Failed to create output directory: \(error)")
             return false
         }
     }
 
     private func shouldCaptureScreen(_ screen: ScreenNavigation) -> Bool {
         // Check if screen is in custom screen paths
-        if !config.customScreenPaths.isEmpty {
-            return config.customScreenPaths.contains { $0.name == screen.name }
+        if !self.config.customScreenPaths.isEmpty {
+            return self.config.customScreenPaths.contains { $0.name == screen.name }
         }
 
         // Otherwise, capture all screens
@@ -133,27 +134,27 @@ class ScreenshotAutomationEngine {
     }
 
     private func captureScreenshotsForScreen(_ screen: ScreenNavigation) -> (total: Int, successful: Int) {
-        logger.log("📸 Capturing screenshots for screen: \(screen.name)")
+        self.logger.log("📸 Capturing screenshots for screen: \(screen.name)")
 
         var total = 0
         var successful = 0
 
         // Iterate through appearance modes
-        for appearanceMode in config.appearanceModes {
+        for appearanceMode in self.config.appearanceModes {
             // Set appearance mode
-            setAppearanceMode(appearanceMode)
+            self.setAppearanceMode(appearanceMode)
             Thread.sleep(forTimeInterval: 1.0) // Wait for appearance change
 
             // Iterate through resolutions
-            for resolution in config.resolutions {
+            for resolution in self.config.resolutions {
                 // Set resolution
-                setResolution(resolution)
+                self.setResolution(resolution)
                 Thread.sleep(forTimeInterval: 0.5) // Wait for resolution change
 
                 // Capture screenshot
-                let screenshotName = generateScreenshotName(screen: screen, appearance: appearanceMode, resolution: resolution)
+                let screenshotName = self.generateScreenshotName(screen: screen, appearance: appearanceMode, resolution: resolution)
 
-                if captureScreenshot(named: screenshotName) {
+                if self.captureScreenshot(named: screenshotName) {
                     successful += 1
                 }
                 total += 1
@@ -163,12 +164,12 @@ class ScreenshotAutomationEngine {
             }
         }
 
-        logger.log("📊 Screen results: \(successful)/\(total) screenshots captured")
+        self.logger.log("📊 Screen results: \(successful)/\(total) screenshots captured")
         return (total: total, successful: successful)
     }
 
     private func setAppearanceMode(_ mode: AppearanceMode) {
-        logger.log("🎨 Setting appearance mode: \(mode.displayName)")
+        self.logger.log("🎨 Setting appearance mode: \(mode.displayName)")
 
         switch mode {
         case .light:
@@ -190,7 +191,7 @@ class ScreenshotAutomationEngine {
     }
 
     private func setResolution(_ resolution: Resolution) {
-        logger.log("📱 Setting resolution: \(resolution.displayName)")
+        self.logger.log("📱 Setting resolution: \(resolution.displayName)")
 
         // Resolution setting would depend on the specific requirements
         // This is a placeholder for resolution implementation
@@ -199,11 +200,11 @@ class ScreenshotAutomationEngine {
     private func generateScreenshotName(screen: ScreenNavigation, appearance: AppearanceMode, resolution: Resolution) -> String {
         var name = screen.screenshotName
 
-        if config.appearanceModes.count > 1 {
+        if self.config.appearanceModes.count > 1 {
             name += "_\(appearance.rawValue)"
         }
 
-        if config.resolutions.count > 1 {
+        if self.config.resolutions.count > 1 {
             name += "_\(resolution.rawValue)"
         }
 
@@ -216,29 +217,29 @@ class ScreenshotAutomationEngine {
             return override(screenshotName)
         }
 
-        logger.log("📸 Capturing screenshot: \(screenshotName)")
+        self.logger.log("📸 Capturing screenshot: \(screenshotName)")
 
         var retryCount = 0
-        while retryCount < config.maxRetries {
-            if doCaptureScreenshot(named: screenshotName) {
+        while retryCount < self.config.maxRetries {
+            if self.doCaptureScreenshot(named: screenshotName) {
                 return true
             }
 
             retryCount += 1
-            if retryCount < config.maxRetries {
-                logger.log("⚠️ Screenshot failed, retrying... (\(retryCount)/\(config.maxRetries))")
+            if retryCount < self.config.maxRetries {
+                self.logger.log("⚠️ Screenshot failed, retrying... (\(retryCount)/\(self.config.maxRetries))")
                 Thread.sleep(forTimeInterval: 1.0)
             }
         }
 
-        logger.logError("❌ Failed to capture screenshot after \(config.maxRetries) retries: \(screenshotName)")
+        self.logger.logError("❌ Failed to capture screenshot after \(self.config.maxRetries) retries: \(screenshotName)")
         return false
     }
 
     private func doCaptureScreenshot(named screenshotName: String) -> Bool {
         // Capture screenshot using ScreenCaptureKit or alternative method
         guard let screenshot = captureScreenImage() else {
-            logger.logError("❌ Failed to capture screen image")
+            self.logger.logError("❌ Failed to capture screen image")
             return false
         }
 
@@ -246,34 +247,35 @@ class ScreenshotAutomationEngine {
         let fileName = "\(screenshotName).\(config.imageFormat.fileExtension)"
         let filePath = URL(fileURLWithPath: config.outputDirectory).appendingPathComponent(fileName)
 
-        guard saveScreenshot(screenshot, to: filePath) else {
-            logger.logError("❌ Failed to save screenshot: \(fileName)")
+        guard self.saveScreenshot(screenshot, to: filePath) else {
+            self.logger.logError("❌ Failed to save screenshot: \(fileName)")
             return false
         }
 
-        logger.logSuccess("✅ Screenshot saved: \(fileName)")
+        self.logger.logSuccess("✅ Screenshot saved: \(fileName)")
         return true
     }
 
     private func captureScreenImage() -> NSImage? {
         // Implementation would use ScreenCaptureKit or CGScreenCapture
         // This is a placeholder implementation
-        return nil
+        nil
     }
 
     private func saveScreenshot(_ image: NSImage, to url: URL) -> Bool {
         guard let tiffData = image.tiffRepresentation,
-              let bitmapImage = NSBitmapImageRep(data: tiffData) else {
+              let bitmapImage = NSBitmapImageRep(data: tiffData)
+        else {
             return false
         }
 
         let imageData: Data?
 
-        switch config.imageFormat {
+        switch self.config.imageFormat {
         case .png:
             imageData = bitmapImage.representation(using: .png, properties: [:])
         case .jpeg:
-            let properties = [NSBitmapImageRep.PropertyKey.init(rawValue: "NSImageCompressionFactor"): config.quality]
+            let properties = [NSBitmapImageRep.PropertyKey(rawValue: "NSImageCompressionFactor"): self.config.quality]
             imageData = bitmapImage.representation(using: .jpeg, properties: properties)
         case .heic:
             // HEIC support would require additional implementation
@@ -288,13 +290,13 @@ class ScreenshotAutomationEngine {
             try data.write(to: url)
             return true
         } catch {
-            logger.logError("❌ Failed to write screenshot data: \(error)")
+            self.logger.logError("❌ Failed to write screenshot data: \(error)")
             return false
         }
     }
 
     private func generateReport(totalScreenshots: Int, successful: Int) {
-        logger.log("📋 Generating screenshot report")
+        self.logger.log("📋 Generating screenshot report")
 
         let report = ScreenshotReport(
             totalScreenshots: totalScreenshots,
@@ -309,14 +311,15 @@ class ScreenshotAutomationEngine {
         do {
             let reportData = try JSONEncoder().encode(report)
             try reportData.write(to: reportPath)
-            logger.logSuccess("✅ Report generated: \(reportPath.path)")
+            self.logger.logSuccess("✅ Report generated: \(reportPath.path)")
         } catch {
-            logger.logError("❌ Failed to generate report: \(error)")
+            self.logger.logError("❌ Failed to generate report: \(error)")
         }
     }
 }
 
 // MARK: - Screenshot Report
+
 struct ScreenshotReport: Codable {
     let totalScreenshots: Int
     let successfulScreenshots: Int
@@ -325,12 +328,12 @@ struct ScreenshotReport: Codable {
     let outputPath: String
 
     var successRate: Double {
-        guard totalScreenshots > 0 else { return 0.0 }
-        return Double(successfulScreenshots) / Double(totalScreenshots)
+        guard self.totalScreenshots > 0 else { return 0.0 }
+        return Double(self.successfulScreenshots) / Double(self.totalScreenshots)
     }
 
     var duration: TimeInterval {
         // This would be calculated based on actual timing
-        return 0.0
+        0.0
     }
 }

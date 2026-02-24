@@ -1,7 +1,8 @@
-import Foundation
 import Combine
+import Foundation
+import os.log
 #if os(iOS)
-import UIKit
+    import UIKit
 #endif
 
 // MARK: - Crash Reporting Manager
@@ -12,8 +13,8 @@ class CrashReportingManager: ObservableObject {
     @Published var isEnabled = false
 
     private init() {
-        setupCrashReporting()
-        loadSettings()
+        self.setupCrashReporting()
+        self.loadSettings()
     }
 
     private func setupCrashReporting() {
@@ -30,21 +31,21 @@ class CrashReportingManager: ObservableObject {
     }
 
     private func loadSettings() {
-        isEnabled = UserDefaults.standard.bool(forKey: "crashReportingConsent")
+        self.isEnabled = UserDefaults.standard.bool(forKey: "crashReportingConsent")
     }
 
     func enableCrashReporting() {
-        isEnabled = true
+        self.isEnabled = true
         UserDefaults.standard.set(true, forKey: "crashReportingConsent")
     }
 
     func disableCrashReporting() {
-        isEnabled = false
+        self.isEnabled = false
         UserDefaults.standard.set(false, forKey: "crashReportingConsent")
     }
 
     func reportCrash(_ error: Error, context: String = "") {
-        guard isEnabled else { return }
+        guard self.isEnabled else { return }
 
         let crashReport = CrashReport(
             error: error,
@@ -54,35 +55,35 @@ class CrashReportingManager: ObservableObject {
             appVersion: getAppVersion()
         )
 
-        saveCrashReport(crashReport)
+        self.saveCrashReport(crashReport)
     }
 
     private func collectDeviceInfo() -> [String: String] {
         var deviceInfo: [String: String] = [:]
 
         #if os(iOS)
-        deviceInfo["deviceModel"] = UIDevice.current.model
-        deviceInfo["systemName"] = UIDevice.current.systemName
-        deviceInfo["systemVersion"] = UIDevice.current.systemVersion
-        deviceInfo["orientation"] = UIDevice.current.orientation.description
+            deviceInfo["deviceModel"] = UIDevice.current.model
+            deviceInfo["systemName"] = UIDevice.current.systemName
+            deviceInfo["systemVersion"] = UIDevice.current.systemVersion
+            deviceInfo["orientation"] = UIDevice.current.orientation.description
         #elseif os(macOS)
-        deviceInfo["deviceModel"] = "Mac"
-        deviceInfo["systemName"] = "macOS"
-        deviceInfo["systemVersion"] = ProcessInfo.processInfo.operatingSystemVersionString
+            deviceInfo["deviceModel"] = "Mac"
+            deviceInfo["systemName"] = "macOS"
+            deviceInfo["systemVersion"] = ProcessInfo.processInfo.operatingSystemVersionString
         #endif
 
-        deviceInfo["appVersion"] = getAppVersion()
-        deviceInfo["buildNumber"] = getBuildNumber()
+        deviceInfo["appVersion"] = self.getAppVersion()
+        deviceInfo["buildNumber"] = self.getBuildNumber()
 
         return deviceInfo
     }
 
     private func getAppVersion() -> String {
-        return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
     }
 
     private func getBuildNumber() -> String {
-        return Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
     }
 
     private func saveCrashReport(_ report: CrashReport) {
@@ -99,9 +100,8 @@ class CrashReportingManager: ObservableObject {
 
             let fileURL = crashReportsPath.appendingPathComponent("crash_\(report.timestamp.timeIntervalSince1970).json")
             try data.write(to: fileURL)
-
         } catch {
-            print("Failed to save crash report: \(error)")
+            os_log("Failed to save crash report: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
         }
     }
 
@@ -110,7 +110,8 @@ class CrashReportingManager: ObservableObject {
         let crashReportsPath = documentsPath.appendingPathComponent("CrashReports")
 
         guard let files = try? FileManager.default.contentsOfDirectory(at: crashReportsPath,
-                                                                   includingPropertiesForKeys: nil) else {
+                                                                       includingPropertiesForKeys: nil)
+        else {
             return []
         }
 
@@ -124,7 +125,7 @@ class CrashReportingManager: ObservableObject {
                 let report = try decoder.decode(CrashReport.self, from: data)
                 reports.append(report)
             } catch {
-                print("Failed to decode crash report from \(file): \(error)")
+                os_log("Failed to decode crash report from %{public}@: %{public}@", log: OSLog.default, type: .error, file.lastPathComponent, error.localizedDescription)
             }
         }
 
@@ -141,7 +142,7 @@ class CrashReportingManager: ObservableObject {
                 try FileManager.default.removeItem(at: file)
             }
         } catch {
-            print("Failed to clear crash reports: \(error)")
+            os_log("Failed to clear crash reports: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
         }
     }
 }
@@ -172,7 +173,7 @@ private func handleUncaughtException(exception: NSException) {
     let error = NSError(domain: "UncaughtException", code: -1, userInfo: [
         NSLocalizedDescriptionKey: exception.reason ?? "Unknown exception",
         "exceptionName": exception.name.rawValue,
-        "exceptionReason": exception.reason ?? ""
+        "exceptionReason": exception.reason ?? "",
     ])
 
     CrashReportingManager.shared.reportCrash(error, context: "Uncaught Exception")
@@ -180,13 +181,13 @@ private func handleUncaughtException(exception: NSException) {
 
 private func handleSignal(signal: Int32) {
     let error = NSError(domain: "Signal", code: Int(signal), userInfo: [
-        NSLocalizedDescriptionKey: "Application received signal: \(signal)"
+        NSLocalizedDescriptionKey: "Application received signal: \(signal)",
     ])
 
     CrashReportingManager.shared.reportCrash(error, context: "Signal Handler")
 }
 
-// Signal function declaration
-private func signal(_ signal: Int32, _ handler: @convention(c) (Int32) -> Void) {
+/// Signal function declaration
+private func signal(_: Int32, _: @convention(c) (Int32) -> Void) {
     // This is a simplified version - in a real implementation, you'd use the proper signal function
 }

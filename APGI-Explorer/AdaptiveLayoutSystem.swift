@@ -1,46 +1,45 @@
-import SwiftUI
 import Combine
+import SwiftUI
 #if os(iOS)
-import UIKit
+    import UIKit
 #else
-import AppKit
+    import AppKit
 #endif
 
 // MARK: - iOS/iPadOS Adaptive Layout System
 
 /// Provides adaptive layouts and touch-optimized interactions for iOS/iPadOS
-struct AdaptiveLayoutSystem {
-
+enum AdaptiveLayoutSystem {
     // MARK: - Device Detection
 
     static var isiPad: Bool {
         #if os(iOS)
-        return UIDevice.current.userInterfaceIdiom == .pad
+            return UIDevice.current.userInterfaceIdiom == .pad
         #else
-        return false
+            return false
         #endif
     }
 
     static var isiPhone: Bool {
         #if os(iOS)
-        return UIDevice.current.userInterfaceIdiom == .phone
+            return UIDevice.current.userInterfaceIdiom == .phone
         #else
-        return false
+            return false
         #endif
     }
 
     static var deviceType: DeviceType {
         #if os(iOS)
-        switch UIDevice.current.userInterfaceIdiom {
-        case .pad:
-            return .iPad
-        case .phone:
-            return .iPhone
-        default:
-            return .unknown
-        }
+            switch UIDevice.current.userInterfaceIdiom {
+            case .pad:
+                return .iPad
+            case .phone:
+                return .iPhone
+            default:
+                return .unknown
+            }
         #else
-        return .mac
+            return .mac
         #endif
     }
 
@@ -52,28 +51,28 @@ struct AdaptiveLayoutSystem {
 
         var name: String {
             switch self {
-            case .iPad: return "iPad"
-            case .iPhone: return "iPhone"
-            case .mac: return "Mac"
-            case .unknown: return "Unknown"
+            case .iPad: "iPad"
+            case .iPhone: "iPhone"
+            case .mac: "Mac"
+            case .unknown: "Unknown"
             }
         }
 
         var recommendedColumns: Int {
             switch self {
-            case .iPad: return 3
-            case .iPhone: return 1
-            case .mac: return 4
-            case .unknown: return 1
+            case .iPad: 3
+            case .iPhone: 1
+            case .mac: 4
+            case .unknown: 1
             }
         }
 
         var recommendedItemHeight: CGFloat {
             switch self {
-            case .iPad: return 200
-            case .iPhone: return 120
-            case .mac: return 180
-            case .unknown: return 120
+            case .iPad: 200
+            case .iPhone: 120
+            case .mac: 180
+            case .unknown: 120
             }
         }
     }
@@ -82,9 +81,9 @@ struct AdaptiveLayoutSystem {
 
     static var screenSize: CGSize {
         #if os(iOS)
-        return UIScreen.main.bounds.size
+            return UIScreen.main.bounds.size
         #else
-        return NSScreen.main?.frame.size ?? CGSize(width: 1920, height: 1080)
+            return NSScreen.main?.frame.size ?? CGSize(width: 1920, height: 1080)
         #endif
     }
 
@@ -103,43 +102,43 @@ struct AdaptiveLayoutSystem {
     // MARK: - Layout Calculations
 
     static func columnsForHorizontalSizeClass(_ sizeClass: UserInterfaceSizeClass?) -> Int {
-        switch (deviceType, sizeClass) {
+        switch (self.deviceType, sizeClass) {
         case (.iPad, .regular):
-            return isLandscape ? 4 : 3
+            self.isLandscape ? 4 : 3
         case (.iPad, .compact):
-            return 2
+            2
         case (.iPhone, .regular):
-            return 2
+            2
         case (.iPhone, .compact):
-            return 1
+            1
         default:
-            return 1
+            1
         }
     }
 
     static func spacingForDevice() -> CGFloat {
-        switch deviceType {
+        switch self.deviceType {
         case .iPad:
-            return 20
+            20
         case .iPhone:
-            return 12
+            12
         case .mac:
-            return 16
+            16
         case .unknown:
-            return 12
+            12
         }
     }
 
     static func paddingForDevice() -> EdgeInsets {
-        switch deviceType {
+        switch self.deviceType {
         case .iPad:
-            return EdgeInsets(top: 24, leading: 32, bottom: 24, trailing: 32)
+            EdgeInsets(top: 24, leading: 32, bottom: 24, trailing: 32)
         case .iPhone:
-            return EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
+            EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
         case .mac:
-            return EdgeInsets(top: 20, leading: 24, bottom: 20, trailing: 24)
+            EdgeInsets(top: 20, leading: 24, bottom: 20, trailing: 24)
         case .unknown:
-            return EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
+            EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
         }
     }
 
@@ -148,39 +147,39 @@ struct AdaptiveLayoutSystem {
     static var minimumTouchTargetSize: CGFloat {
         switch deviceType {
         case .iPad:
-            return 60 // Larger touch targets for iPad
+            60 // Larger touch targets for iPad
         case .iPhone:
-            return 44 // Standard iOS touch target
+            44 // Standard iOS touch target
         case .mac:
-            return 32 // Smaller targets for mouse interaction
+            32 // Smaller targets for mouse interaction
         case .unknown:
-            return 44
+            44
         }
     }
 
     static var buttonHeight: CGFloat {
         switch deviceType {
         case .iPad:
-            return 56
+            56
         case .iPhone:
-            return 48
+            48
         case .mac:
-            return 40
+            40
         case .unknown:
-            return 48
+            48
         }
     }
 
     static var iconSize: CGFloat {
         switch deviceType {
         case .iPad:
-            return 32
+            32
         case .iPhone:
-            return 24
+            24
         case .mac:
-            return 20
+            20
         case .unknown:
-            return 24
+            24
         }
     }
 }
@@ -194,14 +193,14 @@ struct AdaptiveGrid<Content: View, Item: Identifiable>: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var columns: [GridItem] {
-        let columnCount = AdaptiveLayoutSystem.columnsForHorizontalSizeClass(horizontalSizeClass)
+        let columnCount = AdaptiveLayoutSystem.columnsForHorizontalSizeClass(self.horizontalSizeClass)
         return Array(repeating: GridItem(.flexible(), spacing: AdaptiveLayoutSystem.spacingForDevice()), count: columnCount)
     }
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: AdaptiveLayoutSystem.spacingForDevice()) {
-            ForEach(items) { item in
-                content(item)
+        LazyVGrid(columns: self.columns, spacing: AdaptiveLayoutSystem.spacingForDevice()) {
+            ForEach(self.items) { item in
+                self.content(item)
                     .frame(minHeight: AdaptiveLayoutSystem.deviceType.recommendedItemHeight)
             }
         }
@@ -212,21 +211,17 @@ struct AdaptiveGrid<Content: View, Item: Identifiable>: View {
 // MARK: - Adaptive Stack Layout
 
 struct AdaptiveStack<Content: View>: View {
-    let content: Content
+    @ViewBuilder let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
     var body: some View {
-        if AdaptiveLayoutSystem.isRegularWidth && horizontalSizeClass == .regular {
+        if AdaptiveLayoutSystem.isRegularWidth, self.horizontalSizeClass == .regular {
             HStack(spacing: AdaptiveLayoutSystem.spacingForDevice()) {
-                content
+                self.content
             }
         } else {
             VStack(spacing: AdaptiveLayoutSystem.spacingForDevice()) {
-                content
+                self.content
             }
         }
     }
@@ -236,20 +231,15 @@ struct AdaptiveStack<Content: View>: View {
 
 struct TouchOptimizedButton<Label: View>: View {
     let action: () -> Void
-    let label: Label
+    @ViewBuilder let label: Label
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    init(action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
-        self.action = action
-        self.label = label()
-    }
-
     var body: some View {
-        Button(action: action) {
-            label
+        Button(action: self.action) {
+            self.label
                 .frame(minHeight: AdaptiveLayoutSystem.minimumTouchTargetSize)
-                .frame(maxWidth: horizontalSizeClass == .regular ? .infinity : nil)
+                .frame(maxWidth: self.horizontalSizeClass == .regular ? .infinity : nil)
         }
         .buttonStyle(TouchOptimizedButtonStyle())
     }
@@ -287,24 +277,20 @@ struct AdaptiveCard: ViewModifier {
 // MARK: - Adaptive Navigation View
 
 struct AdaptiveNavigationView<Content: View>: View {
-    let content: Content
+    @ViewBuilder let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
     var body: some View {
-        if AdaptiveLayoutSystem.isiPad && horizontalSizeClass == .regular {
+        if AdaptiveLayoutSystem.isiPad, self.horizontalSizeClass == .regular {
             NavigationSplitView {
                 // Sidebar for iPad
                 SidebarView()
             } detail: {
-                content
+                self.content
             }
         } else {
             NavigationView {
-                content
+                self.content
             }
             #if os(iOS)
             .navigationViewStyle(StackNavigationViewStyle())
@@ -348,28 +334,28 @@ struct TouchOptimizedGesture<Content: View>: View {
     }
 
     var body: some View {
-        content
-            .scaleEffect(isPressed ? 0.95 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: isPressed)
+        self.content
+            .scaleEffect(self.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: self.isPressed)
             .onTapGesture {
-                onTap()
+                self.onTap()
                 // Provide haptic feedback on iOS
                 #if os(iOS)
-                let impact = UIImpactFeedbackGenerator(style: .light)
-                impact.impactOccurred()
+                    let impact = UIImpactFeedbackGenerator(style: .light)
+                    impact.impactOccurred()
                 #endif
             }
             .onLongPressGesture(
                 minimumDuration: 0.5,
                 maximumDistance: 10,
                 pressing: { pressing in
-                    isPressed = pressing
+                    self.isPressed = pressing
                 },
                 perform: {
-                    onLongPress?()
+                    self.onLongPress?()
                     #if os(iOS)
-                    let impact = UIImpactFeedbackGenerator(style: .medium)
-                    impact.impactOccurred()
+                        let impact = UIImpactFeedbackGenerator(style: .medium)
+                        impact.impactOccurred()
                     #endif
                 }
             )
@@ -385,25 +371,25 @@ struct AdaptiveSheet<SheetContent: View>: ViewModifier {
     func body(content: Content) -> some View {
         if AdaptiveLayoutSystem.isiPad {
             content
-                .sheet(isPresented: isPresented) {
+                .sheet(isPresented: self.isPresented) {
                     self.content
                         .frame(minWidth: 400, minHeight: 300)
                         .padding()
                 }
         } else {
             content
-                .sheet(isPresented: isPresented) {
+                .sheet(isPresented: self.isPresented) {
                     NavigationView {
                         self.content
                         #if os(iOS)
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") {
-                                    isPresented.wrappedValue = false
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    Button("Done") {
+                                        self.isPresented.wrappedValue = false
+                                    }
                                 }
                             }
-                        }
                         #endif
                     }
                 }
@@ -414,9 +400,9 @@ struct AdaptiveSheet<SheetContent: View>: ViewModifier {
 // MARK: - View Extensions
 
 extension View {
-    func adaptiveSheet<SheetContent: View>(
+    func adaptiveSheet(
         isPresented: Binding<Bool>,
-        @ViewBuilder content: @escaping () -> SheetContent
+        @ViewBuilder content: @escaping () -> some View
     ) -> some View {
         modifier(AdaptiveSheet(content: content(), isPresented: isPresented))
     }

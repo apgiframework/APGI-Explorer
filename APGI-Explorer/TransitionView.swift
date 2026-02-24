@@ -1,4 +1,3 @@
-// TransitionView.swift
 import SwiftUI
 
 struct TransitionView: View {
@@ -6,15 +5,15 @@ struct TransitionView: View {
     let states: [PsychologicalState]
 
     private var fromState: PsychologicalState? {
-        states.first { $0.id == transition.from }
+        self.states.first { $0.id == self.transition.from }
     }
 
     private var toState: PsychologicalState? {
-        states.first { $0.id == transition.toState }
+        self.states.first { $0.id == self.transition.toState }
     }
 
     var body: some View {
-        if let fromState = fromState, let toState = toState {
+        if let fromState, let toState {
             VStack(alignment: .leading, spacing: LayoutConstants.tinySpacing) {
                 HStack {
                     Text(fromState.name)
@@ -24,16 +23,16 @@ struct TransitionView: View {
                     Text(toState.name)
                         .font(.subheadline)
                     Spacer()
-                    Text(String(format: "%.0f%%", transition.probability * DataConstants.probabilityMultiplier))
+                    Text(String(format: "%.0f%%", self.transition.probability * DataConstants.probabilityMultiplier))
                         .font(.caption.monospacedDigit())
                         .foregroundColor(.secondary)
                 }
 
-                if !transition.triggers.isEmpty {
+                if !self.transition.triggers.isEmpty {
                     Text("Triggers:")
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                    ForEach(Array(transition.triggers.enumerated()), id: \.offset) { _, trigger in
+                    ForEach(Array(self.transition.triggers.enumerated()), id: \.offset) { _, trigger in
                         Text(trigger.description)
                             .font(.caption2)
                             .foregroundColor(.secondary)
@@ -48,16 +47,16 @@ struct TransitionView: View {
 extension StateTransitionModel.Transition.Trigger: CustomStringConvertible {
     var description: String {
         switch self {
-        case .parameterShift(let parameter, let direction, let magnitude):
-            return "\(parameter.rawValue) \(direction.rawValue) by \(String(format: "%.1f", magnitude))"
-        case .externalEvent(let type):
-            return "External: \(type.rawValue)"
-        case .temporalFactor(let duration):
-            return "After \(Int(duration))s"
-        case .metabolicConstraint(let level):
-            return "Metabolic: \(level.rawValue)"
-        case .socialContext(let context):
-            return "Social: \(context.rawValue)"
+        case let .parameterShift(parameter, direction, magnitude):
+            "\(parameter.rawValue) \(direction.rawValue) by \(String(format: "%.1f", magnitude))"
+        case let .externalEvent(type):
+            "External: \(type.rawValue)"
+        case let .temporalFactor(duration):
+            "After \(Int(duration))s"
+        case let .metabolicConstraint(level):
+            "Metabolic: \(level.rawValue)"
+        case let .socialContext(context):
+            "Social: \(context.rawValue)"
         }
     }
 }

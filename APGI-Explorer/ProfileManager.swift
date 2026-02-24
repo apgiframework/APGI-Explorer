@@ -1,8 +1,8 @@
-import Foundation
 import Combine
-import SwiftUI
-import PDFKit
+import Foundation
 import os.log
+import PDFKit
+import SwiftUI
 
 @MainActor
 class ProfileManager: ObservableObject {
@@ -28,33 +28,33 @@ class ProfileManager: ObservableObject {
 
     init() {
         Task {
-            await loadProfiles()
-            await restoreLastActiveProfile()
+            await self.loadProfiles()
+            await self.restoreLastActiveProfile()
         }
     }
 
     // MARK: - Loading
 
     func loadProfiles() async {
-        isLoading = true
-        error = nil
+        self.isLoading = true
+        self.error = nil
 
         do {
-            profiles = try await persistence.fetchProfiles(sortBy: sortOption, ascending: sortAscending)
+            self.profiles = try await self.persistence.fetchProfiles(sortBy: self.sortOption, ascending: self.sortAscending)
         } catch {
             self.error = error
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func restoreLastActiveProfile() async {
         guard let lastID = userDefaults.lastActiveProfileID else { return }
 
         do {
-            currentProfile = try await persistence.fetchProfile(id: lastID)
+            self.currentProfile = try await self.persistence.fetchProfile(id: lastID)
         } catch {
-            print("Failed to restore last profile: \(error)")
+            os_log("Failed to restore last profile: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
         }
     }
 
@@ -72,8 +72,8 @@ class ProfileManager: ObservableObject {
 
         // Validate results values are within expected range
         for (key, value) in results {
-            guard value >= 0 && value <= 100 else {
-                print("Invalid parameter value for \(key): \(value). Expected 0-100 range.")
+            guard value >= 0, value <= 100 else {
+                os_log("Invalid parameter value for %{public}@: %{public}@. Expected 0-100 range.", log: OSLog.default, type: .error, key, String(value))
                 throw AppError.invalidParameters
             }
         }
@@ -87,13 +87,13 @@ class ProfileManager: ObservableObject {
         )
 
         do {
-            try await persistence.saveProfile(profile)
-            await loadProfiles()
+            try await self.persistence.saveProfile(profile)
+            await self.loadProfiles()
 
-            currentProfile = profile
-            userDefaults.lastActiveProfileID = profile.id
-            userDefaults.totalQuizzesCompleted += 1
-            userDefaults.lastQuizDate = Date()
+            self.currentProfile = profile
+            self.userDefaults.lastActiveProfileID = profile.id
+            self.userDefaults.totalQuizzesCompleted += 1
+            self.userDefaults.lastQuizDate = Date()
 
             return profile
         } catch {
@@ -106,21 +106,21 @@ class ProfileManager: ObservableObject {
         var updatedProfile = profile
         updatedProfile.dateModified = Date()
 
-        try await persistence.saveProfile(updatedProfile)
-        await loadProfiles()
+        try await self.persistence.saveProfile(updatedProfile)
+        await self.loadProfiles()
 
-        if currentProfile?.id == profile.id {
-            currentProfile = updatedProfile
+        if self.currentProfile?.id == profile.id {
+            self.currentProfile = updatedProfile
         }
     }
 
     func deleteProfile(_ profile: QuizProfile) async throws {
-        try await persistence.deleteProfile(profile)
-        await loadProfiles()
+        try await self.persistence.deleteProfile(profile)
+        await self.loadProfiles()
 
-        if currentProfile?.id == profile.id {
-            currentProfile = profiles.first
-            userDefaults.lastActiveProfileID = currentProfile?.id
+        if self.currentProfile?.id == profile.id {
+            self.currentProfile = self.profiles.first
+            self.userDefaults.lastActiveProfileID = self.currentProfile?.id
         }
     }
 
@@ -133,8 +133,8 @@ class ProfileManager: ObservableObject {
             results: profile.results
         )
 
-        try await persistence.saveProfile(newProfile)
-        await loadProfiles()
+        try await self.persistence.saveProfile(newProfile)
+        await self.loadProfiles()
 
         return newProfile
     }
@@ -143,29 +143,29 @@ class ProfileManager: ObservableObject {
 
     func searchProfiles(query: String) async throws -> [QuizProfile] {
         if query.isEmpty {
-            return profiles
+            return self.profiles
         }
-        return try await persistence.searchProfiles(query: query)
+        return try await self.persistence.searchProfiles(query: query)
     }
 
     func filterProfiles(by predicate: (QuizProfile) -> Bool) -> [QuizProfile] {
-        profiles.filter(predicate)
+        self.profiles.filter(predicate)
     }
 
     // MARK: - Export/Import
 
     func exportProfile(_ profile: QuizProfile) throws -> URL {
-        return try fileStorage.exportProfile(profile)
+        try self.fileStorage.exportProfile(profile)
     }
 
     func importProfile(from url: URL) async throws {
         let profile = try fileStorage.importProfile(from: url)
-        try await persistence.saveProfile(profile)
-        await loadProfiles()
+        try await self.persistence.saveProfile(profile)
+        await self.loadProfiles()
     }
 
     func exportAllProfiles() async throws -> URL {
-        return try await fileStorage.createBackup()
+        try await self.fileStorage.createBackup()
     }
 
     func exportAllUserData() async throws -> URL {
@@ -192,8 +192,8 @@ class ProfileManager: ObservableObject {
 
     func deleteAllUserData() async throws {
         // Delete all profiles
-        for profile in profiles {
-            try await deleteProfile(profile)
+        for profile in self.profiles {
+            try await self.deleteProfile(profile)
         }
 
         // Clear user defaults
@@ -202,32 +202,32 @@ class ProfileManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "lastQuizDate")
 
         // Clear other user data
-        currentProfile = nil
-        profiles.removeAll()
+        self.currentProfile = nil
+        self.profiles.removeAll()
     }
 
     private func getAppVersion() -> String {
-        return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
     }
 
     private func collectDeviceInfo() -> [String: String] {
         var deviceInfo: [String: String] = [:]
 
         #if os(iOS)
-        deviceInfo["platform"] = "iOS"
-        deviceInfo["deviceModel"] = UIDevice.current.model
-        deviceInfo["systemVersion"] = UIDevice.current.systemVersion
+            deviceInfo["platform"] = "iOS"
+            deviceInfo["deviceModel"] = UIDevice.current.model
+            deviceInfo["systemVersion"] = UIDevice.current.systemVersion
         #elseif os(macOS)
-        deviceInfo["platform"] = "macOS"
-        deviceInfo["systemVersion"] = ProcessInfo.processInfo.operatingSystemVersionString
+            deviceInfo["platform"] = "macOS"
+            deviceInfo["systemVersion"] = ProcessInfo.processInfo.operatingSystemVersionString
         #endif
 
         return deviceInfo
     }
 
     func importFromBackup(url: URL) async throws {
-        try await fileStorage.restoreBackup(from: url)
-        await loadProfiles()
+        try await self.fileStorage.restoreBackup(from: url)
+        await self.loadProfiles()
     }
 
     // MARK: - Auto-save
@@ -238,8 +238,8 @@ class ProfileManager: ObservableObject {
             updatedProfile.results = results
             updatedProfile.dateModified = Date()
 
-            if userDefaults.autoSaveEnabled {
-                try? await persistence.saveProfile(updatedProfile)
+            if self.userDefaults.autoSaveEnabled {
+                try? await self.persistence.saveProfile(updatedProfile)
             }
         }
     }
@@ -247,17 +247,17 @@ class ProfileManager: ObservableObject {
     // MARK: - Sort
 
     func changeSortOption(_ option: ProfileSortOption, ascending: Bool = false) async {
-        sortOption = option
-        sortAscending = ascending
-        await loadProfiles()
+        self.sortOption = option
+        self.sortAscending = ascending
+        await self.loadProfiles()
     }
 
     // MARK: - Profile Analysis
 
     /// Determines the APGI profile type based on the stored integer results.
     func determineProfileType(for results: [String: Int]) -> APGIProfileType {
-        let normalizedProfile = enhancedProfile(from: results)
-        return determineProfileType(for: normalizedProfile)
+        let normalizedProfile = self.enhancedProfile(from: results)
+        return self.determineProfileType(for: normalizedProfile)
     }
 
     /// Determines the APGI profile type based on the derived APGIProfile.
@@ -323,7 +323,7 @@ class ProfileManager: ObservableObject {
                 let interactionMatch = self.closeness(value: profile.interactionScore, ideal: 80, tolerance: 25)
                 let thresholdMatch = self.closeness(value: profile.threshold, ideal: 60, tolerance: 20)
                 return (epsilonMatch + somaticMatch + interactionMatch + thresholdMatch) / 4
-            })
+            }),
         ]
 
         let matches = patterns.map { ($0.0, $0.1(profile)) }
@@ -336,7 +336,7 @@ class ProfileManager: ObservableObject {
 
     /// Returns a formatted summary of the profile's results.
     func summary(for profile: QuizProfile) -> String {
-        let profileType = determineProfileType(for: profile.results)
+        let profileType = self.determineProfileType(for: profile.results)
         let epsilon = profile.results["epsilon"] ?? 0
         let precision = profile.results["precision"] ?? 0
         let threshold = profile.results["threshold"] ?? 0
@@ -371,19 +371,20 @@ class ProfileManager: ObservableObject {
         // Convert [String: Int] results to [Int: Int] for the scorer
         let answerMapping: [String: Int] = [
             "epsilon": 1, "precision": 2, "threshold": 3, "somatic": 4,
-            "interactions": 5, "temporal": 6, "environment": 7
+            "interactions": 5, "temporal": 6, "environment": 7,
         ]
 
         var answers: [Int: Int] = [:]
         for (parameter, value) in results {
             guard answerMapping[parameter] != nil,
-                  value >= 0 && value <= 100 else {
+                  value >= 0, value <= 100
+            else {
                 os_log("Invalid parameter '%s' or value '%d' in results", type: .error, parameter, value)
                 continue
             }
 
             // Map the parameter value to question IDs
-            let questionIds = getQuestionIdsForParameter(parameter)
+            let questionIds = self.getQuestionIdsForParameter(parameter)
             for questionId in questionIds {
                 // Distribute the parameter value across related questions
                 // This is a simplified approach - in practice, you'd want actual individual answers
@@ -405,31 +406,31 @@ class ProfileManager: ObservableObject {
             )
         }
 
-        return scorer.calculateRobustScore(answers: answers)
+        return self.scorer.calculateRobustScore(answers: answers)
     }
 
     private func getQuestionIdsForParameter(_ parameter: String) -> [Int] {
         switch parameter {
         case "epsilon":
-            return [1, 2, 3, 4, 5]
+            [1, 2, 3, 4, 5]
         case "precision":
-            return [6, 7, 8, 9, 10]
+            [6, 7, 8, 9, 10]
         case "threshold":
-            return [11, 12, 13, 14, 15]
+            [11, 12, 13, 14, 15]
         case "somatic":
-            return [16, 17, 18, 19, 20]
+            [16, 17, 18, 19, 20]
         case "interactions":
-            return [21, 22, 23, 24, 25]
+            [21, 22, 23, 24, 25]
         case "temporal":
-            return [26, 27, 28, 29, 30]
+            [26, 27, 28, 29, 30]
         case "environment":
-            return [31, 32, 33, 34, 35]
+            [31, 32, 33, 34, 35]
         default:
-            return []
+            []
         }
     }
 
-    internal func profile(from results: [String: Int]) -> APGIProfile {
+    func profile(from results: [String: Int]) -> APGIProfile {
         // Validate input
         guard !results.isEmpty else {
             os_log("Empty results dictionary provided to profile", type: .error)
@@ -468,8 +469,8 @@ class ProfileManager: ObservableObject {
 
     /// Generates a PDF report for the given profile
     func generatePDFReport(for profile: QuizProfile) -> URL? {
-        let apgiProfile = enhancedProfile(from: profile.results)
-        let profileType = determineProfileType(for: apgiProfile)
+        let apgiProfile = self.enhancedProfile(from: profile.results)
+        let profileType = self.determineProfileType(for: apgiProfile)
 
         // Page size with margins
         let pageWidth = 8.5 * 72.0
@@ -499,12 +500,12 @@ class ProfileManager: ObservableObject {
         let title = "APGI Profile Report"
         let titleAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.boldSystemFont(ofSize: 24),
-            .foregroundColor: NSColor.labelColor
+            .foregroundColor: NSColor.labelColor,
         ]
         let titleSize = title.size(withAttributes: titleAttributes)
         let titleRect = CGRect(x: margin, y: pageHeight - margin - titleSize.height,
-                             width: availableWidth,
-                             height: titleSize.height)
+                               width: availableWidth,
+                               height: titleSize.height)
         title.draw(in: titleRect, withAttributes: titleAttributes)
 
         // Profile name and date
@@ -515,26 +516,26 @@ class ProfileManager: ObservableObject {
         let subtitle = "\(profile.name) • \(formatter.string(from: profile.dateCreated))"
         let subtitleAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 14),
-            .foregroundColor: NSColor.secondaryLabelColor
+            .foregroundColor: NSColor.secondaryLabelColor,
         ]
         let subtitleSize = subtitle.size(withAttributes: subtitleAttributes)
         let subtitleRect = CGRect(x: margin,
-                                y: titleRect.minY - subtitleSize.height - 4,
-                                width: availableWidth,
-                                height: subtitleSize.height)
+                                  y: titleRect.minY - subtitleSize.height - 4,
+                                  width: availableWidth,
+                                  height: subtitleSize.height)
         subtitle.draw(in: subtitleRect, withAttributes: subtitleAttributes)
 
         // Profile type
         let typeTitle = "Profile Type: \(profileType.rawValue)"
         let typeAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.boldSystemFont(ofSize: 18),
-            .foregroundColor: NSColor.labelColor
+            .foregroundColor: NSColor.labelColor,
         ]
         let typeSize = typeTitle.size(withAttributes: typeAttributes)
         let typeRect = CGRect(x: margin,
-                            y: subtitleRect.minY - typeSize.height - 24,
-                            width: availableWidth,
-                            height: typeSize.height)
+                              y: subtitleRect.minY - typeSize.height - 24,
+                              width: availableWidth,
+                              height: typeSize.height)
         typeTitle.draw(in: typeRect, withAttributes: typeAttributes)
 
         // Profile description
@@ -545,25 +546,25 @@ class ProfileManager: ObservableObject {
         let descriptionAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 14),
             .foregroundColor: NSColor.labelColor,
-            .paragraphStyle: paragraphStyle
+            .paragraphStyle: paragraphStyle,
         ]
 
         let descriptionHeight: CGFloat = 100 // Approximate height
         let descriptionRect = CGRect(x: margin,
-                                   y: typeRect.minY - descriptionHeight - 8,
-                                   width: availableWidth,
-                                   height: descriptionHeight)
+                                     y: typeRect.minY - descriptionHeight - 8,
+                                     width: availableWidth,
+                                     height: descriptionHeight)
 
         descriptionText.draw(with: descriptionRect,
-                           options: [.usesLineFragmentOrigin, .usesFontLeading],
-                           attributes: descriptionAttributes,
-                           context: nil)
+                             options: [.usesLineFragmentOrigin, .usesFontLeading],
+                             attributes: descriptionAttributes,
+                             context: nil)
 
         // Parameter scores
         let scoresY = descriptionRect.minY - 20
         let scoreAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 12),
-            .foregroundColor: NSColor.labelColor
+            .foregroundColor: NSColor.labelColor,
         ]
 
         let scoreWidth = availableWidth / 2
@@ -573,9 +574,9 @@ class ProfileManager: ObservableObject {
             let score = param == "ε (Epsilon)" ? apgiProfile.epsilon : apgiProfile.precision
             let scoreText = "\(param): \(Int(score))"
             let scoreRect = CGRect(x: margin,
-                                 y: scoresY - CGFloat(index * 20),
-                                 width: scoreWidth,
-                                 height: 20)
+                                   y: scoresY - CGFloat(index * 20),
+                                   width: scoreWidth,
+                                   height: 20)
             scoreText.draw(in: scoreRect, withAttributes: scoreAttributes)
         }
 
@@ -584,9 +585,9 @@ class ProfileManager: ObservableObject {
             let score = param == "θₜ (Threshold)" ? apgiProfile.threshold : apgiProfile.somaticBias
             let scoreText = "\(param): \(Int(score))"
             let scoreRect = CGRect(x: margin + scoreWidth,
-                                 y: scoresY - CGFloat(index * 20),
-                                 width: scoreWidth,
-                                 height: 20)
+                                   y: scoresY - CGFloat(index * 20),
+                                   width: scoreWidth,
+                                   height: 20)
             scoreText.draw(in: scoreRect, withAttributes: scoreAttributes)
         }
 
@@ -599,18 +600,18 @@ class ProfileManager: ObservableObject {
                 try data.write(to: fileURL)
                 return fileURL
             } catch {
-                print("Failed to save PDF: \(error)")
+                os_log("Failed to save PDF: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
                 return nil
             }
         } else {
-            print("Failed to create PDF document")
+            os_log("Failed to create PDF document", log: OSLog.default, type: .error)
             return nil
         }
     }
 
     /// Exports the profile to JSON format
     func exportToJSON(profile: QuizProfile) -> Data? {
-        let apgiScores = enhancedProfile(from: profile.results)
+        let apgiScores = self.enhancedProfile(from: profile.results)
         let export = ProfileExport(
             version: "1.0",
             timestamp: Date(),
@@ -624,15 +625,15 @@ class ProfileManager: ObservableObject {
             encoder.dateEncodingStrategy = .iso8601
             return try encoder.encode(export)
         } catch {
-            print("Failed to encode profile: \(error)")
+            os_log("Failed to encode profile: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
             return nil
         }
     }
 
     /// Exports the profile to CSV format
     func exportToCSV(profile: QuizProfile) -> Data? {
-        let apgiScores = enhancedProfile(from: profile.results)
-        let profileType = determineProfileType(for: apgiScores)
+        let apgiScores = self.enhancedProfile(from: profile.results)
+        let profileType = self.determineProfileType(for: apgiScores)
 
         // CSV header
         var csvContent = [
@@ -652,7 +653,7 @@ class ProfileManager: ObservableObject {
             "Somatic Bias Category",
             "Interaction Category",
             "Temporal Category",
-            "Environmental Category"
+            "Environmental Category",
         ].joined(separator: ",")
 
         // CSV data row
@@ -677,7 +678,7 @@ class ProfileManager: ObservableObject {
             "\"\(apgiScores.somaticCategory.rawValue)\"",
             "\"\(apgiScores.interactionCategory.rawValue)\"",
             "\"\(apgiScores.temporalCategory.rawValue)\"",
-            "\"\(apgiScores.environmentalCategory.rawValue)\""
+            "\"\(apgiScores.environmentalCategory.rawValue)\"",
         ].joined(separator: ",")
 
         csvContent += "\n" + dataRow
@@ -685,43 +686,12 @@ class ProfileManager: ObservableObject {
         return csvContent.data(using: .utf8)
     }
 
-    /// Generates an interactive HTML report for sharing
-    func generateHTMLReport(for profile: QuizProfile) -> URL? {
-        let apgiProfile = enhancedProfile(from: profile.results)
-        let profileType = determineProfileType(for: apgiProfile)
-        let history = timelineSnapshots(excluding: profile)
-
-        let html = ReportGenerator.generateInteractiveHTMLReport(
-            for: profile,
-            apgiProfile: apgiProfile,
-            profileType: profileType,
-            history: history
-        )
-
-        guard let data = html.data(using: .utf8) else {
-            print("Failed to encode HTML for profile report")
-            return nil
-        }
-
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .html)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let tempFile = tempDir.appendingPathComponent(filename)
-
-        do {
-            try data.write(to: tempFile)
-            return tempFile
-        } catch {
-            print("Failed to write HTML export: \(error)")
-            return nil
-        }
-    }
-
     /// Returns a URL for the exported profile that can be shared
     @MainActor
     func getExportURL(for profile: QuizProfile, format: ExportFormat) -> URL? {
         switch format {
         case .pdf:
-            return generatePDFReport(for: profile)
+            return self.generatePDFReport(for: profile)
         case .json:
             if let data = exportToJSON(profile: profile) {
                 let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
@@ -732,7 +702,7 @@ class ProfileManager: ObservableObject {
                     try data.write(to: tempFile)
                     return tempFile
                 } catch {
-                    print("Failed to write JSON export file: \(error)")
+                    os_log("Failed to write JSON export file: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
                     return nil
                 }
             }
@@ -747,7 +717,7 @@ class ProfileManager: ObservableObject {
                     try data.write(to: tempFile)
                     return tempFile
                 } catch {
-                    print("Failed to write CSV export file: \(error)")
+                    os_log("Failed to write CSV export file: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
                     return nil
                 }
             }
@@ -755,17 +725,31 @@ class ProfileManager: ObservableObject {
         case .png:
             let apgiScores = self.profile(from: profile.results)
             return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
-        case .html:
-            return generateHTMLReport(for: profile)
+        case .spss, .stata, .rData, .excel, .xml, .bibTeX, .endNote, .apa, .mla:
+            // For these formats, fall back to CSV export for now
+            if let data = exportToCSV(profile: profile) {
+                let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
+                let tempDir = ExportUtilities.getTemporaryDirectory()
+                let tempFile = tempDir.appendingPathComponent(filename)
+
+                do {
+                    try data.write(to: tempFile)
+                    return tempFile
+                } catch {
+                    os_log("Failed to write export file for %{public}@ format: %{public}@", log: OSLog.default, type: .error, format.rawValue, error.localizedDescription)
+                    return nil
+                }
+            }
+            return nil
         }
     }
 
     private func timelineSnapshots(excluding profile: QuizProfile) -> [ReportSnapshot] {
-        profiles
+        self.profiles
             .filter { $0.id != profile.id }
             .map { savedProfile in
-                let savedApgi = enhancedProfile(from: savedProfile.results)
-                let savedType = determineProfileType(for: savedApgi)
+                let savedApgi = self.enhancedProfile(from: savedProfile.results)
+                let savedType = self.determineProfileType(for: savedApgi)
                 return ReportSnapshot(
                     name: savedProfile.name,
                     date: savedProfile.dateCreated,
@@ -784,7 +768,7 @@ extension ProfileManager {
         let states = StateModel().states
 
         return states.map { state in
-            let accessibility = calculateAccessibility(state: state, profile: profile)
+            let accessibility = self.calculateAccessibility(state: state, profile: profile)
             return StateAccessibility(state: state, score: accessibility.score, explanation: accessibility.explanation)
         }
         .sorted { $0.score > $1.score }
@@ -792,7 +776,7 @@ extension ProfileManager {
 
     private func calculateAccessibility(state: PsychologicalState, profile: APGIProfile) -> (score: Double, explanation: String) {
         // Parse state parameters
-        let stateParams = parseStateParameters(state)
+        let stateParams = self.parseStateParameters(state)
 
         var score = 0.0
         var factors: [String] = []
@@ -836,11 +820,11 @@ extension ProfileManager {
     }
 
     private func parseStateParameters(_ state: PsychologicalState) -> StateParameters {
-        return StateParameters(
-            epsilon: extractNumericValue(from: state.predictionError),
-            precision: extractNumericValue(from: state.precision),
-            threshold: extractNumericValue(from: state.threshold),
-            somaticBias: extractNumericValue(from: state.somaticBias)
+        StateParameters(
+            epsilon: self.extractNumericValue(from: state.predictionError),
+            precision: self.extractNumericValue(from: state.precision),
+            threshold: self.extractNumericValue(from: state.threshold),
+            somaticBias: self.extractNumericValue(from: state.somaticBias)
         )
     }
 
@@ -879,13 +863,13 @@ extension ProfileManager {
             // Convert NSImage to PNG data
             if let tiffData = nsImage.tiffRepresentation,
                let bitmapImage = NSBitmapImageRep(data: tiffData),
-               let pngData = bitmapImage.representation(using: .png, properties: [:]) {
-
+               let pngData = bitmapImage.representation(using: .png, properties: [:])
+            {
                 do {
                     try pngData.write(to: tempFile)
                     return tempFile
                 } catch {
-                    print("Failed to write PNG file: \(error)")
+                    os_log("Failed to write PNG file: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
                 }
             }
         }
@@ -898,11 +882,13 @@ extension ProfileManager {
         hostingView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
         hostingView.layoutSubtreeIfNeeded()
 
-        let rep = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)
-        hostingView.cacheDisplay(in: hostingView.bounds, to: rep!)
+        guard let rep = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds) else {
+            return nil
+        }
+        hostingView.cacheDisplay(in: hostingView.bounds, to: rep)
 
         let nsImage = NSImage(size: hostingView.bounds.size)
-        nsImage.addRepresentation(rep!)
+        nsImage.addRepresentation(rep)
 
         return nsImage
     }
@@ -916,7 +902,7 @@ struct ProfileChartView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text(profile.name)
+            Text(self.profile.name)
                 .font(.title)
                 .fontWeight(.bold)
                 .padding(.top)
@@ -926,16 +912,16 @@ struct ProfileChartView: View {
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: 10) {
-                ParameterRow(name: "Epsilon (ε)", value: apgiScores.epsilon, color: .blue)
-                ParameterRow(name: "Precision (π)", value: apgiScores.precision, color: .green)
-                ParameterRow(name: "Threshold (θₜ)", value: apgiScores.threshold, color: .orange)
-                ParameterRow(name: "Somatic Bias (β)", value: apgiScores.somaticBias, color: .red)
+                ParameterRow(name: "Epsilon (ε)", value: self.apgiScores.epsilon, color: .blue)
+                ParameterRow(name: "Precision (π)", value: self.apgiScores.precision, color: .green)
+                ParameterRow(name: "Threshold (θₜ)", value: self.apgiScores.threshold, color: .orange)
+                ParameterRow(name: "Somatic Bias (β)", value: self.apgiScores.somaticBias, color: .red)
             }
             .padding(.horizontal)
 
             Spacer()
 
-            Text("Created: \(profile.dateCreated, formatter: DateFormatter.shortDate)")
+            Text("Created: \(self.profile.dateCreated, formatter: DateFormatter.shortDate)")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom)
@@ -952,15 +938,15 @@ struct ParameterRow: View {
 
     var body: some View {
         HStack {
-            Text(name)
+            Text(self.name)
                 .font(.body)
                 .frame(width: 150, alignment: .leading)
 
-            ProgressView(value: value, total: 5.0)
-                .progressViewStyle(LinearProgressViewStyle(tint: color))
+            ProgressView(value: self.value, total: 5.0)
+                .progressViewStyle(LinearProgressViewStyle(tint: self.color))
                 .frame(width: 400)
 
-            Text(String(format: "%.2f", value))
+            Text(String(format: "%.2f", self.value))
                 .font(.body)
                 .fontWeight(.medium)
                 .frame(width: 50, alignment: .trailing)
@@ -1002,27 +988,46 @@ struct QuizProfile: Identifiable, Codable, Equatable, Sendable {
 
     var parameterSummary: String {
         """
-        ε: \(results["epsilon"] ?? 0)
-        π: \(results["precision"] ?? 0)
-        θₜ: \(results["threshold"] ?? 0)
-        β: \(results["somatic"] ?? 0)
+        ε: \(self.results["epsilon"] ?? 0)
+        π: \(self.results["precision"] ?? 0)
+        θₜ: \(self.results["threshold"] ?? 0)
+        β: \(self.results["somatic"] ?? 0)
         """
     }
 
-    // Computed properties for analytics compatibility
+    /// Computed properties for analytics compatibility
     var epsilon: Double {
-        Double(results["epsilon"] ?? 0)
+        Double(self.results["epsilon"] ?? 0)
     }
 
     var precision: Double {
-        Double(results["precision"] ?? 0)
+        Double(self.results["precision"] ?? 0)
     }
 
     var threshold: Double {
-        Double(results["threshold"] ?? 0)
+        Double(self.results["threshold"] ?? 0)
     }
 
     var somaticBias: Double {
-        Double(results["somatic"] ?? 0)
+        Double(self.results["somatic"] ?? 0)
+    }
+
+    /// Demographic properties for export compatibility
+    var age: Int {
+        self.results["age"] ?? 0
+    }
+
+    var gender: String {
+        // Since results are Int, perhaps demographics are not stored
+        // Return empty string for now
+        ""
+    }
+
+    var education: String {
+        ""
+    }
+
+    var occupation: String {
+        ""
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - Appearance Settings View
+
 struct AppearanceSettingsView: View {
     @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
     @AppStorage("exportQuality") private var exportQuality: ExportQuality = .high
@@ -16,7 +17,7 @@ struct AppearanceSettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Picker("Default Chart Style", selection: $defaultChartStyle) {
+                    Picker("Default Chart Style", selection: self.$defaultChartStyle) {
                         Text("Radar").tag(ChartStyle.radar)
                         Text("Bar").tag(ChartStyle.bar)
                         Text("Line").tag(ChartStyle.line)
@@ -34,7 +35,7 @@ struct AppearanceSettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Picker("Export Quality", selection: $exportQuality) {
+                    Picker("Export Quality", selection: self.$exportQuality) {
                         Text("Low").tag(ExportQuality.low)
                         Text("Medium").tag(ExportQuality.medium)
                         Text("High").tag(ExportQuality.high)
@@ -52,7 +53,7 @@ struct AppearanceSettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Picker("Color Scheme", selection: $colorScheme) {
+                    Picker("Color Scheme", selection: self.$colorScheme) {
                         Text("System").tag("system")
                         Text("Light").tag("light")
                         Text("Dark").tag("dark")
@@ -63,11 +64,11 @@ struct AppearanceSettingsView: View {
                     HStack {
                         Text("Font Size")
                         Spacer()
-                        Text("\(fontSize, specifier: "%.0f")pt")
+                        Text("\(self.fontSize, specifier: "%.0f")pt")
                             .foregroundColor(.secondary)
                     }
 
-                    Slider(value: $fontSize, in: 12...20, step: 1)
+                    Slider(value: self.$fontSize, in: 12 ... 20, step: 1)
                         .help("Adjust the base font size throughout the app")
                 }
                 .padding()

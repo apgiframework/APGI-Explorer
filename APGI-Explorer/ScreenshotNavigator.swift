@@ -1,9 +1,10 @@
-import Foundation
-import AppKit
 import Accessibility
+import AppKit
+import Foundation
 import os.log
 
 // MARK: - Screen Navigator
+
 class ScreenNavigator {
     private let accessibilityManager: ScreenshotAccessibilityManager
     private let logger: Logger
@@ -15,13 +16,13 @@ class ScreenNavigator {
 
     /// Navigate to a specific screen
     func navigate(to screen: ScreenNavigation) -> Bool {
-        logger.log("🧭 Navigating to: \(screen.name)")
+        self.logger.log("🧭 Navigating to: \(screen.name)")
 
         for (index, step) in screen.navigationSteps.enumerated() {
-            logger.log("   ↳ Step \(index + 1): \(step.type)")
+            self.logger.log("   ↳ Step \(index + 1): \(step.type)")
 
-            if !executeNavigationStep(step) {
-                logger.log("❌ Failed to execute navigation step: \(step.type)")
+            if !self.executeNavigationStep(step) {
+                self.logger.log("❌ Failed to execute navigation step: \(step.type)")
                 return false
             }
 
@@ -31,26 +32,26 @@ class ScreenNavigator {
         }
 
         // Verify we're on the correct screen
-        if !verifyCurrentScreen(screen) {
-            logger.log("⚠️ Screen verification failed for: \(screen.name)")
+        if !self.verifyCurrentScreen(screen) {
+            self.logger.log("⚠️ Screen verification failed for: \(screen.name)")
             return false
         }
 
-        logger.log("✅ Successfully navigated to: \(screen.name)")
+        self.logger.log("✅ Successfully navigated to: \(screen.name)")
         return true
     }
 
     /// Verify that we're on the expected screen
     private func verifyCurrentScreen(_ screen: ScreenNavigation) -> Bool {
-        logger.log("🔍 Verifying screen: \(screen.name)")
+        self.logger.log("🔍 Verifying screen: \(screen.name)")
 
         var foundElements = 0
         for element in screen.expectedElements {
-            if accessibilityManager.elementExists(withIdentifier: element) {
+            if self.accessibilityManager.elementExists(withIdentifier: element) {
                 foundElements += 1
-                logger.log("   ✓ Found element: \(element)")
+                self.logger.log("   ✓ Found element: \(element)")
             } else {
-                logger.log("   ⚠️ Missing element: \(element)")
+                self.logger.log("   ⚠️ Missing element: \(element)")
             }
         }
 
@@ -58,9 +59,9 @@ class ScreenNavigator {
         let success = Double(foundElements) >= threshold
 
         if success {
-            logger.log("✅ Screen verification passed (\(foundElements)/\(screen.expectedElements.count) elements found)")
+            self.logger.log("✅ Screen verification passed (\(foundElements)/\(screen.expectedElements.count) elements found)")
         } else {
-            logger.log("❌ Screen verification failed (\(foundElements)/\(screen.expectedElements.count) elements found)")
+            self.logger.log("❌ Screen verification failed (\(foundElements)/\(screen.expectedElements.count) elements found)")
         }
 
         return success
@@ -69,48 +70,48 @@ class ScreenNavigator {
     /// Execute a single navigation step
     private func executeNavigationStep(_ step: NavigationStep) -> Bool {
         switch step.type {
-        case .wait(let time):
+        case let .wait(time):
             Thread.sleep(forTimeInterval: time)
             return true
-        case .tapElement(let elementName):
-            return handleTapElement(elementName)
+        case let .tapElement(elementName):
+            return self.handleTapElement(elementName)
         case .tab:
-            handleTabNavigation()
+            self.handleTabNavigation()
             return true
         case .menu:
-            handleMenuNavigation()
+            self.handleMenuNavigation()
             return true
-        case .keyboardShortcut(let key, let modifiers):
-            simulateKeyPress(key: key, modifiers: modifiers.toNSEventFlags())
+        case let .keyboardShortcut(key, modifiers):
+            self.simulateKeyPress(key: key, modifiers: modifiers.toNSEventFlags())
             return true
-        case .clickElement(let elementName):
-            return handleClickElement(elementName)
-        case .swipe(let direction):
-            performSwipe(direction)
+        case let .clickElement(elementName):
+            return self.handleClickElement(elementName)
+        case let .swipe(direction):
+            self.performSwipe(direction)
             return true
         case .selectTab:
-            handleTabSelection()
+            self.handleTabSelection()
             return true
         case .longPress:
-            handleLongPress()
+            self.handleLongPress()
             return true
         case .completeQuiz:
-            handleCompleteQuiz()
+            self.handleCompleteQuiz()
             return true
         }
     }
 
     private func handleTapElement(_ elementName: String) -> Bool {
-        if !accessibilityManager.clickElement(withIdentifier: elementName) {
-            logger.log("⚠️ Element not found (skipping): \(elementName)")
+        if !self.accessibilityManager.clickElement(withIdentifier: elementName) {
+            self.logger.log("⚠️ Element not found (skipping): \(elementName)")
             return false
         }
         return true
     }
 
     private func handleClickElement(_ elementName: String) -> Bool {
-        if !accessibilityManager.clickElement(withIdentifier: elementName) {
-            logger.log("⚠️ Element not found (skipping): \(elementName)")
+        if !self.accessibilityManager.clickElement(withIdentifier: elementName) {
+            self.logger.log("⚠️ Element not found (skipping): \(elementName)")
             return false
         }
         return true
@@ -134,7 +135,7 @@ class ScreenNavigator {
 
     private func handleCompleteQuiz() {
         // Handle quiz completion
-        logger.log("   ↳ Completing quiz")
+        self.logger.log("   ↳ Completing quiz")
     }
 
     /// Simulate a key press with modifiers
@@ -156,17 +157,18 @@ class ScreenNavigator {
     private func performSwipe(_ direction: Direction) {
         // Implementation would depend on the specific automation framework
         // This is a placeholder for swipe gesture implementation
-        logger.log("   ↳ Performing swipe: \(direction)")
+        self.logger.log("   ↳ Performing swipe: \(direction)")
     }
 
     /// Get current screen information
     func getCurrentScreenInfo() -> ScreenInfo? {
         // This would analyze the current screen state and return relevant information
-        return nil
+        nil
     }
 }
 
 // MARK: - Screen Info
+
 struct ScreenInfo {
     let name: String
     let identifier: String

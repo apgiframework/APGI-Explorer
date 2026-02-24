@@ -1,11 +1,12 @@
-import Foundation
-import CoreData
 import Combine
+import CoreData
+import Foundation
 
 extension ProfileEntity {
     func toQuizProfile() throws -> QuizProfile {
-        guard let resultsData = resultsData,
-              let results = try? JSONDecoder().decode([String: Int].self, from: resultsData) else {
+        guard let resultsData,
+              let results = try? JSONDecoder().decode([String: Int].self, from: resultsData)
+        else {
             throw PersistenceError.invalidData
         }
 
@@ -25,7 +26,6 @@ extension ProfileEntity {
         self.dateModified = profile.dateModified
         self.resultsData = try JSONEncoder().encode(profile.results)
 
-        // Calculate and store APGI values for quick filtering
         let apgiProfile = QuizModel.calculateAPGIProfile(from: profile.results)
         self.epsilon = apgiProfile.epsilon
         self.precision = apgiProfile.precision
@@ -43,13 +43,13 @@ enum PersistenceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidData:
-            return "The profile data is corrupted or invalid"
-        case .saveFailed(let error):
-            return "Failed to save: \(error.localizedDescription)"
-        case .fetchFailed(let error):
-            return "Failed to load profiles: \(error.localizedDescription)"
-        case .deleteFailed(let error):
-            return "Failed to delete profile: \(error.localizedDescription)"
+            "The profile data is corrupted or invalid"
+        case let .saveFailed(error):
+            "Failed to save: \(error.localizedDescription)"
+        case let .fetchFailed(error):
+            "Failed to load profiles: \(error.localizedDescription)"
+        case let .deleteFailed(error):
+            "Failed to delete profile: \(error.localizedDescription)"
         }
     }
 }

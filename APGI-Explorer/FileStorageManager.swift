@@ -1,7 +1,6 @@
-// FileStorageManager.swift
-
-import Foundation
 import Combine
+import Foundation
+import os.log
 
 class FileStorageManager: ObservableObject {
     static let shared = FileStorageManager()
@@ -17,27 +16,27 @@ class FileStorageManager: ObservableObject {
     }()
 
     private lazy var profilesDirectory: URL = {
-        let url = documentsDirectory.appendingPathComponent("Profiles", isDirectory: true)
-        try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        let url = self.documentsDirectory.appendingPathComponent("Profiles", isDirectory: true)
+        try? self.fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }()
 
     private lazy var exportsDirectory: URL = {
-        let url = documentsDirectory.appendingPathComponent("Exports", isDirectory: true)
-        try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        let url = self.documentsDirectory.appendingPathComponent("Exports", isDirectory: true)
+        try? self.fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }()
 
     private lazy var backupsDirectory: URL = {
-        let url = documentsDirectory.appendingPathComponent("Backups", isDirectory: true)
-        try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        let url = self.documentsDirectory.appendingPathComponent("Backups", isDirectory: true)
+        try? self.fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }()
 
-    // CRIT-003 Fix: Add free disk space calculation
+    /// CRIT-003 Fix: Add free disk space calculation
     private var freeDiskSpace: UInt64 {
         do {
-            let attributes = try fileManager.attributesOfFileSystem(forPath: documentsDirectory.path)
+            let attributes = try fileManager.attributesOfFileSystem(forPath: self.documentsDirectory.path)
             return attributes[.systemFreeSize] as? UInt64 ?? 0
         } catch {
             return 0
@@ -49,10 +48,10 @@ class FileStorageManager: ObservableObject {
     func exportProfile(_ profile: QuizProfile, to url: URL? = nil) throws -> URL {
         // CRIT-003 Fix: Check available disk space before export
         let requiredSpace: UInt64 = 1024 * 1024 // 1MB minimum estimate
-        let availableSpace = freeDiskSpace
+        let availableSpace = self.freeDiskSpace
         guard availableSpace >= requiredSpace else {
             throw AppError.exportFailed(underlying: NSError(domain: NSPOSIXErrorDomain, code: Int(ENOSPC), userInfo: [
-                NSLocalizedDescriptionKey: "Insufficient disk space for export. Required: \(requiredSpace/1024)KB, Available: \(availableSpace/1024)KB"
+                NSLocalizedDescriptionKey: "Insufficient disk space for export. Required: \(requiredSpace / 1024)KB, Available: \(availableSpace / 1024)KB",
             ]))
         }
 
@@ -62,7 +61,7 @@ class FileStorageManager: ObservableObject {
 
         let data = try encoder.encode(profile)
 
-        let destinationURL = url ?? exportsDirectory.appendingPathComponent("\(profile.name)_\(profile.id.uuidString).json")
+        let destinationURL = url ?? self.exportsDirectory.appendingPathComponent("\(profile.name)_\(profile.id.uuidString).json")
 
         do {
             try data.write(to: destinationURL)
@@ -79,15 +78,14 @@ class FileStorageManager: ObservableObject {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        let profile = try decoder.decode(QuizProfile.self, from: data)
-        return profile
+        return try decoder.decode(QuizProfile.self, from: data)
     }
 
     // MARK: - Backup/Restore
 
     func createBackup() async throws -> URL {
         let timestamp = ISO8601DateFormatter().string(from: Date())
-        let backupURL = backupsDirectory.appendingPathComponent("backup_\(timestamp).json")
+        let backupURL = self.backupsDirectory.appendingPathComponent("backup_\(timestamp).json")
 
         let profiles = try await PersistenceController.shared.fetchProfiles()
 
@@ -122,12 +120,12 @@ class FileStorageManager: ObservableObject {
         }
 
         // Restore settings
-        restoreSettings(backup.settings)
+        self.restoreSettings(backup.settings)
     }
 
     func listBackups() throws -> [URL] {
         let contents = try fileManager.contentsOfDirectory(
-            at: backupsDirectory,
+            at: self.backupsDirectory,
             includingPropertiesForKeys: [.creationDateKey],
             options: .skipsHiddenFiles
         )
@@ -142,14 +140,14 @@ class FileStorageManager: ObservableObject {
     }
 
     func deleteBackup(at url: URL) throws {
-        try fileManager.removeItem(at: url)
+        try self.fileManager.removeItem(at: url)
     }
 
     // MARK: - Automatic Backup Scheduling
 
     func scheduleAutomaticBackups() {
         // Stop existing timer
-        backupTimer?.invalidate()
+        self.backupTimer?.invalidate()
 
         let frequency = UserDefaultsManager.shared.backupFrequency
 
@@ -160,17 +158,17 @@ class FileStorageManager: ObservableObject {
         guard interval > 0 else { return }
 
         // Check if backup is needed
-        checkAndPerformBackup()
+        self.checkAndPerformBackup()
 
         // Schedule recurring backups
-        backupTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+        self.backupTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
             self.checkAndPerformBackup()
         }
     }
 
     func stopAutomaticBackups() {
-        backupTimer?.invalidate()
-        backupTimer = nil
+        self.backupTimer?.invalidate()
+        self.backupTimer = nil
     }
 
     private func checkAndPerformBackup() {
@@ -189,11 +187,11 @@ class FileStorageManager: ObservableObject {
         // Perform backup
         Task {
             do {
-                _ = try await createBackup()
+                _ = try await self.createBackup()
                 userDefaults.lastBackupDate = Date()
-                print("Automatic backup completed successfully")
+                os_log("Automatic backup completed successfully", log: OSLog.default, type: .info)
             } catch {
-                print("Automatic backup failed: \(error)")
+                os_log("Automatic backup failed: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
             }
         }
     }
@@ -208,7 +206,7 @@ class FileStorageManager: ObservableObject {
             "showConfidenceIndicators": prefs.showConfidenceIndicators,
             "autoSaveEnabled": prefs.autoSaveEnabled,
             "soundEffectsEnabled": prefs.soundEffectsEnabled,
-            "hapticsEnabled": prefs.hapticsEnabled
+            "hapticsEnabled": prefs.hapticsEnabled,
         ]
     }
 
@@ -216,12 +214,14 @@ class FileStorageManager: ObservableObject {
         let prefs = UserDefaultsManager.shared
 
         if let chartStyle = settings["preferredChartStyle"] as? String,
-           let style = ChartStyle(rawValue: chartStyle) {
+           let style = ChartStyle(rawValue: chartStyle)
+        {
             prefs.preferredChartStyle = style
         }
 
         if let theme = settings["theme"] as? String,
-           let appTheme = AppTheme(rawValue: theme) {
+           let appTheme = AppTheme(rawValue: theme)
+        {
             prefs.theme = appTheme
         }
 
@@ -254,19 +254,19 @@ struct ProfileBackup: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        version = try container.decode(String.self, forKey: .version)
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
-        profiles = try container.decode([QuizProfile].self, forKey: .profiles)
-        settings = try container.decode([String: AnyCodable].self, forKey: .settings)
+        self.version = try container.decode(String.self, forKey: .version)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.profiles = try container.decode([QuizProfile].self, forKey: .profiles)
+        self.settings = try container.decode([String: AnyCodable].self, forKey: .settings)
             .mapValues { $0.value }
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(version, forKey: .version)
-        try container.encode(createdAt, forKey: .createdAt)
-        try container.encode(profiles, forKey: .profiles)
-        try container.encode(settings.mapValues { AnyCodable($0) }, forKey: .settings)
+        try container.encode(self.version, forKey: .version)
+        try container.encode(self.createdAt, forKey: .createdAt)
+        try container.encode(self.profiles, forKey: .profiles)
+        try container.encode(self.settings.mapValues { AnyCodable($0) }, forKey: .settings)
     }
 }
 
@@ -281,22 +281,22 @@ struct AnyCodable: Codable {
         let container = try decoder.singleValueContainer()
 
         if let bool = try? container.decode(Bool.self) {
-            value = bool
+            self.value = bool
         } else if let int = try? container.decode(Int.self) {
-            value = int
+            self.value = int
         } else if let double = try? container.decode(Double.self) {
-            value = double
+            self.value = double
         } else if let string = try? container.decode(String.self) {
-            value = string
+            self.value = string
         } else {
-            value = ""
+            self.value = ""
         }
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
-        switch value {
+        switch self.value {
         case let bool as Bool:
             try container.encode(bool)
         case let int as Int:

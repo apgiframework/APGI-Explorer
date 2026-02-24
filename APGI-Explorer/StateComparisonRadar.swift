@@ -1,13 +1,12 @@
-// StateComparisonRadar.swift
-import SwiftUI
 import Charts
+import SwiftUI
 
 struct StateComparisonRadar: View {
     let primary: PsychologicalState
     let comparisons: [PsychologicalState]
 
     private var allStates: [PsychologicalState] {
-        [primary] + comparisons
+        [self.primary] + self.comparisons
     }
 
     private func valueForState(_ state: PsychologicalState, parameter: String) -> Double {
@@ -30,15 +29,15 @@ struct StateComparisonRadar: View {
                 .font(.headline)
 
             Chart {
-                ForEach(allStates) { state in
+                ForEach(self.allStates) { state in
                     ForEach(["Prediction Error", "Precision", "Threshold", "Somatic Bias"], id: \.self) { parameter in
                         LineMark(
                             x: .value("Parameter", parameter),
-                            y: .value("Value", valueForState(state, parameter: parameter))
+                            y: .value("Value", self.valueForState(state, parameter: parameter))
                         )
-                        .foregroundStyle(by: .value("State", state.id == primary.id ? "Current" : "Comparison \(state.id)"))
+                        .foregroundStyle(by: .value("State", state.id == self.primary.id ? "Current" : "Comparison \(state.id)"))
                         .interpolationMethod(.cardinal)
-                        .lineStyle(StrokeStyle(lineWidth: state.id == primary.id ? 3 : 2))
+                        .lineStyle(StrokeStyle(lineWidth: state.id == self.primary.id ? 3 : 2))
                     }
                 }
             }

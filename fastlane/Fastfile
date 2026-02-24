@@ -1,0 +1,172 @@
+# APGI Explorer Fastfile
+# For more information about fastlane, see https://fastlane.tools
+
+default_platform(:mac)
+
+platform :mac do
+  desc "Run tests"
+  lane :test do
+    scan(
+      scheme: "APGI-Explorer",
+      device: "Mac",
+      clean: true,
+      code_coverage: true,
+      output_directory: "./fastlane/test_output"
+    )
+  end
+
+  desc "Build for development"
+  lane :build do
+    gym(
+      scheme: "APGI-Explorer",
+      configuration: "Debug",
+      output_directory: "./fastlane/build",
+      output_name: "APGI-Explorer-dev",
+      clean: true,
+      include_symbols: true,
+      include_bitcode: false
+    )
+  end
+
+  desc "Build for distribution"
+  lane :build_release do
+    gym(
+      scheme: "APGI-Explorer",
+      configuration: "Release",
+      output_directory: "./fastlane/build",
+      output_name: "APGI-Explorer",
+      clean: true,
+      export_method: "mac-application",
+      export_options: {
+        method: "mac-application",
+        provisioningProfiles: {
+          "com.lesoto.APGI-Explorer" => "APGI_Explorer_Mac_App_Store"
+        },
+        signingStyle: "automatic"
+      }
+    )
+  end
+
+  desc "Create DMG for distribution"
+  lane :create_dmg do
+    build_release
+    
+    dmg_name = "APGI-Explorer-1.0.dmg"
+    app_path = "./fastlane/build/APGI-Explorer.app"
+    
+    create_dmg(
+      path: app_path,
+      name: dmg_name,
+      volname: "APGI Explorer",
+      icon: app_path + "/Contents/Resources/AppIcon.icns",
+      size: "600m",
+      background: "./fastlane/dmg_background.png",
+      icon_size: 100,
+      position: {
+        "APGI-Explorer.app" => [175, 120],
+        "Applications" => [425, 120]
+      }
+    )
+  end
+
+  desc "Notarize and staple the app"
+  lane :notarize do
+    notarize_app(
+      package: "./fastlane/build/APGI-Explorer-1.0.dmg",
+      bundle_id: "com.lesoto.APGI-Explorer",
+      username: ENV["APPLE_ID"],
+      password: ENV["APPLE_ID_PASSWORD"],
+      team_id: ENV["TEAM_ID"]
+    )
+  end
+
+  desc "Upload to App Store Connect"
+  lane :upload_to_app_store do
+    deliver(
+      app_id: "com.lesoto.APGI-Explorer",
+      ipa: "./fastlane/build/APGI-Explorer-1.0.dmg",
+      skip_metadata: false,
+      skip_screenshots: false,
+      force: true,
+      submit_for_review: false
+    )
+  end
+
+  desc "Complete release pipeline"
+  lane :release do
+    test
+    create_dmg
+    notarize
+    upload_to_app_store
+  end
+
+  desc "Update screenshots"
+  lane :update_screenshots do
+    capture_screenshots(
+      scheme: "APGI-Explorer",
+      device: "Mac",
+      language: ["en-US", "es-ES", "fr-FR", "de-DE", "zh-Hans"],
+      output_directory: "./fastlane/screenshots"
+    )
+  end
+
+  desc "Update metadata"
+  lane :update_metadata do
+    deliver(
+      app_id: "com.lesoto.APGI-Explorer",
+      metadata_path: "./fastlane/metadata",
+      screenshots_path: "./fastlane/screenshots",
+      skip_binary_upload: true,
+      skip_app_version_update: true,
+      force: true
+    )
+  end
+
+  desc "Run security checks"
+  lane :security_check do
+    # Check for hardcoded secrets
+    detect_secrets(
+      path: ".",
+      exclude_patterns: [".git", "fastlane/report", "build", "*.dmg"]
+    )
+    
+    # Check dependencies for vulnerabilities
+    dependency_check(
+      path: ".",
+      project_directory: "APGI-Explorer",
+      scheme: "APGI-Explorer"
+    )
+  end
+
+  desc "Generate documentation"
+  lane :docs do
+    # Generate API documentation
+    jazzy(
+      scheme: "APGI-Explorer",
+      output_dir: "./docs",
+      clean: true,
+      theme: "apple"
+    )
+  end
+
+  # Error handling
+  error do |lane, exception|
+    UI.error("Lane #{lane} failed with exception: #{exception}")
+  end
+end
+
+# Platform-specific configurations
+before_all do |lane, options|
+  # Set up environment
+  ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "120"
+  ENV["FASTLANE_XCODE_LIST_TIMEOUT"] = "120"
+end
+
+after_all do |lane, options|
+  # Cleanup
+  if lane == :test
+    UI.success("All tests passed!")
+  elsif lane == :release
+    UI.success("Release completed successfully!")
+  end
+end

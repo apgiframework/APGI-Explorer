@@ -1,11 +1,11 @@
 import SwiftUI
 
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #endif
 
 #if canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 struct ResultsView: View {
@@ -19,27 +19,27 @@ struct ResultsView: View {
     @Environment(\.appDependencies) private var dependencies
 
     private var analytics: AnalyticsService {
-        dependencies.getAnalyticsService()
+        self.dependencies.getAnalyticsService()
     }
 
     private var apgiProfile: APGIProfile {
-        quizModel.calculateScore().profile
+        self.quizModel.calculateScore().profile
     }
 
     private var profileType: APGIProfileType {
-        profileManager.determineProfileType(for: apgiProfile)
+        self.profileManager.determineProfileType(for: self.apgiProfile)
     }
 
     private var profileColor: Color {
-        switch profileType {
-        case .sensitiveIntegrator: return .orange
-        case .analyticalGuard: return .blue
-        case .adaptiveBalancer: return .green
-        case .openExplorer: return .pink
-        case .contemplativeAnchor: return .teal
-        case .somaticNavigator: return .purple
-        case .cognitiveArchitect: return .mint
-        case .dynamicResponder: return .red
+        switch self.profileType {
+        case .sensitiveIntegrator: .orange
+        case .analyticalGuard: .blue
+        case .adaptiveBalancer: .green
+        case .openExplorer: .pink
+        case .contemplativeAnchor: .teal
+        case .somaticNavigator: .purple
+        case .cognitiveArchitect: .mint
+        case .dynamicResponder: .red
         }
     }
 
@@ -48,9 +48,9 @@ struct ResultsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                profileHeaderView
+                self.profileHeaderView
 
-                Picker("View", selection: $selectedTab) {
+                Picker("View", selection: self.$selectedTab) {
                     Text("Overview").tag(0)
                     Text("Details").tag(1)
                     Text("States").tag(2)
@@ -60,80 +60,81 @@ struct ResultsView: View {
                 .padding(.horizontal)
 
                 Group {
-                    switch selectedTab {
-                    case 0: overviewTab
-                    case 1: detailsTab
-                    case 2: statesTab
-                    case 3: strategiesTab
-                    default: overviewTab
+                    switch self.selectedTab {
+                    case 0: self.overviewTab
+                    case 1: self.detailsTab
+                    case 2: self.statesTab
+                    case 3: self.strategiesTab
+                    default: self.overviewTab
                     }
                 }
 
-                saveProfileSection
+                self.saveProfileSection
             }
             .padding()
         }
         .navigationTitle("Your APGI Profile")
-#if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-#endif
-        .toolbar {
-            #if os(macOS)
-            ToolbarItem(placement: .automatic) {
-                Button(action: { showingExportSheet = true }, label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .imageScale(.large)
-                })
+        #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+        #endif
+            .toolbar {
+                #if os(macOS)
+                    ToolbarItem(placement: .automatic) {
+                        Button(action: { self.showingExportSheet = true }, label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .imageScale(.large)
+                        })
+                    }
+                #else
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { self.showingExportSheet = true }, label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .imageScale(.large)
+                        })
+                    }
+                #endif
             }
-            #else
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingExportSheet = true }, label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .imageScale(.large)
-                })
-            }
-            #endif
-        }
-        .sheet(isPresented: $showingExportSheet) {
-            if #available(iOS 16.0, *) {
-                NavigationStack {
-                    ExportView(profileManager: profileManager, profile: createTemporaryProfile())
+            .sheet(isPresented: self.$showingExportSheet) {
+                if #available(iOS 16.0, *) {
+                    NavigationStack {
+                        ExportView(profileManager: self.profileManager, profile: self.createTemporaryProfile())
+                    }
+                } else {
+                    NavigationView {
+                        ExportView(profileManager: self.profileManager, profile: self.createTemporaryProfile())
+                    }
                 }
-            } else {
-                NavigationView {
-                    ExportView(profileManager: profileManager, profile: createTemporaryProfile())
-                }
             }
-        }
-        .alert("Profile Saved!", isPresented: $showSavedAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Your results have been saved to '\(profileName)'.")
-        }
-        .toast($toast)
-        .onAppear {
-            analytics.track(event: .quizCompleted(profileType: profileType, score: quizModel.calculatePartialScore().epsilon, duration: 0))
-            analytics.setUserProperty(profileType.rawValue, forKey: "recentProfileType")
-        }
+            .alert("Profile Saved!", isPresented: self.$showSavedAlert) {
+                Button("OK", role: .cancel) {
+                }
+            } message: {
+                Text("Your results have been saved to '\(self.profileName)'.")
+            }
+            .toast(self.$toast)
+            .onAppear {
+                self.analytics.track(event: .quizCompleted(profileType: self.profileType, score: self.quizModel.calculatePartialScore().epsilon, duration: 0))
+                self.analytics.setUserProperty(self.profileType.rawValue, forKey: "recentProfileType")
+            }
     }
 
     private var profileHeaderView: some View {
         VStack(spacing: 16) {
-            Text(profileType.rawValue)
+            Text(self.profileType.rawValue)
                 .font(.title)
                 .fontWeight(.bold)
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(profileColor.opacity(0.2))
+                        .fill(self.profileColor.opacity(0.2))
                 )
 
-            Text(profileType.description)
+            Text(self.profileType.description)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
 
-            APGIRadarChart(profile: apgiProfile)
+            APGIRadarChart(profile: self.apgiProfile)
                 .frame(height: 250)
         }
     }
@@ -142,29 +143,29 @@ struct ResultsView: View {
         VStack(alignment: .leading, spacing: 20) {
             ParameterCardView(
                 name: "Prediction Error Sensitivity (ε)",
-                value: apgiProfile.epsilon,
-                interpretation: interpretEpsilon(apgiProfile.epsilon),
+                value: self.apgiProfile.epsilon,
+                interpretation: self.interpretEpsilon(self.apgiProfile.epsilon),
                 color: .orange
             )
 
             ParameterCardView(
                 name: "Precision Allocation (π)",
-                value: apgiProfile.precision,
-                interpretation: interpretPrecision(apgiProfile.precision),
+                value: self.apgiProfile.precision,
+                interpretation: self.interpretPrecision(self.apgiProfile.precision),
                 color: .green
             )
 
             ParameterCardView(
                 name: "Ignition Threshold (θₜ)",
-                value: apgiProfile.threshold,
-                interpretation: interpretThreshold(apgiProfile.threshold),
+                value: self.apgiProfile.threshold,
+                interpretation: self.interpretThreshold(self.apgiProfile.threshold),
                 color: .purple
             )
 
             ParameterCardView(
                 name: "Somatic Bias (β)",
-                value: apgiProfile.somaticBias,
-                interpretation: interpretSomaticBias(apgiProfile.somaticBias),
+                value: self.apgiProfile.somaticBias,
+                interpretation: self.interpretSomaticBias(self.apgiProfile.somaticBias),
                 color: .blue
             )
         }
@@ -175,12 +176,12 @@ struct ResultsView: View {
             Text("Derived Metrics")
                 .font(.headline)
 
-            InfoRow(title: "Interaction Score", value: "\(Int(apgiProfile.interactionScore)) / 100")
-            InfoRow(title: "Temporal Stability", value: "\(Int(apgiProfile.temporalStability)) / 100")
-            InfoRow(title: "Environmental Fit", value: "\(Int(apgiProfile.environmentalFit)) / 100")
+            InfoRow(title: "Interaction Score", value: "\(Int(self.apgiProfile.interactionScore)) / 100")
+            InfoRow(title: "Temporal Stability", value: "\(Int(self.apgiProfile.temporalStability)) / 100")
+            InfoRow(title: "Environmental Fit", value: "\(Int(self.apgiProfile.environmentalFit)) / 100")
         }
         .padding()
-        .background(cardBackground)
+        .background(self.cardBackground)
         .cornerRadius(16)
     }
 
@@ -193,7 +194,7 @@ struct ResultsView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            ForEach(profileType.likelyStates, id: \.stateId) { match in
+            ForEach(self.profileType.likelyStates, id: \.stateId) { match in
                 if let state = findState(id: match.stateId) {
                     StateLikelihoodCard(
                         state: state,
@@ -207,9 +208,9 @@ struct ResultsView: View {
 
     private var strategiesTab: some View {
         VStack(alignment: .leading, spacing: 20) {
-            StrengthsSection(strengths: profileType.strengths)
-            ChallengesSection(challenges: profileType.challenges)
-            StrategiesSection(strategies: profileType.strategies)
+            StrengthsSection(strengths: self.profileType.strengths)
+            ChallengesSection(challenges: self.profileType.challenges)
+            StrategiesSection(strategies: self.profileType.strategies)
         }
     }
 
@@ -218,55 +219,55 @@ struct ResultsView: View {
             Text("Save Your Results")
                 .font(.headline)
 
-            TextField("Profile Name", text: $profileName)
+            TextField("Profile Name", text: self.$profileName)
                 .textFieldStyle(.roundedBorder)
 
             LoadingButton(
                 title: "Save to Profile",
                 isLoading: false,
-                style: profileName.isEmpty ? SecondaryButtonStyle() : PrimaryButtonStyle(),
-                action: saveProfile
+                style: self.profileName.isEmpty ? SecondaryButtonStyle() : PrimaryButtonStyle(),
+                action: self.saveProfile
             )
-            .disabled(profileName.isEmpty)
+            .disabled(self.profileName.isEmpty)
         }
         .padding()
-        .background(cardBackground)
+        .background(self.cardBackground)
         .cornerRadius(16)
     }
 
     private var cardBackground: Color {
         #if os(macOS)
-        Color(NSColor.controlBackgroundColor)
+            Color(NSColor.controlBackgroundColor)
         #else
-        Color(.secondarySystemBackground)
+            Color(.secondarySystemBackground)
         #endif
     }
 
-    private func interpretEpsilon(_ value: Double) -> String {
-        apgiProfile.epsilonCategory.rawValue
+    private func interpretEpsilon(_: Double) -> String {
+        self.apgiProfile.epsilonCategory.rawValue
     }
 
-    private func interpretPrecision(_ value: Double) -> String {
-        apgiProfile.precisionCategory.rawValue
+    private func interpretPrecision(_: Double) -> String {
+        self.apgiProfile.precisionCategory.rawValue
     }
 
-    private func interpretThreshold(_ value: Double) -> String {
-        apgiProfile.thresholdCategory.rawValue
+    private func interpretThreshold(_: Double) -> String {
+        self.apgiProfile.thresholdCategory.rawValue
     }
 
-    private func interpretSomaticBias(_ value: Double) -> String {
-        apgiProfile.somaticCategory.rawValue
+    private func interpretSomaticBias(_: Double) -> String {
+        self.apgiProfile.somaticCategory.rawValue
     }
 
     private func findState(id: Int) -> PsychologicalState? {
-        stateModel.states.first { $0.id == id }
+        self.stateModel.states.first { $0.id == id }
     }
 
     private func saveProfile() {
         Task {
             do {
                 // MED-003 Fix: Check for duplicate profile names
-                let trimmedProfileName = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedProfileName = self.profileName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedProfileName.isEmpty else {
                     throw AppError.invalidParameters
                 }
@@ -279,18 +280,18 @@ struct ResultsView: View {
                     throw AppError.profileGenerationFailed
                 }
 
-                _ = try await profileManager.createProfile(
+                _ = try await self.profileManager.createProfile(
                     name: trimmedProfileName,
-                    results: quizModel.calculateRawScore()
+                    results: self.quizModel.calculateRawScore()
                 )
-                analytics.track(event: .profileCreated(profileType: profileType))
+                self.analytics.track(event: .profileCreated(profileType: self.profileType))
                 await MainActor.run {
-                    showSavedAlert = true
-                    profileName = ""
+                    self.showSavedAlert = true
+                    self.profileName = ""
                 }
             } catch {
                 await MainActor.run {
-                    toast = .error("Failed to save profile: \(error.localizedDescription)")
+                    self.toast = .error("Failed to save profile: \(error.localizedDescription)")
                 }
             }
         }
@@ -299,15 +300,15 @@ struct ResultsView: View {
     private func createTemporaryProfile() -> QuizProfile {
         QuizProfile(
             id: UUID(),
-            name: profileName.isEmpty ? "My Profile" : profileName,
+            name: self.profileName.isEmpty ? "My Profile" : self.profileName,
             dateCreated: Date(),
             dateModified: Date(),
-            results: quizModel.calculateRawScore()
+            results: self.quizModel.calculateRawScore()
         )
     }
 
     private var resultStateId: Int {
-        profileType.likelyStates.first?.stateId ?? stateModel.states.first?.id ?? 0
+        self.profileType.likelyStates.first?.stateId ?? self.stateModel.states.first?.id ?? 0
     }
 }
 
@@ -318,25 +319,25 @@ private struct ParameterCardView: View {
     let color: Color
 
     private var progress: Double {
-        max(0, min(value / 100, 1))
+        max(0, min(self.value / 100, 1))
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(name)
+                Text(self.name)
                     .font(.headline)
                 Spacer()
-                Text("\(Int(value))")
+                Text("\(Int(self.value))")
                     .font(.title)
                     .fontWeight(.bold)
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
             }
 
-            ProgressView(value: progress)
-                .tint(color)
+            ProgressView(value: self.progress)
+                .tint(self.color)
 
-            Text(interpretation)
+            Text(self.interpretation)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -355,9 +356,9 @@ private struct InfoRow: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
             Spacer()
-            Text(value)
+            Text(self.value)
                 .fontWeight(.semibold)
         }
         .foregroundColor(.primary)
@@ -368,7 +369,7 @@ private struct StrengthsSection: View {
     let strengths: [String]
 
     var body: some View {
-        InsightSection(title: "Strengths", items: strengths, accentColor: .green)
+        InsightSection(title: "Strengths", items: self.strengths, accentColor: .green)
     }
 }
 
@@ -376,7 +377,7 @@ private struct ChallengesSection: View {
     let challenges: [String]
 
     var body: some View {
-        InsightSection(title: "Challenges", items: challenges, accentColor: .orange)
+        InsightSection(title: "Challenges", items: self.challenges, accentColor: .orange)
     }
 }
 
@@ -384,7 +385,7 @@ private struct StrategiesSection: View {
     let strategies: [String]
 
     var body: some View {
-        InsightSection(title: "Strategies", items: strategies, accentColor: .blue)
+        InsightSection(title: "Strategies", items: self.strategies, accentColor: .blue)
     }
 }
 
@@ -395,13 +396,13 @@ private struct InsightSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(self.title)
                 .font(.headline)
 
-            ForEach(items, id: \.self) { item in
+            ForEach(self.items, id: \.self) { item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle()
-                        .fill(accentColor)
+                        .fill(self.accentColor)
                         .frame(width: 8, height: 8)
                         .padding(.top, 6)
                     Text(item)
@@ -425,36 +426,36 @@ private struct StateLikelihoodCard: View {
     let reason: String
 
     private var badgeColor: Color {
-        switch likelihood {
-        case .veryHigh: return .red
-        case .high: return .orange
-        case .moderate: return .yellow
-        case .low: return .gray
+        switch self.likelihood {
+        case .veryHigh: .red
+        case .high: .orange
+        case .moderate: .yellow
+        case .low: .gray
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(state.name)
+                Text(self.state.name)
                     .font(.headline)
                 Spacer()
-                Text(likelihood.rawValue)
+                Text(self.likelihood.rawValue)
                     .font(.caption)
                     .fontWeight(.bold)
                     .padding(6)
                     .background(
                         Capsule()
-                            .fill(badgeColor.opacity(0.2))
+                            .fill(self.badgeColor.opacity(0.2))
                     )
-                    .foregroundColor(badgeColor)
+                    .foregroundColor(self.badgeColor)
             }
 
-            Text(reason)
+            Text(self.reason)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            Text(state.description)
+            Text(self.state.description)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -474,14 +475,14 @@ struct APGIRadarChart: View {
     let profile: APGIProfile
 
     private var normalizedValues: [Double] {
-        [profile.epsilon, profile.precision, profile.threshold, profile.somaticBias]
+        [self.profile.epsilon, self.profile.precision, self.profile.threshold, self.profile.somaticBias]
             .map { max(0, min($0 / 100, 1)) }
     }
 
     private func makeAxisAngles(count: Int) -> [Double] {
         guard count > 0 else { return [] }
         let step = (2 * .pi) / Double(count)
-        return (0..<count).map { Double($0) * step - .pi / 2 }
+        return (0 ..< count).map { Double($0) * step - .pi / 2 }
     }
 
     private func makeRadarPoints(center: CGPoint, radius: Double, angles: [Double], values: [Double]) -> [CGPoint] {
@@ -497,14 +498,14 @@ struct APGIRadarChart: View {
         GeometryReader { geometry in
             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
             let radius = min(geometry.size.width, geometry.size.height) / 2 - 20
-            let axisAngles = makeAxisAngles(count: normalizedValues.count)
-            let radarPoints = makeRadarPoints(
+            let axisAngles = self.makeAxisAngles(count: self.normalizedValues.count)
+            let radarPoints = self.makeRadarPoints(
                 center: center,
                 radius: radius,
                 angles: axisAngles,
-                values: normalizedValues
+                values: self.normalizedValues
             )
-            let radarShape = makeRadarPath(from: radarPoints)
+            let radarShape = self.makeRadarPath(from: radarPoints)
 
             ZStack {
                 ForEach([0.25, 0.5, 0.75, 1.0], id: \.self) { scale in

@@ -1,9 +1,10 @@
-import Foundation
-import AppKit
 import Accessibility
+import AppKit
+import Foundation
 import os.log
 
 // MARK: - Accessibility Manager
+
 class ScreenshotAccessibilityManager {
     private let logger: Logger
     private let systemWideElement = AXUIElementCreateSystemWide()
@@ -16,10 +17,10 @@ class ScreenshotAccessibilityManager {
 
     /// Click an element by its identifier
     func clickElement(withIdentifier identifier: String) -> Bool {
-        logger.log("🖱️ Clicking element: \(identifier)")
+        self.logger.log("🖱️ Clicking element: \(identifier)")
 
         guard let element = findElement(withIdentifier: identifier) else {
-            logger.log("❌ Element not found: \(identifier)")
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
@@ -27,9 +28,9 @@ class ScreenshotAccessibilityManager {
         let success = result == .success
 
         if success {
-            logger.log("✅ Successfully clicked element: \(identifier)")
+            self.logger.log("✅ Successfully clicked element: \(identifier)")
         } else {
-            logger.log("❌ Failed to click element: \(identifier) (Error: \(result.rawValue))")
+            self.logger.log("❌ Failed to click element: \(identifier) (Error: \(result.rawValue))")
         }
 
         return success
@@ -37,17 +38,17 @@ class ScreenshotAccessibilityManager {
 
     /// Type text into an element
     func typeText(_ text: String, inElementWithIdentifier identifier: String) -> Bool {
-        logger.log("⌨️ Typing text in element: \(identifier)")
+        self.logger.log("⌨️ Typing text in element: \(identifier)")
 
         guard let element = findElement(withIdentifier: identifier) else {
-            logger.log("❌ Element not found: \(identifier)")
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
         // First, set focus to the element
         let focusResult = AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         guard focusResult == .success else {
-            logger.log("❌ Failed to set focus to element: \(identifier)")
+            self.logger.log("❌ Failed to set focus to element: \(identifier)")
             return false
         }
 
@@ -56,9 +57,9 @@ class ScreenshotAccessibilityManager {
 
         let success = setResult == .success
         if success {
-            logger.log("✅ Successfully typed text in element: \(identifier)")
+            self.logger.log("✅ Successfully typed text in element: \(identifier)")
         } else {
-            logger.log("❌ Failed to type text in element: \(identifier)")
+            self.logger.log("❌ Failed to type text in element: \(identifier)")
         }
 
         return success
@@ -66,10 +67,10 @@ class ScreenshotAccessibilityManager {
 
     /// Set slider value
     func setSliderValue(_ value: Double, forElementWithIdentifier identifier: String) -> Bool {
-        logger.log("🎚️ Setting slider value: \(identifier) = \(value)")
+        self.logger.log("🎚️ Setting slider value: \(identifier) = \(value)")
 
         guard let element = findElement(withIdentifier: identifier) else {
-            logger.log("❌ Element not found: \(identifier)")
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
@@ -77,9 +78,9 @@ class ScreenshotAccessibilityManager {
         let success = result == .success
 
         if success {
-            logger.log("✅ Successfully set slider value: \(identifier) = \(value)")
+            self.logger.log("✅ Successfully set slider value: \(identifier) = \(value)")
         } else {
-            logger.log("❌ Failed to set slider value: \(identifier)")
+            self.logger.log("❌ Failed to set slider value: \(identifier)")
         }
 
         return success
@@ -87,10 +88,10 @@ class ScreenshotAccessibilityManager {
 
     /// Scroll an area
     func scrollArea(_ identifier: String, by amount: Double) -> Bool {
-        logger.log("📜 Scrolling area: \(identifier) by \(amount)")
+        self.logger.log("📜 Scrolling area: \(identifier) by \(amount)")
 
-        guard findElement(withIdentifier: identifier) != nil else {
-            logger.log("❌ Element not found: \(identifier)")
+        guard self.findElement(withIdentifier: identifier) != nil else {
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
@@ -100,10 +101,10 @@ class ScreenshotAccessibilityManager {
 
     /// Toggle a switch
     func toggleSwitch(withIdentifier identifier: String) -> Bool {
-        logger.log("🔄 Toggling switch: \(identifier)")
+        self.logger.log("🔄 Toggling switch: \(identifier)")
 
         guard let element = findElement(withIdentifier: identifier) else {
-            logger.log("❌ Element not found: \(identifier)")
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
@@ -111,9 +112,9 @@ class ScreenshotAccessibilityManager {
         let success = result == .success
 
         if success {
-            logger.log("✅ Successfully toggled switch: \(identifier)")
+            self.logger.log("✅ Successfully toggled switch: \(identifier)")
         } else {
-            logger.log("❌ Failed to toggle switch: \(identifier)")
+            self.logger.log("❌ Failed to toggle switch: \(identifier)")
         }
 
         return success
@@ -121,10 +122,10 @@ class ScreenshotAccessibilityManager {
 
     /// Select a tab
     func selectTab(named name: String) -> Bool {
-        logger.log("📑 Selecting tab: \(name)")
+        self.logger.log("📑 Selecting tab: \(name)")
 
         guard let element = findElement(withIdentifier: name) else {
-            logger.log("❌ Tab not found: \(name)")
+            self.logger.log("❌ Tab not found: \(name)")
             return false
         }
 
@@ -132,9 +133,9 @@ class ScreenshotAccessibilityManager {
         let success = result == .success
 
         if success {
-            logger.log("✅ Successfully selected tab: \(name)")
+            self.logger.log("✅ Successfully selected tab: \(name)")
         } else {
-            logger.log("❌ Failed to select tab: \(name)")
+            self.logger.log("❌ Failed to select tab: \(name)")
         }
 
         return success
@@ -142,7 +143,7 @@ class ScreenshotAccessibilityManager {
 
     /// Complete quiz interaction
     func completeQuiz() -> Bool {
-        logger.log("📝 Completing quiz")
+        self.logger.log("📝 Completing quiz")
 
         // Implementation would depend on the specific quiz structure
         return true // Placeholder
@@ -150,7 +151,7 @@ class ScreenshotAccessibilityManager {
 
     /// Perform swipe gesture
     func performSwipe(direction: Direction) -> Bool {
-        logger.log("👆 Performing swipe: \(direction)")
+        self.logger.log("👆 Performing swipe: \(direction)")
 
         // Implementation would depend on the specific gesture framework
         return true // Placeholder
@@ -158,10 +159,10 @@ class ScreenshotAccessibilityManager {
 
     /// Perform long press
     func performLongPress(onElementWithIdentifier identifier: String) -> Bool {
-        logger.log("👆 Performing long press: \(identifier)")
+        self.logger.log("👆 Performing long press: \(identifier)")
 
-        guard findElement(withIdentifier: identifier) != nil else {
-            logger.log("❌ Element not found: \(identifier)")
+        guard self.findElement(withIdentifier: identifier) != nil else {
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
@@ -171,10 +172,10 @@ class ScreenshotAccessibilityManager {
 
     /// Tap a button
     func tapButton(withIdentifier identifier: String) -> Bool {
-        logger.log("🔘 Tapping button: \(identifier)")
+        self.logger.log("🔘 Tapping button: \(identifier)")
 
         guard let element = findElement(withIdentifier: identifier) else {
-            logger.log("❌ Button not found: \(identifier)")
+            self.logger.log("❌ Button not found: \(identifier)")
             return false
         }
 
@@ -182,9 +183,9 @@ class ScreenshotAccessibilityManager {
         let success = result == .success
 
         if success {
-            logger.log("✅ Successfully tapped button: \(identifier)")
+            self.logger.log("✅ Successfully tapped button: \(identifier)")
         } else {
-            logger.log("❌ Failed to tap button: \(identifier)")
+            self.logger.log("❌ Failed to tap button: \(identifier)")
         }
 
         return success
@@ -192,10 +193,10 @@ class ScreenshotAccessibilityManager {
 
     /// Toggle an element
     func toggleElement(withIdentifier identifier: String) -> Bool {
-        logger.log("🔄 Toggling element: \(identifier)")
+        self.logger.log("🔄 Toggling element: \(identifier)")
 
         guard let element = findElement(withIdentifier: identifier) else {
-            logger.log("❌ Element not found: \(identifier)")
+            self.logger.log("❌ Element not found: \(identifier)")
             return false
         }
 
@@ -203,9 +204,9 @@ class ScreenshotAccessibilityManager {
         let success = result == .success
 
         if success {
-            logger.log("✅ Successfully toggled element: \(identifier)")
+            self.logger.log("✅ Successfully toggled element: \(identifier)")
         } else {
-            logger.log("❌ Failed to toggle element: \(identifier)")
+            self.logger.log("❌ Failed to toggle element: \(identifier)")
         }
 
         return success
@@ -215,24 +216,24 @@ class ScreenshotAccessibilityManager {
 
     /// Check if an element exists
     func elementExists(withIdentifier identifier: String) -> Bool {
-        return findElement(withIdentifier: identifier) != nil
+        self.findElement(withIdentifier: identifier) != nil
     }
 
     /// Find an element by its identifier
-    private func findElement(withIdentifier identifier: String) -> AXUIElement? {
+    private func findElement(withIdentifier _: String) -> AXUIElement? {
         // This is a simplified implementation
         // In practice, you'd need to traverse the accessibility hierarchy
-        return nil // Placeholder
+        nil // Placeholder
     }
 
     /// Get all available elements on current screen
     func getAllAvailableElements() -> [String] {
-        logger.log("🔍 Scanning for available elements")
+        self.logger.log("🔍 Scanning for available elements")
 
         let elements: [String] = []
         // Implementation would traverse the accessibility hierarchy and collect element identifiers
 
-        logger.log("📋 Found \(elements.count) available elements")
+        self.logger.log("📋 Found \(elements.count) available elements")
         return elements
     }
 }

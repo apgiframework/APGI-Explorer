@@ -1,9 +1,9 @@
-import SwiftUI
 import Combine
+import SwiftUI
 #if os(iOS)
-import UIKit
+    import UIKit
 #elseif os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 // MARK: - Contextual Help System
@@ -17,38 +17,39 @@ class ContextualHelpManager: ObservableObject {
     @Published var availableTutorials: [Tutorial] = []
 
     private init() {
-        loadCompletedTutorials()
-        setupAvailableTutorials()
+        self.loadCompletedTutorials()
+        self.setupAvailableTutorials()
     }
 
     func showHelp(for context: HelpContext) {
-        currentHelpContext = context
-        isHelpVisible = true
+        self.currentHelpContext = context
+        self.isHelpVisible = true
         HapticFeedback.shared.lightImpact()
     }
 
     func dismissHelp() {
-        isHelpVisible = false
-        currentHelpContext = nil
+        self.isHelpVisible = false
+        self.currentHelpContext = nil
     }
 
     func markTutorialCompleted(_ tutorialId: String) {
-        completedTutorials.insert(tutorialId)
-        saveCompletedTutorials()
+        self.completedTutorials.insert(tutorialId)
+        self.saveCompletedTutorials()
     }
 
     func isTutorialCompleted(_ tutorialId: String) -> Bool {
-        completedTutorials.contains(tutorialId)
+        self.completedTutorials.contains(tutorialId)
     }
 
     func getTutorial(for context: HelpContext) -> Tutorial? {
-        return availableTutorials.first { $0.contexts.contains(context) }
+        self.availableTutorials.first { $0.contexts.contains(context) }
     }
 
     private func loadCompletedTutorials() {
         if let data = UserDefaults.standard.data(forKey: "completedTutorials"),
-           let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
-            completedTutorials = decoded
+           let decoded = try? JSONDecoder().decode(Set<String>.self, from: data)
+        {
+            self.completedTutorials = decoded
         }
     }
 
@@ -59,12 +60,12 @@ class ContextualHelpManager: ObservableObject {
     }
 
     private func setupAvailableTutorials() {
-        availableTutorials = [
-            createProfileCreationTutorial(),
-            createProfileComparisonTutorial(),
-            createDataExportTutorial(),
-            createAppSettingsTutorial(),
-            createAdvancedFeaturesTutorial()
+        self.availableTutorials = [
+            self.createProfileCreationTutorial(),
+            self.createProfileComparisonTutorial(),
+            self.createDataExportTutorial(),
+            self.createAppSettingsTutorial(),
+            self.createAdvancedFeaturesTutorial(),
         ]
     }
 
@@ -94,7 +95,7 @@ class ContextualHelpManager: ObservableObject {
                     title: "Save Your Profile",
                     content: "Give your profile a name and save it for future reference.",
                     highlightElement: "save_profile_button"
-                )
+                ),
             ]
         )
     }
@@ -120,7 +121,7 @@ class ContextualHelpManager: ObservableObject {
                     title: "Analyze Insights",
                     content: "Review the detailed analysis and psychological insights.",
                     highlightElement: "insights_panel"
-                )
+                ),
             ]
         )
     }
@@ -146,7 +147,7 @@ class ContextualHelpManager: ObservableObject {
                     title: "Export File",
                     content: "Generate and save your export file to your device.",
                     highlightElement: "export_button"
-                )
+                ),
             ]
         )
     }
@@ -172,7 +173,7 @@ class ContextualHelpManager: ObservableObject {
                     title: "Appearance",
                     content: "Customize themes, colors, and display preferences.",
                     highlightElement: "appearance_settings"
-                )
+                ),
             ]
         )
     }
@@ -198,7 +199,7 @@ class ContextualHelpManager: ObservableObject {
                     title: "Keyboard Shortcuts",
                     content: "Master keyboard shortcuts for faster navigation.",
                     highlightElement: "keyboard_help"
-                )
+                ),
             ]
         )
     }
@@ -214,49 +215,49 @@ enum HelpContext: String, CaseIterable, Codable {
     case dataExport = "data_export"
     case dataImport = "data_import"
     case dataManagement = "data_management"
-    case settings = "settings"
-    case privacy = "privacy"
-    case charts = "charts"
-    case analytics = "analytics"
+    case settings
+    case privacy
+    case charts
+    case analytics
     case advancedFeatures = "advanced_features"
-    case quiz = "quiz"
-    case results = "results"
+    case quiz
+    case results
 
     var title: String {
         switch self {
-        case .profileCreation: return "Profile Creation"
-        case .profileManagement: return "Profile Management"
-        case .profileComparison: return "Profile Comparison"
-        case .profileAnalysis: return "Profile Analysis"
-        case .dataExport: return "Data Export"
-        case .dataImport: return "Data Import"
-        case .dataManagement: return "Data Management"
-        case .settings: return "Settings"
-        case .privacy: return "Privacy"
-        case .charts: return "Charts"
-        case .analytics: return "Analytics"
-        case .advancedFeatures: return "Advanced Features"
-        case .quiz: return "Quiz"
-        case .results: return "Results"
+        case .profileCreation: "Profile Creation"
+        case .profileManagement: "Profile Management"
+        case .profileComparison: "Profile Comparison"
+        case .profileAnalysis: "Profile Analysis"
+        case .dataExport: "Data Export"
+        case .dataImport: "Data Import"
+        case .dataManagement: "Data Management"
+        case .settings: "Settings"
+        case .privacy: "Privacy"
+        case .charts: "Charts"
+        case .analytics: "Analytics"
+        case .advancedFeatures: "Advanced Features"
+        case .quiz: "Quiz"
+        case .results: "Results"
         }
     }
 
     var description: String {
         switch self {
-        case .profileCreation: return "Help with creating new psychological profiles"
-        case .profileManagement: return "Managing and organizing your profiles"
-        case .profileComparison: return "Comparing multiple profiles"
-        case .profileAnalysis: return "Analyzing profile data and insights"
-        case .dataExport: return "Exporting profiles and data"
-        case .dataImport: return "Importing data from other sources"
-        case .dataManagement: return "Managing app data and storage"
-        case .settings: return "App configuration and preferences"
-        case .privacy: return "Privacy settings and data protection"
-        case .charts: return "Understanding and using charts"
-        case .analytics: return "Analytics and insights"
-        case .advancedFeatures: return "Advanced features and tools"
-        case .quiz: return "Taking psychological assessments"
-        case .results: return "Understanding quiz results"
+        case .profileCreation: "Help with creating new psychological profiles"
+        case .profileManagement: "Managing and organizing your profiles"
+        case .profileComparison: "Comparing multiple profiles"
+        case .profileAnalysis: "Analyzing profile data and insights"
+        case .dataExport: "Exporting profiles and data"
+        case .dataImport: "Importing data from other sources"
+        case .dataManagement: "Managing app data and storage"
+        case .settings: "App configuration and preferences"
+        case .privacy: "Privacy settings and data protection"
+        case .charts: "Understanding and using charts"
+        case .analytics: "Analytics and insights"
+        case .advancedFeatures: "Advanced features and tools"
+        case .quiz: "Taking psychological assessments"
+        case .results: "Understanding quiz results"
         }
     }
 }
@@ -269,12 +270,12 @@ struct Tutorial: Identifiable, Codable {
     let steps: [TutorialStep]
 
     var estimatedDuration: String {
-        let minutes = steps.count * 2
+        let minutes = self.steps.count * 2
         return "\(minutes) minutes"
     }
 
     var isCompleted: Bool {
-        ContextualHelpManager.shared.isTutorialCompleted(id)
+        ContextualHelpManager.shared.isTutorialCompleted(self.id)
     }
 }
 
@@ -297,14 +298,14 @@ struct ContextualHelpButton: View {
 
     var body: some View {
         Button(action: {
-            helpManager.showHelp(for: context)
+            self.helpManager.showHelp(for: self.context)
         }) {
             Image(systemName: "questionmark.circle")
                 .font(.title3)
                 .foregroundColor(.accentColor)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Get help for \(context.title)")
+        .accessibilityLabel("Get help for \(self.context.title)")
         .accessibilityHint("Show contextual help and tutorials")
     }
 }
@@ -315,38 +316,38 @@ struct ContextualHelpOverlay: View {
     @State private var isAnimating = false
 
     var body: some View {
-        if helpManager.isHelpVisible, let context = helpManager.currentHelpContext,
-           let tutorial = helpManager.getTutorial(for: context) {
-
+        if self.helpManager.isHelpVisible, let context = helpManager.currentHelpContext,
+           let tutorial = helpManager.getTutorial(for: context)
+        {
             ZStack {
                 // Dimmed background
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        helpManager.dismissHelp()
+                        self.helpManager.dismissHelp()
                     }
 
                 // Help content
                 VStack(spacing: 0) {
                     // Header
-                    helpHeader
+                    self.helpHeader
 
                     // Content
-                    helpContent(tutorial: tutorial)
+                    self.helpContent(tutorial: tutorial)
 
                     // Navigation
-                    helpNavigation(tutorial: tutorial)
+                    self.helpNavigation(tutorial: tutorial)
                 }
                 .background(
                     Group {
                         #if os(iOS)
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(UIColor.systemBackground))
-                            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(UIColor.systemBackground))
+                                .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
                         #elseif os(macOS)
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(NSColor.windowBackgroundColor))
-                            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(NSColor.windowBackgroundColor))
+                                .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
                         #endif
                     }
                 )
@@ -355,17 +356,16 @@ struct ContextualHelpOverlay: View {
             .transition(.opacity.combined(with: .scale))
             .onAppear {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    isAnimating = true
+                    self.isAnimating = true
                 }
             }
         }
     }
 
-    @ViewBuilder
     private var helpHeader: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(helpManager.currentHelpContext?.title ?? "")
+                Text(self.helpManager.currentHelpContext?.title ?? "")
                     .font(.title2)
                     .fontWeight(.bold)
 
@@ -377,7 +377,7 @@ struct ContextualHelpOverlay: View {
             Spacer()
 
             Button(action: {
-                helpManager.dismissHelp()
+                self.helpManager.dismissHelp()
             }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title2)
@@ -390,9 +390,9 @@ struct ContextualHelpOverlay: View {
         .background(
             Group {
                 #if os(iOS)
-                Color(UIColor.systemBackground)
+                    Color(UIColor.systemBackground)
                 #elseif os(macOS)
-                Color(NSColor.windowBackgroundColor)
+                    Color(NSColor.windowBackgroundColor)
                 #endif
             }
         )
@@ -401,17 +401,17 @@ struct ContextualHelpOverlay: View {
 
     @ViewBuilder
     private func helpContent(tutorial: Tutorial) -> some View {
-        if currentStepIndex < tutorial.steps.count {
-            let step = tutorial.steps[currentStepIndex]
+        if self.currentStepIndex < tutorial.steps.count {
+            let step = tutorial.steps[self.currentStepIndex]
 
             VStack(spacing: 20) {
                 // Progress indicator
-                ProgressView(value: Double(currentStepIndex + 1), total: Double(tutorial.steps.count))
+                ProgressView(value: Double(self.currentStepIndex + 1), total: Double(tutorial.steps.count))
                     .progressViewStyle(LinearProgressViewStyle(tint: .accentColor))
 
                 // Step content
                 VStack(spacing: 16) {
-                    Text("Step \(currentStepIndex + 1) of \(tutorial.steps.count)")
+                    Text("Step \(self.currentStepIndex + 1) of \(tutorial.steps.count)")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
@@ -430,13 +430,12 @@ struct ContextualHelpOverlay: View {
         }
     }
 
-    @ViewBuilder
     private func helpNavigation(tutorial: Tutorial) -> some View {
         HStack(spacing: 16) {
             // Previous button
             Button(action: {
-                if currentStepIndex > 0 {
-                    currentStepIndex -= 1
+                if self.currentStepIndex > 0 {
+                    self.currentStepIndex -= 1
                     HapticFeedback.shared.selectionChanged()
                 }
             }) {
@@ -445,28 +444,28 @@ struct ContextualHelpOverlay: View {
                     Text("Previous")
                 }
             }
-            .disabled(currentStepIndex == 0)
+            .disabled(self.currentStepIndex == 0)
             .buttonStyle(SecondaryButtonStyle())
 
             // Skip button
             Button("Skip Tutorial") {
-                helpManager.dismissHelp()
+                self.helpManager.dismissHelp()
                 HapticFeedback.shared.lightImpact()
             }
             .buttonStyle(SecondaryButtonStyle())
 
             // Next/Complete button
             Button(action: {
-                if currentStepIndex < tutorial.steps.count - 1 {
-                    currentStepIndex += 1
+                if self.currentStepIndex < tutorial.steps.count - 1 {
+                    self.currentStepIndex += 1
                     HapticFeedback.shared.selectionChanged()
                 } else {
-                    completeTutorial(tutorial)
+                    self.completeTutorial(tutorial)
                 }
             }) {
                 HStack {
-                    Text(currentStepIndex < tutorial.steps.count - 1 ? "Next" : "Complete")
-                    if currentStepIndex < tutorial.steps.count - 1 {
+                    Text(self.currentStepIndex < tutorial.steps.count - 1 ? "Next" : "Complete")
+                    if self.currentStepIndex < tutorial.steps.count - 1 {
                         Image(systemName: "chevron.right")
                     } else {
                         Image(systemName: "checkmark")
@@ -479,9 +478,9 @@ struct ContextualHelpOverlay: View {
         .background(
             Group {
                 #if os(iOS)
-                Color(UIColor.systemBackground)
+                    Color(UIColor.systemBackground)
                 #elseif os(macOS)
-                Color(NSColor.windowBackgroundColor)
+                    Color(NSColor.windowBackgroundColor)
                 #endif
             }
         )
@@ -489,10 +488,10 @@ struct ContextualHelpOverlay: View {
     }
 
     private func completeTutorial(_ tutorial: Tutorial) {
-        helpManager.markTutorialCompleted(tutorial.id)
-        helpManager.dismissHelp()
+        self.helpManager.markTutorialCompleted(tutorial.id)
+        self.helpManager.dismissHelp()
         #if os(iOS)
-        HapticFeedback.shared.notification(.success)
+            HapticFeedback.shared.notification(.success)
         #endif
     }
 }
@@ -503,53 +502,53 @@ struct HelpCenterView: View {
 
     enum HelpCategory: String, CaseIterable {
         case gettingStarted = "getting_started"
-        case profiles = "profiles"
-        case comparison = "comparison"
-        case data = "data"
-        case settings = "settings"
-        case advanced = "advanced"
+        case profiles
+        case comparison
+        case data
+        case settings
+        case advanced
 
         var title: String {
             switch self {
-            case .gettingStarted: return "Getting Started"
-            case .profiles: return "Profiles"
-            case .comparison: return "Comparison"
-            case .data: return "Data Management"
-            case .settings: return "Settings"
-            case .advanced: return "Advanced Features"
+            case .gettingStarted: "Getting Started"
+            case .profiles: "Profiles"
+            case .comparison: "Comparison"
+            case .data: "Data Management"
+            case .settings: "Settings"
+            case .advanced: "Advanced Features"
             }
         }
 
         var description: String {
             switch self {
-            case .gettingStarted: return "Learn the basics of APGI Explorer"
-            case .profiles: return "Creating and managing psychological profiles"
-            case .comparison: return "Comparing profiles and analyzing differences"
-            case .data: return "Import, export, and manage your data"
-            case .settings: return "Configure the app to your preferences"
-            case .advanced: return "Power user features and tools"
+            case .gettingStarted: "Learn the basics of APGI Explorer"
+            case .profiles: "Creating and managing psychological profiles"
+            case .comparison: "Comparing profiles and analyzing differences"
+            case .data: "Import, export, and manage your data"
+            case .settings: "Configure the app to your preferences"
+            case .advanced: "Power user features and tools"
             }
         }
 
         var icon: String {
             switch self {
-            case .gettingStarted: return "play.circle.fill"
-            case .profiles: return "person.crop.circle.fill"
-            case .comparison: return "person.2.fill"
-            case .data: return "doc.text.fill"
-            case .settings: return "gearshape.fill"
-            case .advanced: return "star.fill"
+            case .gettingStarted: "play.circle.fill"
+            case .profiles: "person.crop.circle.fill"
+            case .comparison: "person.2.fill"
+            case .data: "doc.text.fill"
+            case .settings: "gearshape.fill"
+            case .advanced: "star.fill"
             }
         }
 
         var contexts: [HelpContext] {
             switch self {
-            case .gettingStarted: return [.profileCreation, .quiz, .results]
-            case .profiles: return [.profileManagement, .profileAnalysis]
-            case .comparison: return [.profileComparison]
-            case .data: return [.dataExport, .dataImport, .dataManagement]
-            case .settings: return [.settings, .privacy]
-            case .advanced: return [.advancedFeatures, .charts, .analytics]
+            case .gettingStarted: [.profileCreation, .quiz, .results]
+            case .profiles: [.profileManagement, .profileAnalysis]
+            case .comparison: [.profileComparison]
+            case .data: [.dataExport, .dataImport, .dataManagement]
+            case .settings: [.settings, .privacy]
+            case .advanced: [.advancedFeatures, .charts, .analytics]
             }
         }
     }
@@ -559,24 +558,23 @@ struct HelpCenterView: View {
             ScrollView {
                 LazyVStack(spacing: 20) {
                     // Quick Help
-                    quickHelpSection
+                    self.quickHelpSection
 
                     // Tutorial Categories
-                    tutorialCategoriesSection
+                    self.tutorialCategoriesSection
 
                     // Completed Tutorials
-                    completedTutorialsSection
+                    self.completedTutorialsSection
                 }
                 .padding()
             }
             .navigationTitle("Help Center")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
+                .navigationBarTitleDisplayMode(.large)
             #endif
         }
     }
 
-    @ViewBuilder
     private var quickHelpSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Quick Help")
@@ -591,7 +589,6 @@ struct HelpCenterView: View {
         }
     }
 
-    @ViewBuilder
     private var tutorialCategoriesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Interactive Tutorials")
@@ -606,14 +603,14 @@ struct HelpCenterView: View {
 
     @ViewBuilder
     private var completedTutorialsSection: some View {
-        if !helpManager.completedTutorials.isEmpty {
+        if !self.helpManager.completedTutorials.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Completed Tutorials")
                     .font(.title2)
                     .fontWeight(.bold)
 
-                let completedTutorials = helpManager.availableTutorials.filter {
-                    helpManager.completedTutorials.contains($0.id)
+                let completedTutorials = self.helpManager.availableTutorials.filter {
+                    self.helpManager.completedTutorials.contains($0.id)
                 }
 
                 ForEach(completedTutorials) { tutorial in
@@ -630,7 +627,7 @@ struct QuickHelpCard: View {
 
     var body: some View {
         Button(action: {
-            helpManager.showHelp(for: context)
+            self.helpManager.showHelp(for: self.context)
         }) {
             HStack(spacing: 12) {
                 Image(systemName: "questionmark.circle.fill")
@@ -638,12 +635,12 @@ struct QuickHelpCard: View {
                     .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(context.title)
+                    Text(self.context.title)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
 
-                    Text(context.description)
+                    Text(self.context.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.leading)
@@ -666,29 +663,29 @@ struct CategoryCard: View {
     @StateObject private var helpManager = ContextualHelpManager.shared
 
     private var tutorialsInCategory: [Tutorial] {
-        helpManager.availableTutorials.filter { tutorial in
-            tutorial.contexts.contains { category.contexts.contains($0) }
+        self.helpManager.availableTutorials.filter { tutorial in
+            tutorial.contexts.contains { self.category.contexts.contains($0) }
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                Image(systemName: category.icon)
+                Image(systemName: self.category.icon)
                     .font(.title2)
                     .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(category.title)
+                    Text(self.category.title)
                         .font(.headline)
                         .foregroundColor(.primary)
 
-                    Text(category.description)
+                    Text(self.category.description)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.leading)
 
-                    Text("\(tutorialsInCategory.count) tutorials")
+                    Text("\(self.tutorialsInCategory.count) tutorials")
                         .font(.caption)
                         .foregroundColor(.accentColor)
                 }
@@ -696,13 +693,13 @@ struct CategoryCard: View {
                 Spacer()
             }
 
-            if !tutorialsInCategory.isEmpty {
-                ForEach(tutorialsInCategory.prefix(3)) { tutorial in
+            if !self.tutorialsInCategory.isEmpty {
+                ForEach(self.tutorialsInCategory.prefix(3)) { tutorial in
                     TutorialRow(tutorial: tutorial)
                 }
 
-                if tutorialsInCategory.count > 3 {
-                    Button("View All (\(tutorialsInCategory.count))") {
+                if self.tutorialsInCategory.count > 3 {
+                    Button("View All (\(self.tutorialsInCategory.count))") {
                         // Show all tutorials in category
                     }
                     .font(.caption)
@@ -714,13 +711,13 @@ struct CategoryCard: View {
         .background(
             Group {
                 #if os(iOS)
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.systemBackground))
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                 #elseif os(macOS)
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.windowBackgroundColor))
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(NSColor.windowBackgroundColor))
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                 #endif
             }
         )
@@ -734,17 +731,17 @@ struct TutorialRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(tutorial.title)
+                Text(self.tutorial.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
 
                 HStack {
-                    Text(tutorial.estimatedDuration)
+                    Text(self.tutorial.estimatedDuration)
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    if tutorial.isCompleted {
+                    if self.tutorial.isCompleted {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundColor(.green)
@@ -754,9 +751,9 @@ struct TutorialRow: View {
 
             Spacer()
 
-            Button(tutorial.isCompleted ? "Review" : "Start") {
+            Button(self.tutorial.isCompleted ? "Review" : "Start") {
                 if let firstContext = tutorial.contexts.first {
-                    helpManager.showHelp(for: firstContext)
+                    self.helpManager.showHelp(for: firstContext)
                 }
             }
             .buttonStyle(.bordered)
@@ -776,7 +773,7 @@ struct CompletedTutorialCard: View {
                 .foregroundColor(.green)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(tutorial.title)
+                Text(self.tutorial.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)

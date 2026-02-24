@@ -1,12 +1,12 @@
 import SwiftUI
 #if os(iOS)
-import UIKit
+    import UIKit
 #endif
 
 #if os(iOS)
-typealias NotificationFeedbackType = UINotificationFeedbackGenerator.FeedbackType
+    typealias NotificationFeedbackType = UINotificationFeedbackGenerator.FeedbackType
 #else
-typealias NotificationFeedbackType = String
+    typealias NotificationFeedbackType = String
 #endif
 
 // MARK: - Haptic Feedback Manager
@@ -14,40 +14,41 @@ typealias NotificationFeedbackType = String
 class HapticFeedback {
     static let shared = HapticFeedback()
 
-    private init() {}
+    private init() {
+    }
 
     func lightImpact() {
         #if os(iOS)
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
         #endif
     }
 
     func mediumImpact() {
         #if os(iOS)
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
         #endif
     }
 
     func heavyImpact() {
         #if os(iOS)
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+            impactFeedback.impactOccurred()
         #endif
     }
 
     func selectionChanged() {
         #if os(iOS)
-        let selectionFeedback = UISelectionFeedbackGenerator()
-        selectionFeedback.selectionChanged()
+            let selectionFeedback = UISelectionFeedbackGenerator()
+            selectionFeedback.selectionChanged()
         #endif
     }
 
     func notification(_ type: NotificationFeedbackType) {
         #if os(iOS)
-        let notificationFeedback = UINotificationFeedbackGenerator()
-        notificationFeedback.notificationOccurred(type)
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(type)
         #endif
     }
 }
@@ -60,13 +61,13 @@ struct DetailRow: View {
 
     var body: some View {
         HStack {
-            Text(label + ":")
+            Text(self.label + ":")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.secondary)
                 .frame(width: 80, alignment: .leading)
 
-            Text(value)
+            Text(self.value)
                 .font(.caption)
                 .foregroundColor(.primary)
                 .textSelection(.enabled)
@@ -94,23 +95,23 @@ struct ErrorView: View {
     var body: some View {
         VStack(spacing: LayoutConstants.mediumSpacing) {
             // Error Icon with Severity Color and Animation
-            Image(systemName: iconForSeverity)
+            Image(systemName: self.iconForSeverity)
                 .font(.system(size: LayoutConstants.errorIconFontSize))
-                .foregroundColor(colorForSeverity)
-                .scaleEffect(pulseAnimation ? 1.1 : 1.0)
-                .accessibilityLabel("Error icon: \(String(describing: error.severity))")
+                .foregroundColor(self.colorForSeverity)
+                .scaleEffect(self.pulseAnimation ? 1.1 : 1.0)
+                .accessibilityLabel("Error icon: \(String(describing: self.error.severity))")
                 .onAppear {
                     withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
-                        pulseAnimation = true
+                        self.pulseAnimation = true
                     }
                 }
 
             // Error Title with better accessibility
-            Text(error.localizedDescription)
+            Text(self.error.localizedDescription)
                 .font(.headline)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .accessibilityLabel("Error: \(error.localizedDescription)")
+                .accessibilityLabel("Error: \(self.error.localizedDescription)")
                 .accessibilityAddTraits(.isStaticText)
 
             // Recovery Suggestion with enhanced visibility
@@ -139,17 +140,17 @@ struct ErrorView: View {
 
             // Action Buttons with enhanced accessibility
             VStack(spacing: LayoutConstants.smallSpacing) {
-                if error.isRetryable {
+                if self.error.isRetryable {
                     Button(action: {
-                        isRetrying = true
+                        self.isRetrying = true
                         HapticFeedback.shared.lightImpact()
-                        retry()
+                        self.retry()
                         DispatchQueue.main.asyncAfter(deadline: .now() + ColorConstants.retryDelay) {
-                            isRetrying = false
+                            self.isRetrying = false
                         }
                     }, label: {
                         HStack {
-                            if isRetrying {
+                            if self.isRetrying {
                                 LoadingIndicator(size: .small)
                                 Text("Retrying...")
                                     .accessibilityHidden(true)
@@ -160,49 +161,49 @@ struct ErrorView: View {
                         }
                     })
                     .buttonStyle(PrimaryButtonStyle())
-                    .disabled(isRetrying)
-                    .accessibilityLabel(isRetrying ? "Retrying operation" : "Retry operation")
-                    .accessibilityHint(error.isRetryable ? "Attempt the operation again" : "")
+                    .disabled(self.isRetrying)
+                    .accessibilityLabel(self.isRetrying ? "Retrying operation" : "Retry operation")
+                    .accessibilityHint(self.error.isRetryable ? "Attempt the operation again" : "")
                 }
 
-                if let dismiss = dismiss {
+                if let dismiss {
                     Button("Dismiss", action: {
                         HapticFeedback.shared.lightImpact()
                         dismiss()
                     })
-                        .buttonStyle(SecondaryButtonStyle())
-                        .accessibilityLabel("Dismiss error")
-                        .accessibilityHint("Close this error message")
+                    .buttonStyle(SecondaryButtonStyle())
+                    .accessibilityLabel("Dismiss error")
+                    .accessibilityHint("Close this error message")
                 }
 
                 Button("Show Details") {
                     HapticFeedback.shared.selectionChanged()
-                    showingDetails.toggle()
+                    self.showingDetails.toggle()
                 }
                 .buttonStyle(SecondaryButtonStyle())
-                .foregroundColor(colorForSeverity)
-                .accessibilityLabel(showingDetails ? "Hide error details" : "Show error details")
+                .foregroundColor(self.colorForSeverity)
+                .accessibilityLabel(self.showingDetails ? "Hide error details" : "Show error details")
                 .accessibilityHint("View technical information about this error")
             }
 
             // Error Details (Expandable) with enhanced accessibility
-            if showingDetails {
+            if self.showingDetails {
                 VStack(alignment: .leading, spacing: LayoutConstants.tinySpacing) {
                     HStack {
                         Image(systemName: "info.circle.fill")
-                            .foregroundColor(colorForSeverity)
+                            .foregroundColor(self.colorForSeverity)
                             .font(.caption)
                         Text("Technical Details:")
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(colorForSeverity)
+                            .foregroundColor(self.colorForSeverity)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        DetailRow(label: "Error Type", value: String(describing: type(of: error)))
-                        DetailRow(label: "Severity", value: String(describing: error.severity))
-                        DetailRow(label: "Retryable", value: error.isRetryable ? "Yes" : "No")
-                        DetailRow(label: "Error Code", value: "\(type(of: error))")
+                        DetailRow(label: "Error Type", value: String(describing: type(of: self.error)))
+                        DetailRow(label: "Severity", value: String(describing: self.error.severity))
+                        DetailRow(label: "Retryable", value: self.error.isRetryable ? "Yes" : "No")
+                        DetailRow(label: "Error Code", value: "\(type(of: self.error))")
                     }
                 }
                 .padding()
@@ -211,7 +212,7 @@ struct ErrorView: View {
                         .fill(AccessibleColors.cardBackground)
                         .overlay(
                             RoundedRectangle(cornerRadius: LayoutConstants.cardCornerRadius)
-                                .stroke(colorForSeverity.opacity(0.3), lineWidth: 1)
+                                .stroke(self.colorForSeverity.opacity(0.3), lineWidth: 1)
                         )
                 )
                 .cornerRadius(LayoutConstants.cardCornerRadius)
@@ -226,30 +227,26 @@ struct ErrorView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.easeInOut(duration: ColorConstants.animationDuration), value: showingDetails)
+        .animation(.easeInOut(duration: ColorConstants.animationDuration), value: self.showingDetails)
         .onAppear {
-            // Announce error for accessibility
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                AccessibilityManager.shared.announce("Error occurred: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private var iconForSeverity: String {
-        switch error.severity {
-        case .info: return "info.circle"
-        case .warning: return "exclamationmark.triangle"
-        case .error: return "xmark.circle"
-        case .critical: return "exclamationmark.octagon"
         }
     }
 
     private var colorForSeverity: Color {
-        switch error.severity {
-        case .info: return .blue
-        case .warning: return .orange
-        case .error: return .red
-        case .critical: return .purple
+        switch self.error.severity {
+        case .info: .blue
+        case .warning: .orange
+        case .error: .red
+        case .critical: .purple
+        }
+    }
+
+    private var iconForSeverity: String {
+        switch self.error.severity {
+        case .info: "info.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .error: "xmark.circle.fill"
+        case .critical: "exclamationmark.octagon.fill"
         }
     }
 }
@@ -274,13 +271,13 @@ struct OfflineOperationsView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            if !errorRecoveryManager.pendingOperations.isEmpty {
+            if !self.errorRecoveryManager.pendingOperations.isEmpty {
                 VStack(alignment: .leading, spacing: LayoutConstants.tinySpacing) {
-                    Text("Pending Operations (\(errorRecoveryManager.pendingOperations.count)):")
+                    Text("Pending Operations (\(self.errorRecoveryManager.pendingOperations.count)):")
                         .font(.caption)
                         .fontWeight(.semibold)
 
-                    ForEach(errorRecoveryManager.pendingOperations) { operation in
+                    ForEach(self.errorRecoveryManager.pendingOperations) { operation in
                         HStack {
                             Circle()
                                 .fill(Color.orange)
@@ -309,54 +306,54 @@ struct OfflineOperationsView: View {
 // MARK: - Long Running Operation View
 
 struct LongRunningOperationView: View {
+    @State private var elapsedTime: TimeInterval = 0
+    @State private var timer: Timer?
     let message: String
     let progress: Double?
     let cancel: (() -> Void)?
 
-    @State private var elapsedTime: TimeInterval = 0
-    @State private var timer: Timer?
+    init(message: String, progress: Double? = nil, cancel: (() -> Void)? = nil) {
+        self.message = message
+        self.progress = progress
+        self.cancel = cancel
+    }
 
     var body: some View {
         VStack(spacing: 20) {
-            if let progress = progress {
-                ProgressRingView(progress: progress, message: message)
+            if let progress {
+                ProgressRingView(progress: progress, message: self.message)
             } else {
                 VStack(spacing: 16) {
-                    LoadingIndicator(message: message, size: .large)
+                    LoadingIndicator(message: self.message, size: .large)
 
-                    Text(message)
+                    Text(self.message)
                         .font(.headline)
                         .multilineTextAlignment(.center)
 
-                    Text("Time elapsed: \(formatTime(elapsedTime))")
+                    Text("Time elapsed: \(self.formatTime(self.elapsedTime))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                .padding()
+                .onAppear {
+                    self.startTimer()
+                }
+                .onDisappear {
+                    self.stopTimer()
+                }
             }
-
-            if let cancel = cancel {
-                Button("Cancel", action: cancel)
-                    .buttonStyle(DestructiveButtonStyle())
-            }
-        }
-        .padding()
-        .onAppear {
-            startTimer()
-        }
-        .onDisappear {
-            stopTimer()
         }
     }
 
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            elapsedTime += 1
+        self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            self.elapsedTime += 1
         }
     }
 
     private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
+        self.timer?.invalidate()
+        self.timer = nil
     }
 
     private func formatTime(_ interval: TimeInterval) -> String {
@@ -372,24 +369,24 @@ struct ErrorView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             ErrorView(error: .networkError(URLError(.notConnectedToInternet))) {
-                print("Retry tapped")
+                // Retry action for preview
             }
             .previewDisplayName("Network Error")
 
             ErrorView(error: .invalidParameters) {
-                print("Retry tapped")
+                // Retry action for preview
             }
             .previewDisplayName("Invalid Parameters")
 
             ErrorView(error: .offlineMode) {
-                print("Retry tapped")
+                // Retry action for preview
             }
             .previewDisplayName("Offline Mode")
 
             LongRunningOperationView(
                 message: "Processing your data...",
                 progress: 0.75,
-                cancel: { print("Cancelled") }
+                cancel: { /* Cancel action for preview */ }
             )
             .previewDisplayName("Long Running Operation")
         }

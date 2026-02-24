@@ -1,8 +1,8 @@
-import SwiftUI
 import Intents
+import SwiftUI
 
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #endif
 
 struct QuizView: View {
@@ -12,44 +12,44 @@ struct QuizView: View {
     @State private var handoffActivity: NSUserActivity?
 
     var body: some View {
-        mainContent
+        self.mainContent
             .navigationBarBackButtonHidden(true)
             .onAppear {
-                setupHandoffActivity()
+                self.setupHandoffActivity()
             }
             .onDisappear {
-                handoffActivity?.invalidate()
-                handoffActivity = nil
+                self.handoffActivity?.invalidate()
+                self.handoffActivity = nil
             }
-            .onChange(of: isNavigatingToResults) { _, isNavigating in
+            .onChange(of: self.isNavigatingToResults) { _, isNavigating in
                 if isNavigating {
-                    handoffActivity?.invalidate()
-                    handoffActivity = nil
+                    self.handoffActivity?.invalidate()
+                    self.handoffActivity = nil
                 }
             }
-            .onChange(of: currentQuestionIndex) { oldValue, newValue in
+            .onChange(of: self.currentQuestionIndex) { oldValue, newValue in
                 // HIGH-001 Fix: Prevent rapid navigation issues
                 guard newValue != oldValue else { return }
-                guard newValue >= 0 && newValue < quizModel.questions.count else { return }
-                updateHandoffActivity()
+                guard newValue >= 0, newValue < self.quizModel.questions.count else { return }
+                self.updateHandoffActivity()
             }
-            .onChange(of: quizModel.answers) { oldValue, newValue in
+            .onChange(of: self.quizModel.answers) { oldValue, newValue in
                 // HIGH-001 Fix: Debounce rapid answer changes
                 guard newValue != oldValue else { return }
-                updateHandoffActivity()
+                self.updateHandoffActivity()
             }
             .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
                 if let restoredAnswers = HandoffActivity.restoreUserActivity(
                     userActivity,
                     currentQuestionIndex: $currentQuestionIndex
                 ) {
-                    quizModel.restoreAnswers(restoredAnswers)
+                    self.quizModel.restoreAnswers(restoredAnswers)
                     ConsoleAnalyticsService.shared.track(event: .handoffActivityRestored)
                 }
             }
             .userActivity(HandoffActivity.activityType) { activity in
                 // This ensures the activity is updated in the system
-                if let handoffActivity = handoffActivity {
+                if let handoffActivity {
                     activity.userInfo = handoffActivity.userInfo
                 }
             }
@@ -57,13 +57,13 @@ struct QuizView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            progressBarSection
-            progressTextSection
-            liveScoreSection
-            currentSectionSection
-            if currentQuestionIndex < quizModel.questions.count {
-                questionSection
-                navigationButtonsSection
+            self.progressBarSection
+            self.progressTextSection
+            self.liveScoreSection
+            self.currentSectionSection
+            if self.currentQuestionIndex < self.quizModel.questions.count {
+                self.questionSection
+                self.navigationButtonsSection
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -71,25 +71,25 @@ struct QuizView: View {
     }
 
     private var progressBarSection: some View {
-        ProgressView(value: Double(currentQuestionIndex + 1), total: Double(quizModel.questions.count))
+        ProgressView(value: Double(self.currentQuestionIndex + 1), total: Double(self.quizModel.questions.count))
             .progressViewStyle(.linear)
             .tint(.blue)
             .padding()
     }
 
     private var progressTextSection: some View {
-        Text("Question \(currentQuestionIndex + 1) of \(quizModel.questions.count)")
+        Text("Question \(self.currentQuestionIndex + 1) of \(self.quizModel.questions.count)")
             .font(.caption)
             .foregroundColor(.secondary)
     }
 
     private var liveScoreSection: some View {
-        LiveScoreTracker(quizModel: quizModel)
+        LiveScoreTracker(quizModel: self.quizModel)
             .padding(.horizontal)
     }
 
     private var currentSectionSection: some View {
-        Text(sectionName(for: quizModel.questions[currentQuestionIndex]))
+        Text(self.sectionName(for: self.quizModel.questions[self.currentQuestionIndex]))
             .font(.subheadline)
             .foregroundColor(.blue)
             .padding(.vertical, 8)
@@ -97,19 +97,19 @@ struct QuizView: View {
 
     private var questionSection: some View {
         QuestionView(
-            question: quizModel.questions[currentQuestionIndex],
-            selectedAnswer: quizModel.answers[quizModel.questions[currentQuestionIndex].id],
+            question: self.quizModel.questions[self.currentQuestionIndex],
+            selectedAnswer: self.quizModel.answers[self.quizModel.questions[self.currentQuestionIndex].id],
             onAnswer: { answer in
-                quizModel.selectAnswer(for: quizModel.questions[currentQuestionIndex].id, answer: answer)
+                self.quizModel.selectAnswer(for: self.quizModel.questions[self.currentQuestionIndex].id, answer: answer)
             }
         )
     }
 
     private var navigationButtonsSection: some View {
         HStack {
-            if currentQuestionIndex > 0 {
+            if self.currentQuestionIndex > 0 {
                 Button(
-                    action: { currentQuestionIndex -= 1 },
+                    action: { self.currentQuestionIndex -= 1 },
                     label: {
                         Label("Previous", systemImage: "chevron.left")
                     }
@@ -119,11 +119,11 @@ struct QuizView: View {
 
             Spacer()
 
-            if currentQuestionIndex < quizModel.questions.count - 1 {
+            if self.currentQuestionIndex < self.quizModel.questions.count - 1 {
                 Button(
                     action: {
-                        if quizModel.answers[quizModel.questions[currentQuestionIndex].id] != nil {
-                            currentQuestionIndex += 1
+                        if self.quizModel.answers[self.quizModel.questions[self.currentQuestionIndex].id] != nil {
+                            self.currentQuestionIndex += 1
                         }
                     },
                     label: {
@@ -131,18 +131,18 @@ struct QuizView: View {
                     }
                 )
                 .buttonStyle(PrimaryButtonStyle())
-                .disabled(quizModel.answers[quizModel.questions[currentQuestionIndex].id] == nil)
+                .disabled(self.quizModel.answers[self.quizModel.questions[self.currentQuestionIndex].id] == nil)
             } else {
                 NavigationLink(
-                    destination: ResultsView(quizModel: quizModel),
+                    destination: ResultsView(quizModel: self.quizModel),
                     label: {
                         Label("See Results", systemImage: "chart.bar.fill")
                     }
                 )
                 .buttonStyle(PrimaryButtonStyle())
-                .disabled(!quizModel.isComplete)
+                .disabled(!self.quizModel.isComplete)
                 .onTapGesture {
-                    isNavigatingToResults = true
+                    self.isNavigatingToResults = true
                 }
             }
         }
@@ -150,41 +150,41 @@ struct QuizView: View {
     }
 
     private func setupHandoffActivity() {
-        handoffActivity = HandoffActivity.createUserActivity(
-            quizModel: quizModel,
-            currentQuestionIndex: currentQuestionIndex
+        self.handoffActivity = HandoffActivity.createUserActivity(
+            quizModel: self.quizModel,
+            currentQuestionIndex: self.currentQuestionIndex
         )
-        handoffActivity?.becomeCurrent()
+        self.handoffActivity?.becomeCurrent()
     }
 
     private func updateHandoffActivity() {
-        handoffActivity?.invalidate()
-        handoffActivity = HandoffActivity.createUserActivity(
-            quizModel: quizModel,
-            currentQuestionIndex: currentQuestionIndex
+        self.handoffActivity?.invalidate()
+        self.handoffActivity = HandoffActivity.createUserActivity(
+            quizModel: self.quizModel,
+            currentQuestionIndex: self.currentQuestionIndex
         )
-        handoffActivity?.becomeCurrent()
+        self.handoffActivity?.becomeCurrent()
     }
 
     private func sectionName(for question: QuizQuestion) -> String {
         switch question.parameter {
-        case "epsilon": return "Prediction Error Sensitivity"
-        case "precision": return "Precision Allocation"
-        case "threshold": return "Ignition Threshold"
-        case "somatic": return "Somatic Bias"
-        case "interactions": return "Parameter Interactions"
-        case "temporal": return "Temporal Stability"
-        case "environment": return "Environmental Fit"
-        default: return ""
+        case "epsilon": "Prediction Error Sensitivity"
+        case "precision": "Precision Allocation"
+        case "threshold": "Ignition Threshold"
+        case "somatic": "Somatic Bias"
+        case "interactions": "Parameter Interactions"
+        case "temporal": "Temporal Stability"
+        case "environment": "Environmental Fit"
+        default: ""
         }
     }
 }
 
 private var toolTipBackground: Color {
     #if os(macOS)
-    Color(NSColor.windowBackgroundColor).opacity(0.9)
+        Color(NSColor.windowBackgroundColor).opacity(0.9)
     #else
-    Color(uiColor: .systemGray6)
+        Color(uiColor: .systemGray6)
     #endif
 }
 
@@ -196,24 +196,24 @@ private struct QuestionOptionRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Button(action: onSelect) {
+            Button(action: self.onSelect) {
                 HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: isSelected ? "circle.fill" : "circle")
-                        .foregroundColor(isSelected ? .blue : .gray)
+                    Image(systemName: self.isSelected ? "circle.fill" : "circle")
+                        .foregroundColor(self.isSelected ? .blue : .gray)
                         .font(.title3)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(option.text)
+                        Text(self.option.text)
                             .foregroundColor(.primary)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text(option.note)
+                        Text(self.option.note)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
 
                     Spacer()
 
-                    Button(action: toggleTooltip) {
+                    Button(action: self.toggleTooltip) {
                         Image(systemName: "info.circle")
                             .font(.title3)
                             .foregroundColor(.blue.opacity(0.7))
@@ -223,17 +223,17 @@ private struct QuestionOptionRow: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(isSelected ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
+                        .fill(self.isSelected ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                        .stroke(self.isSelected ? Color.blue : Color.clear, lineWidth: 2)
                 )
             }
             .buttonStyle(AppPlainButtonStyle())
 
-            if tooltipOptionID == option.id {
-                Text(option.tooltip)
+            if self.tooltipOptionID == self.option.id {
+                Text(self.option.tooltip)
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
@@ -247,11 +247,11 @@ private struct QuestionOptionRow: View {
     }
 
     private func toggleTooltip() {
-        tooltipOptionID = tooltipOptionID == option.id ? nil : option.id
+        self.tooltipOptionID = self.tooltipOptionID == self.option.id ? nil : self.option.id
     }
 }
 
-// Enhanced QuestionView with selection state
+/// Enhanced QuestionView with selection state
 struct QuestionView: View {
     let question: QuizQuestion
     let selectedAnswer: Int?
@@ -261,18 +261,18 @@ struct QuestionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(question.text)
+                Text(self.question.text)
                     .font(.title2)
                     .fontWeight(.medium)
                     .fixedSize(horizontal: false, vertical: true)
 
-                ForEach(question.options) { option in
+                ForEach(self.question.options) { option in
                     QuestionOptionRow(
                         option: option,
-                        isSelected: selectedAnswer == option.value,
-                        tooltipOptionID: $tooltipOptionID,
+                        isSelected: self.selectedAnswer == option.value,
+                        tooltipOptionID: self.$tooltipOptionID,
                         onSelect: {
-                            onAnswer(option.value)
+                            self.onAnswer(option.value)
                         }
                     )
                 }

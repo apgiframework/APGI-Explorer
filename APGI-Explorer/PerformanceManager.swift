@@ -1,11 +1,12 @@
-import Foundation
-import SwiftUI
 import Combine
+import Foundation
+import os.log
+import SwiftUI
 
 #if os(iOS)
-import UIKit
+    import UIKit
 #elseif os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 // MARK: - Performance Manager
@@ -26,17 +27,17 @@ class PerformanceManager: ObservableObject {
 
         var cacheLimit: Int {
             switch self {
-            case .power: return 200
-            case .balanced: return 100
-            case .memory: return 50
+            case .power: 200
+            case .balanced: 100
+            case .memory: 50
             }
         }
 
         var imageQuality: ImageQuality {
             switch self {
-            case .power: return .high
-            case .balanced: return .medium
-            case .memory: return .low
+            case .power: .high
+            case .balanced: .medium
+            case .memory: .low
             }
         }
     }
@@ -46,20 +47,20 @@ class PerformanceManager: ObservableObject {
 
         var compressionQuality: CGFloat {
             switch self {
-            case .low: return 0.3
-            case .medium: return 0.7
-            case .high: return 1.0
+            case .low: 0.3
+            case .medium: 0.7
+            case .high: 1.0
             }
         }
     }
 
     private init() {
-        setupMemoryMonitoring()
-        setupPerformanceModeDetection()
+        self.setupMemoryMonitoring()
+        self.setupPerformanceModeDetection()
     }
 
     private func setupMemoryMonitoring() {
-        memoryMonitor.$memoryPressure
+        self.memoryMonitor.$memoryPressure
             .receive(on: DispatchQueue.main)
             .sink { [weak self] pressure in
                 switch pressure {
@@ -70,23 +71,23 @@ class PerformanceManager: ObservableObject {
                     self?.memoryWarning = false
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func setupPerformanceModeDetection() {
         #if os(macOS)
-        // Check if device is on battery power
-        _ = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
-            self?.updatePerformanceMode()
-        }
+            // Check if device is on battery power
+            _ = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+                self?.updatePerformanceMode()
+            }
         #endif
     }
 
     #if os(macOS)
-    private func updatePerformanceMode() {
-        let isOnBattery = !ProcessInfo.processInfo.isLowPowerModeEnabled
-        performanceMode = isOnBattery ? .memory : .power
-    }
+        private func updatePerformanceMode() {
+            let isOnBattery = !ProcessInfo.processInfo.isLowPowerModeEnabled
+            self.performanceMode = isOnBattery ? .memory : .power
+        }
     #endif
 
     private func adjustForLowMemory() {
@@ -95,7 +96,7 @@ class PerformanceManager: ObservableObject {
         ImageCache.shared.clearCache()
 
         // Switch to memory-efficient mode
-        performanceMode = .memory
+        self.performanceMode = .memory
 
         // Notify views to optimize
         NotificationCenter.default.post(name: .memoryWarning, object: nil)
@@ -114,14 +115,14 @@ class MemoryMonitor: ObservableObject {
     private var source: DispatchSourceMemoryPressure?
 
     init() {
-        setupMemoryPressureMonitoring()
+        self.setupMemoryPressureMonitoring()
     }
 
     private func setupMemoryPressureMonitoring() {
-        source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
+        self.source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
 
-        source?.setEventHandler { [weak self] in
-            guard let self = self else { return }
+        self.source?.setEventHandler { [weak self] in
+            guard let self else { return }
 
             let event = self.source?.mask
             if event?.contains(.critical) == true {
@@ -131,7 +132,7 @@ class MemoryMonitor: ObservableObject {
             }
         }
 
-        source?.resume()
+        self.source?.resume()
     }
 
     deinit {
@@ -147,12 +148,12 @@ private enum CacheInstanceManager {
 
     static func shared<Key: Hashable, Value>() -> LazyLoadCache<Key, Value> {
         let key = "\(Key.self)-\(Value.self)"
-        return queue.sync {
+        return self.queue.sync {
             if let instance = _instances[key] as? LazyLoadCache<Key, Value> {
                 return instance
             }
             let newInstance = LazyLoadCache<Key, Value>()
-            _instances[key] = newInstance
+            self._instances[key] = newInstance
             return newInstance
         }
     }
@@ -162,7 +163,7 @@ private enum CacheInstanceManager {
 
 class LazyLoadCache<Key: Hashable, Value> {
     static var shared: LazyLoadCache<Key, Value> {
-        return CacheInstanceManager.shared()
+        CacheInstanceManager.shared()
     }
 
     private let cache = NSCache<NSCacheKey, CacheEntry>()
@@ -190,28 +191,28 @@ class LazyLoadCache<Key: Hashable, Value> {
         }
 
         override var hash: Int {
-            return key.hashValue
+            self.key.hashValue
         }
 
         override func isEqual(_ object: Any?) -> Bool {
             guard let other = object as? NSCacheKey else { return false }
-            return other.key == key
+            return other.key == self.key
         }
     }
 
     init() {
-        setupCache()
+        self.setupCache()
     }
 
     private func setupCache() {
-        cache.countLimit = PerformanceManager.shared.performanceMode.cacheLimit
-        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+        self.cache.countLimit = PerformanceManager.shared.performanceMode.cacheLimit
+        self.cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
 
         // Set up eviction handler with strong reference
         let delegate = CacheDelegate()
-        cache.delegate = delegate
+        self.cache.delegate = delegate
         // Store delegate strongly to prevent deallocation
-        objc_setAssociatedObject(cache, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        objc_setAssociatedObject(self.cache, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
 
     func getValue(for key: Key, loader: @escaping () async throws -> Value) async throws -> Value {
@@ -226,19 +227,19 @@ class LazyLoadCache<Key: Hashable, Value> {
         let value = try await loader()
 
         // Cache the value
-        setCachedValue(value, for: cacheKey)
+        self.setCachedValue(value, for: cacheKey)
 
         return value
     }
 
     private func getCachedValue(for key: NSCacheKey) -> Value? {
-        return queue.sync {
-            return cache.object(forKey: key)?.value
+        self.queue.sync {
+            self.cache.object(forKey: key)?.value
         }
     }
 
     private func setCachedValue(_ value: Value, for key: NSCacheKey) {
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             let entry = CacheEntry(value: value, timestamp: Date(), accessCount: 1)
             self.cache.setObject(entry, forKey: key, cost: self.calculateCost(value))
         }
@@ -255,7 +256,7 @@ class LazyLoadCache<Key: Hashable, Value> {
     }
 
     func clearExpiredItems() {
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             self.cache.removeAllObjects()
         }
     }
@@ -264,10 +265,10 @@ class LazyLoadCache<Key: Hashable, Value> {
 // MARK: - Cache Delegate
 
 private class CacheDelegate: NSObject {
-    func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: AnyObject?) {
+    func cache(_: NSCache<AnyObject, AnyObject>, willEvictObject obj: AnyObject?) {
         // Log evictions for debugging
-        if let obj = obj {
-            print("Cache evicted object: \(obj)")
+        if let obj {
+            os_log("Cache evicted object: %{public}@", log: OSLog.default, type: .debug, String(describing: obj))
         }
     }
 }
@@ -300,20 +301,20 @@ class ImageCache {
     }
 
     private init() {
-        cacheDirectory = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        self.cacheDirectory = self.fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ImageCache")
 
-        setupCache()
-        createCacheDirectory()
+        self.setupCache()
+        self.createCacheDirectory()
     }
 
     private func setupCache() {
-        cache.countLimit = 100
-        cache.totalCostLimit = 200 * 1024 * 1024 // 200MB
+        self.cache.countLimit = 100
+        self.cache.totalCostLimit = 200 * 1024 * 1024 // 200MB
     }
 
     private func createCacheDirectory() {
-        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? self.fileManager.createDirectory(at: self.cacheDirectory, withIntermediateDirectories: true)
     }
 
     func image(for url: URL) async -> Image? {
@@ -326,14 +327,14 @@ class ImageCache {
 
         // Try disk cache
         if let diskImage = await loadImageFromDisk(url: url) {
-            cache.setObject(CachedImage(image: diskImage, timestamp: Date(), size: 0), forKey: key)
+            self.cache.setObject(CachedImage(image: diskImage, timestamp: Date(), size: 0), forKey: key)
             return diskImage
         }
 
         // Load from network
         if let networkImage = await loadImageFromNetwork(url: url) {
-            cache.setObject(CachedImage(image: networkImage, timestamp: Date(), size: 0), forKey: key)
-            await saveImageToDisk(networkImage, url: url)
+            self.cache.setObject(CachedImage(image: networkImage, timestamp: Date(), size: 0), forKey: key)
+            await self.saveImageToDisk(networkImage, url: url)
             return networkImage
         }
 
@@ -342,18 +343,18 @@ class ImageCache {
 
     private func loadImageFromDisk(url: URL) async -> Image? {
         let fileName = url.lastPathComponent
-        let fileURL = cacheDirectory.appendingPathComponent(fileName)
+        let fileURL = self.cacheDirectory.appendingPathComponent(fileName)
 
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
 
         #if os(iOS)
-        if let uiImage = UIImage(data: data) {
-            return Image(uiImage: uiImage)
-        }
+            if let uiImage = UIImage(data: data) {
+                return Image(uiImage: uiImage)
+            }
         #elseif os(macOS)
-        if let nsImage = NSImage(data: data) {
-            return Image(nsImage: nsImage)
-        }
+            if let nsImage = NSImage(data: data) {
+                return Image(nsImage: nsImage)
+            }
         #endif
 
         return nil
@@ -364,32 +365,32 @@ class ImageCache {
             let (data, _) = try await URLSession.shared.data(from: url)
 
             #if os(iOS)
-            if let uiImage = UIImage(data: data) {
-                return Image(uiImage: uiImage)
-            }
+                if let uiImage = UIImage(data: data) {
+                    return Image(uiImage: uiImage)
+                }
             #elseif os(macOS)
-            if let nsImage = NSImage(data: data) {
-                return Image(nsImage: nsImage)
-            }
+                if let nsImage = NSImage(data: data) {
+                    return Image(nsImage: nsImage)
+                }
             #endif
         } catch {
-            print("Failed to load image from network: \(error)")
+            os_log("Failed to load image from network: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
         }
 
         return nil
     }
 
-    private func saveImageToDisk(_ image: Image, url: URL) async {
+    private func saveImageToDisk(_: Image, url _: URL) async {
         // This would require converting Image back to Data
         // Implementation depends on specific requirements
     }
 
     func clearCache() {
-        cache.removeAllObjects()
+        self.cache.removeAllObjects()
 
         // Clear disk cache
-        try? fileManager.removeItem(at: cacheDirectory)
-        createCacheDirectory()
+        try? self.fileManager.removeItem(at: self.cacheDirectory)
+        self.createCacheDirectory()
     }
 }
 
@@ -404,10 +405,10 @@ struct LazyLoadView<Data: Hashable, Content: View>: View {
 
     var body: some View {
         Group {
-            if isVisible {
-                content(data)
+            if self.isVisible {
+                self.content(self.data)
                     .onAppear {
-                        hasAppeared = true
+                        self.hasAppeared = true
                     }
             } else {
                 Rectangle()
@@ -418,9 +419,9 @@ struct LazyLoadView<Data: Hashable, Content: View>: View {
             }
         }
         .onAppear {
-            if !hasAppeared {
+            if !self.hasAppeared {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isVisible = true
+                    self.isVisible = true
                 }
             }
         }
@@ -484,9 +485,9 @@ class PerformanceTracker: ObservableObject {
 // MARK: - View Extensions for Lazy Loading
 
 extension View {
-    func lazyLoad<Data: Hashable, Content: View>(
+    func lazyLoad<Data: Hashable>(
         data: Data,
-        @ViewBuilder content: @escaping (Data) -> Content
+        @ViewBuilder content: @escaping (Data) -> some View
     ) -> some View {
         LazyLoadView(data: data, content: content)
     }

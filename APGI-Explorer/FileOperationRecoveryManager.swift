@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - File Operation Recovery Manager
 
@@ -10,7 +10,8 @@ class FileOperationRecoveryManager: ObservableObject {
     @Published var pendingRecoveries: [FileOperationRecovery] = []
     @Published var recoveryInProgress = false
 
-    private init() {}
+    private init() {
+    }
 
     func handleFileOperationError(_ error: Error, operation: FileOperation) -> FileOperationRecovery {
         let recovery = FileOperationRecovery(
@@ -53,20 +54,20 @@ class FileOperationRecoveryManager: ObservableObject {
         }
 
         do {
-            try await performRecoveryAction(action, operation: recovery.operation)
+            try await self.performRecoveryAction(action, operation: recovery.operation)
 
             DispatchQueue.main.async {
                 self.pendingRecoveries.removeAll { $0.id == recovery.id }
                 self.recoveryInProgress = false
                 #if os(iOS)
-                HapticFeedback.shared.notification(.success)
+                    HapticFeedback.shared.notification(.success)
                 #endif
             }
         } catch {
             DispatchQueue.main.async {
                 self.recoveryInProgress = false
                 #if os(iOS)
-                HapticFeedback.shared.notification(.error)
+                    HapticFeedback.shared.notification(.error)
                 #endif
             }
             throw error
@@ -79,7 +80,7 @@ class FileOperationRecoveryManager: ObservableObject {
         }
     }
 
-    private func generateRecoveryActions(for error: Error, operation: FileOperation) -> [RecoveryAction] {
+    private func generateRecoveryActions(for error: Error, operation _: FileOperation) -> [RecoveryAction] {
         var actions: [RecoveryAction] = []
 
         if let nsError = error as NSError? {
@@ -142,7 +143,7 @@ class FileOperationRecoveryManager: ObservableObject {
 
         case .rename:
             if var fileOperation = operation as? FileExportOperation {
-                fileOperation.customName = generateUniqueName(fileOperation.suggestedName)
+                fileOperation.customName = self.generateUniqueName(fileOperation.suggestedName)
                 try await fileOperation.execute()
             }
 
@@ -155,7 +156,7 @@ class FileOperationRecoveryManager: ObservableObject {
             throw FileOperationError.notImplemented
 
         case .freeSpace:
-            try await freeDiskSpace()
+            try await self.freeDiskSpace()
             try await operation.execute()
 
         case .chooseDifferentFormat:
@@ -163,7 +164,7 @@ class FileOperationRecoveryManager: ObservableObject {
             throw FileOperationError.notImplemented
 
         case .useBackup:
-            try await restoreFromBackup()
+            try await self.restoreFromBackup()
 
         case .restartApp:
             // This would need to be implemented with app restart
@@ -202,17 +203,17 @@ struct FileOperationRecovery: Identifiable {
     let suggestedActions: [RecoveryAction]
 
     var canRetry: Bool {
-        retryCount < maxRetries
+        self.retryCount < self.maxRetries
     }
 
     var severity: RecoverySeverity {
-        switch retryCount {
+        switch self.retryCount {
         case 0:
-            return .low
+            .low
         case 1:
-            return .medium
+            .medium
         default:
-            return .high
+            .high
         }
     }
 }
@@ -230,15 +231,15 @@ struct FileExportOperation: FileOperation {
     var customName: String?
 
     var description: String {
-        "Export \(profile.name) as \(format.rawValue)"
+        "Export \(self.profile.name) as \(self.format.rawValue)"
     }
 
     var suggestedName: String {
-        customName ?? "\(profile.name).\(format.rawValue)"
+        self.customName ?? "\(self.profile.name).\(self.format.rawValue)"
     }
 
     func execute() async throws {
-        _ = try FileStorageManager.shared.exportProfile(profile, to: destination)
+        _ = try FileStorageManager.shared.exportProfile(self.profile, to: self.destination)
     }
 }
 
@@ -256,46 +257,46 @@ enum RecoveryAction: CaseIterable {
 
     var title: String {
         switch self {
-        case .retry: return "Try Again"
-        case .overwrite: return "Overwrite Existing File"
-        case .rename: return "Rename File"
-        case .chooseDifferentLocation: return "Choose Different Location"
-        case .changePermissions: return "Change Permissions"
-        case .freeSpace: return "Free Up Space"
-        case .chooseDifferentFormat: return "Try Different Format"
-        case .useBackup: return "Use Backup"
-        case .restartApp: return "Restart App"
-        case .contactSupport: return "Contact Support"
+        case .retry: "Try Again"
+        case .overwrite: "Overwrite Existing File"
+        case .rename: "Rename File"
+        case .chooseDifferentLocation: "Choose Different Location"
+        case .changePermissions: "Change Permissions"
+        case .freeSpace: "Free Up Space"
+        case .chooseDifferentFormat: "Try Different Format"
+        case .useBackup: "Use Backup"
+        case .restartApp: "Restart App"
+        case .contactSupport: "Contact Support"
         }
     }
 
     var description: String {
         switch self {
-        case .retry: return "Attempt the operation again"
-        case .overwrite: return "Replace the existing file"
-        case .rename: return "Save with a different name"
-        case .chooseDifferentLocation: return "Save to a different location"
-        case .changePermissions: return "Grant necessary permissions"
-        case .freeSpace: return "Clear up disk space"
-        case .chooseDifferentFormat: return "Export in a different format"
-        case .useBackup: return "Restore from a previous backup"
-        case .restartApp: return "Restart the application"
-        case .contactSupport: return "Get help from our support team"
+        case .retry: "Attempt the operation again"
+        case .overwrite: "Replace the existing file"
+        case .rename: "Save with a different name"
+        case .chooseDifferentLocation: "Save to a different location"
+        case .changePermissions: "Grant necessary permissions"
+        case .freeSpace: "Clear up disk space"
+        case .chooseDifferentFormat: "Export in a different format"
+        case .useBackup: "Restore from a previous backup"
+        case .restartApp: "Restart the application"
+        case .contactSupport: "Get help from our support team"
         }
     }
 
     var icon: String {
         switch self {
-        case .retry: return "arrow.clockwise"
-        case .overwrite: return "arrow.down.doc.fill"
-        case .rename: return "pencil"
-        case .chooseDifferentLocation: return "folder"
-        case .changePermissions: return "lock.shield"
-        case .freeSpace: return "trash"
-        case .chooseDifferentFormat: return "doc.badge.gearshape"
-        case .useBackup: return "clock.arrow.circlepath"
-        case .restartApp: return "arrow.clockwise.circle"
-        case .contactSupport: return "questionmark.circle"
+        case .retry: "arrow.clockwise"
+        case .overwrite: "arrow.down.doc.fill"
+        case .rename: "pencil"
+        case .chooseDifferentLocation: "folder"
+        case .changePermissions: "lock.shield"
+        case .freeSpace: "trash"
+        case .chooseDifferentFormat: "doc.badge.gearshape"
+        case .useBackup: "clock.arrow.circlepath"
+        case .restartApp: "arrow.clockwise.circle"
+        case .contactSupport: "questionmark.circle"
         }
     }
 }
@@ -307,17 +308,17 @@ enum RecoverySeverity {
 
     var color: Color {
         switch self {
-        case .low: return .orange
-        case .medium: return .red
-        case .high: return .purple
+        case .low: .orange
+        case .medium: .red
+        case .high: .purple
         }
     }
 
     var icon: String {
         switch self {
-        case .low: return "exclamationmark.triangle.fill"
-        case .medium: return "xmark.circle.fill"
-        case .high: return "exclamationmark.octagon.fill"
+        case .low: "exclamationmark.triangle.fill"
+        case .medium: "xmark.circle.fill"
+        case .high: "exclamationmark.octagon.fill"
         }
     }
 }
@@ -330,11 +331,11 @@ enum FileOperationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .maxRetriesExceeded:
-            return "Maximum retry attempts exceeded"
+            "Maximum retry attempts exceeded"
         case .notImplemented:
-            return "This recovery option is not yet available"
+            "This recovery option is not yet available"
         case .contactSupport:
-            return "Please contact support for assistance"
+            "Please contact support for assistance"
         }
     }
 }
@@ -347,19 +348,19 @@ struct FileOperationRecoveryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !recoveryManager.pendingRecoveries.isEmpty {
-                List(recoveryManager.pendingRecoveries) { recovery in
+            if !self.recoveryManager.pendingRecoveries.isEmpty {
+                List(self.recoveryManager.pendingRecoveries) { recovery in
                     RecoveryRow(recovery: recovery) {
-                        selectedRecovery = recovery
+                        self.selectedRecovery = recovery
                     }
                 }
                 .listStyle(.inset)
             }
 
-            if selectedRecovery != nil {
+            if let selectedRecovery = self.selectedRecovery {
                 RecoveryActionsSheet(
-                    recovery: selectedRecovery!,
-                    onDismiss: { selectedRecovery = nil }
+                    recovery: selectedRecovery,
+                    onDismiss: { self.selectedRecovery = nil }
                 )
             }
         }
@@ -372,28 +373,28 @@ struct RecoveryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: recovery.severity.icon)
-                .foregroundColor(recovery.severity.color)
+            Image(systemName: self.recovery.severity.icon)
+                .foregroundColor(self.recovery.severity.color)
                 .font(.title3)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(recovery.operation.description)
+                Text(self.recovery.operation.description)
                     .font(.headline)
                     .foregroundColor(.primary)
 
-                Text(recovery.error.localizedDescription)
+                Text(self.recovery.error.localizedDescription)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
 
                 HStack {
-                    Text("Attempt \(recovery.retryCount + 1) of \(recovery.maxRetries)")
+                    Text("Attempt \(self.recovery.retryCount + 1) of \(self.recovery.maxRetries)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
 
                     Spacer()
 
-                    Text(recovery.timestamp, style: .relative)
+                    Text(self.recovery.timestamp, style: .relative)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -401,7 +402,7 @@ struct RecoveryRow: View {
 
             Spacer()
 
-            Button(action: onSelect) {
+            Button(action: self.onSelect) {
                 Image(systemName: "chevron.right")
                     .font(.caption)
             }
@@ -427,11 +428,11 @@ struct RecoveryActionsSheet: View {
                         .font(.title2)
                         .fontWeight(.bold)
 
-                    Text(recovery.operation.description)
+                    Text(self.recovery.operation.description)
                         .font(.headline)
                         .foregroundColor(.primary)
 
-                    Text(recovery.error.localizedDescription)
+                    Text(self.recovery.error.localizedDescription)
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
@@ -442,12 +443,12 @@ struct RecoveryActionsSheet: View {
                         .font(.headline)
                         .foregroundColor(.primary)
 
-                    ForEach(recovery.suggestedActions, id: \.self) { action in
+                    ForEach(self.recovery.suggestedActions, id: \.self) { action in
                         RecoveryActionButton(
                             action: action,
-                            isDisabled: performingAction || (!recovery.canRetry && action == .retry)
+                            isDisabled: self.performingAction || (!self.recovery.canRetry && action == .retry)
                         ) {
-                            performAction(action)
+                            self.performAction(action)
                         }
                     }
                 }
@@ -457,13 +458,13 @@ struct RecoveryActionsSheet: View {
             .padding()
             .navigationTitle("File Recovery")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
             #if os(iOS)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Dismiss") {
-                        onDismiss()
+                        self.onDismiss()
                     }
                 }
             }
@@ -471,31 +472,31 @@ struct RecoveryActionsSheet: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Dismiss") {
-                        onDismiss()
+                        self.onDismiss()
                     }
                 }
             }
             #endif
         }
-        .sheet(isPresented: $performingAction) {
+        .sheet(isPresented: self.$performingAction) {
             ProgressView("Attempting recovery...")
                 .padding()
         }
     }
 
     private func performAction(_ action: RecoveryAction) {
-        performingAction = true
+        self.performingAction = true
 
         Task {
             do {
-                try await recoveryManager.attemptRecovery(recovery, action: action)
+                try await self.recoveryManager.attemptRecovery(self.recovery, action: action)
                 await MainActor.run {
-                    onDismiss()
+                    self.onDismiss()
                 }
             } catch {
                 await MainActor.run {
                     ErrorHandlingManager.shared.handle(error, context: "File Recovery")
-                    performingAction = false
+                    self.performingAction = false
                 }
             }
         }
@@ -508,19 +509,19 @@ struct RecoveryActionButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: 12) {
-                Image(systemName: action.icon)
+                Image(systemName: self.action.icon)
                     .font(.title3)
                     .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(action.title)
+                    Text(self.action.title)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
 
-                    Text(action.description)
+                    Text(self.action.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.leading)
@@ -538,7 +539,7 @@ struct RecoveryActionButton: View {
                     .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
             )
         }
-        .disabled(isDisabled)
-        .opacity(isDisabled ? 0.6 : 1.0)
+        .disabled(self.isDisabled)
+        .opacity(self.isDisabled ? 0.6 : 1.0)
     }
 }

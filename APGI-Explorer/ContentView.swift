@@ -8,12 +8,12 @@ struct ContentView: View {
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.blue.opacity(ColorConstants.backgroundOpacity),
-                        Color.purple.opacity(ColorConstants.backgroundOpacity)
+                        Color.purple.opacity(ColorConstants.backgroundOpacity),
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                    .edgesIgnoringSafeArea(.all)
+                .edgesIgnoringSafeArea(.all)
 
                 VStack(spacing: LayoutConstants.largeSpacing) {
                     // App Title

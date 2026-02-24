@@ -1,8 +1,6 @@
-// KeyboardNavigationModifier.swift
-
 import SwiftUI
 #if os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 struct KeyboardNavigationModifier: ViewModifier {
@@ -17,55 +15,55 @@ struct KeyboardNavigationModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .focused($focusedField, equals: .item(currentIndex))
+            .focused(self.$focusedField, equals: .item(self.currentIndex))
             .onKeyPress(.upArrow) {
-                navigateUp()
+                self.navigateUp()
                 return .handled
             }
             .onKeyPress(.downArrow) {
-                navigateDown()
+                self.navigateDown()
                 return .handled
             }
             .onKeyPress(.return) {
-                onSelect(currentIndex)
+                self.onSelect(self.currentIndex)
                 return .handled
             }
             .onKeyPress(.space) {
-                onSelect(currentIndex)
+                self.onSelect(self.currentIndex)
                 return .handled
             }
             .onKeyPress(.tab) {
-                navigateUp()
+                self.navigateUp()
                 return .handled
             }
             .onKeyPress(.tab) {
-                navigateDown()
+                self.navigateDown()
                 return .handled
             }
             .onKeyPress("j") {
-                navigateDown()
+                self.navigateDown()
                 return .handled
             }
             .onKeyPress("k") {
-                navigateUp()
+                self.navigateUp()
                 return .handled
             }
             .onAppear {
-                focusedField = .item(0)
+                self.focusedField = .item(0)
             }
     }
 
     private func navigateUp() {
-        if currentIndex > 0 {
-            currentIndex -= 1
-            focusedField = .item(currentIndex)
+        if self.currentIndex > 0 {
+            self.currentIndex -= 1
+            self.focusedField = .item(self.currentIndex)
         }
     }
 
     private func navigateDown() {
-        if currentIndex < totalItems - 1 {
-            currentIndex += 1
-            focusedField = .item(currentIndex)
+        if self.currentIndex < self.totalItems - 1 {
+            self.currentIndex += 1
+            self.focusedField = .item(self.currentIndex)
         }
     }
 }
@@ -84,16 +82,16 @@ struct QuizViewWithKeyboard: View {
     @FocusState private var focusedAnswer: Int?
 
     var currentQuestion: QuizQuestion? {
-        guard quizModel.currentQuestionIndex < quizModel.questions.count else { return nil }
-        return quizModel.questions[quizModel.currentQuestionIndex]
+        guard self.quizModel.currentQuestionIndex < self.quizModel.questions.count else { return nil }
+        return self.quizModel.questions[self.quizModel.currentQuestionIndex]
     }
 
     var body: some View {
         VStack(spacing: 20) {
-            questionContent
+            self.questionContent
         }
         .onAppear {
-            focusSelectedAnswer()
+            self.focusSelectedAnswer()
         }
     }
 
@@ -104,60 +102,59 @@ struct QuizViewWithKeyboard: View {
                 .font(.title2)
                 .padding()
 
-            optionsSection(for: question)
+            self.optionsSection(for: question)
 
-            navigationButtons
+            self.navigationButtons
         }
     }
 
-    @ViewBuilder
     private func optionsSection(for question: QuizQuestion) -> some View {
         VStack(spacing: 12) {
             ForEach(Array(question.options.enumerated()), id: \.offset) { index, option in
                 AnswerButton(
                     text: option.text,
-                    isSelected: selectedAnswerIndex == index,
+                    isSelected: self.selectedAnswerIndex == index,
                     index: index
                 ) {
-                    selectAnswer(index)
+                    self.selectAnswer(index)
                 }
-                .focused($focusedAnswer, equals: index)
+                .focused(self.$focusedAnswer, equals: index)
                 .onKeyPress(.return) {
-                    selectAnswer(index)
+                    self.selectAnswer(index)
                     return .handled
                 }
                 .onKeyPress(.space) {
-                    selectAnswer(index)
+                    self.selectAnswer(index)
                     return .handled
                 }
             }
         }
         .onKeyPress(.upArrow) {
-            moveSelection(isMovingUp: true, totalOptions: question.options.count)
+            self.moveSelection(isMovingUp: true, totalOptions: question.options.count)
             return .handled
         }
         .onKeyPress(.downArrow) {
-            moveSelection(isMovingUp: false, totalOptions: question.options.count)
+            self.moveSelection(isMovingUp: false, totalOptions: question.options.count)
             return .handled
         }
         .onKeyPress("1") {
-            handleNumericSelection(0, totalOptions: question.options.count)
+            self.handleNumericSelection(0, totalOptions: question.options.count)
             return .handled
         }
         .onKeyPress("2") {
-            handleNumericSelection(1, totalOptions: question.options.count)
+            self.handleNumericSelection(1, totalOptions: question.options.count)
             return .handled
         }
         .onKeyPress("3") {
-            handleNumericSelection(2, totalOptions: question.options.count)
+            self.handleNumericSelection(2, totalOptions: question.options.count)
             return .handled
         }
         .onKeyPress("4") {
-            handleNumericSelection(3, totalOptions: question.options.count)
+            self.handleNumericSelection(3, totalOptions: question.options.count)
             return .handled
         }
         .onKeyPress("5") {
-            handleNumericSelection(4, totalOptions: question.options.count)
+            self.handleNumericSelection(4, totalOptions: question.options.count)
             return .handled
         }
     }
@@ -165,58 +162,58 @@ struct QuizViewWithKeyboard: View {
     private var navigationButtons: some View {
         HStack(spacing: 20) {
             Button("Previous") {
-                previousQuestion()
+                self.previousQuestion()
             }
             .keyboardShortcut(.leftArrow, modifiers: .command)
-            .disabled(quizModel.currentQuestionIndex == 0)
+            .disabled(self.quizModel.currentQuestionIndex == 0)
 
             Button("Next") {
-                nextQuestion()
+                self.nextQuestion()
             }
             .keyboardShortcut(.rightArrow, modifiers: .command)
-            .disabled(!quizModel.hasAnsweredCurrentQuestion)
+            .disabled(!self.quizModel.hasAnsweredCurrentQuestion)
         }
     }
 
     private func selectAnswer(_ index: Int) {
-        updateSelection(to: index)
-        quizModel.selectAnswer(index)
+        self.updateSelection(to: index)
+        self.quizModel.selectAnswer(index)
     }
 
     private func moveSelection(isMovingUp: Bool, totalOptions: Int) {
         if isMovingUp {
-            guard selectedAnswerIndex > 0 else { return }
-            updateSelection(to: selectedAnswerIndex - 1)
+            guard self.selectedAnswerIndex > 0 else { return }
+            self.updateSelection(to: self.selectedAnswerIndex - 1)
         } else {
-            guard selectedAnswerIndex < totalOptions - 1 else { return }
-            updateSelection(to: selectedAnswerIndex + 1)
+            guard self.selectedAnswerIndex < totalOptions - 1 else { return }
+            self.updateSelection(to: self.selectedAnswerIndex + 1)
         }
     }
 
     private func handleNumericSelection(_ index: Int, totalOptions: Int) {
         guard index < totalOptions else { return }
-        selectAnswer(index)
+        self.selectAnswer(index)
     }
 
     private func updateSelection(to index: Int) {
-        selectedAnswerIndex = index
-        focusSelectedAnswer()
+        self.selectedAnswerIndex = index
+        self.focusSelectedAnswer()
     }
 
     private func focusSelectedAnswer() {
-        focusedAnswer = selectedAnswerIndex
+        self.focusedAnswer = self.selectedAnswerIndex
     }
 
     private func nextQuestion() {
-        quizModel.nextQuestion()
-        selectedAnswerIndex = 0
-        focusSelectedAnswer()
+        self.quizModel.nextQuestion()
+        self.selectedAnswerIndex = 0
+        self.focusSelectedAnswer()
     }
 
     private func previousQuestion() {
-        quizModel.previousQuestion()
-        selectedAnswerIndex = 0
-        focusSelectedAnswer()
+        self.quizModel.previousQuestion()
+        self.selectedAnswerIndex = 0
+        self.focusSelectedAnswer()
     }
 }
 
@@ -228,29 +225,29 @@ struct AnswerButton: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack {
-                Text("\(index + 1).")
+                Text("\(self.index + 1).")
                     .fontWeight(.semibold)
                     .frame(width: 30, alignment: .leading)
 
-                Text(text)
+                Text(self.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+                    .fill(self.isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
             )
         }
         .buttonStyle(.plain)
-        .buttonFocusIndicator(isFocused: $isFocused)
-        .accessibilityLabel("Option \(index + 1): \(text)")
-        .accessibilityHint(isSelected ? "Selected answer" : "Tap to select this answer")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .buttonFocusIndicator(isFocused: self.$isFocused)
+        .accessibilityLabel("Option \(self.index + 1): \(self.text)")
+        .accessibilityHint(self.isSelected ? "Selected answer" : "Tap to select this answer")
+        .accessibilityAddTraits(self.isSelected ? .isSelected : [])
         .onTapGesture {
             HapticFeedback.shared.selectionChanged()
-            action()
+            self.action()
         }
     }
 }
@@ -263,86 +260,86 @@ struct ProfileListWithKeyboard: View {
     @FocusState private var focusedProfile: UUID?
 
     var body: some View {
-        List(Array(profileManager.profiles.enumerated()), id: \.element.id) { index, profile in
-            ProfileRow(profile: profile, isSelected: selectedIndex == index)
-                .focused($focusedProfile, equals: profile.id)
+        List(Array(self.profileManager.profiles.enumerated()), id: \.element.id) { index, profile in
+            ProfileRow(profile: profile, isSelected: self.selectedIndex == index)
+                .focused(self.$focusedProfile, equals: profile.id)
                 .onTapGesture {
-                    selectProfile(at: index)
+                    self.selectProfile(at: index)
                 }
         }
         .onKeyPress(.upArrow) {
-            if selectedIndex > 0 {
-                selectedIndex -= 1
-                focusProfile()
+            if self.selectedIndex > 0 {
+                self.selectedIndex -= 1
+                self.focusProfile()
             }
             return .handled
         }
         .onKeyPress(.downArrow) {
-            if selectedIndex < profileManager.profiles.count - 1 {
-                selectedIndex += 1
-                focusProfile()
+            if self.selectedIndex < self.profileManager.profiles.count - 1 {
+                self.selectedIndex += 1
+                self.focusProfile()
             }
             return .handled
         }
         .onKeyPress(.return) {
-            openProfile()
+            self.openProfile()
             return .handled
         }
         .onKeyPress(.delete) {
-            deleteCurrentProfile()
+            self.deleteCurrentProfile()
             return .handled
         }
         .onKeyPress(KeyEquivalent("d")) {
-            duplicateCurrentProfile()
+            self.duplicateCurrentProfile()
             return .handled
         }
         .onKeyPress(KeyEquivalent("e")) {
-            exportCurrentProfile()
+            self.exportCurrentProfile()
             return .handled
         }
     }
 
     private func selectProfile(at index: Int) {
-        selectedIndex = index
-        profileManager.currentProfile = profileManager.profiles[index]
-        focusProfile()
+        self.selectedIndex = index
+        self.profileManager.currentProfile = self.profileManager.profiles[index]
+        self.focusProfile()
     }
 
     private func focusProfile() {
-        if selectedIndex < profileManager.profiles.count {
-            focusedProfile = profileManager.profiles[selectedIndex].id
+        if self.selectedIndex < self.profileManager.profiles.count {
+            self.focusedProfile = self.profileManager.profiles[self.selectedIndex].id
         }
     }
 
     private func openProfile() {
-        if selectedIndex < profileManager.profiles.count {
-            profileManager.currentProfile = profileManager.profiles[selectedIndex]
+        if self.selectedIndex < self.profileManager.profiles.count {
+            self.profileManager.currentProfile = self.profileManager.profiles[self.selectedIndex]
         }
     }
 
     private func deleteCurrentProfile() {
-        guard selectedIndex < profileManager.profiles.count else { return }
-        let profile = profileManager.profiles[selectedIndex]
+        guard self.selectedIndex < self.profileManager.profiles.count else { return }
+        let profile = self.profileManager.profiles[self.selectedIndex]
 
         Task {
-            try? await profileManager.deleteProfile(profile)
+            try? await self.profileManager.deleteProfile(profile)
         }
     }
 
     private func duplicateCurrentProfile() {
-        guard selectedIndex < profileManager.profiles.count else { return }
-        let profile = profileManager.profiles[selectedIndex]
+        guard self.selectedIndex < self.profileManager.profiles.count else { return }
+        let profile = self.profileManager.profiles[self.selectedIndex]
 
         Task {
-            _ = try? await profileManager.duplicateProfile(profile)
+            _ = try? await self.profileManager.duplicateProfile(profile)
         }
     }
 
     private func exportCurrentProfile() {
-        guard selectedIndex < profileManager.profiles.count else { return }
-        let profile = profileManager.profiles[selectedIndex]
+        guard self.selectedIndex < self.profileManager.profiles.count else { return }
+        let profile = self.profileManager.profiles[self.selectedIndex]
 
-        _ = try? profileManager.exportProfile(profile)
+        _ = try? self.profileManager.exportProfile(profile)
     }
 }
 
@@ -354,27 +351,27 @@ struct ProfileRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(profile.name)
+                Text(self.profile.name)
                     .font(.headline)
-                Text(profile.dateModified, style: .date)
+                Text(self.profile.dateModified, style: .date)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             Spacer()
 
-            if isSelected {
+            if self.isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.accentColor)
             }
         }
         .padding()
-        .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+        .background(self.isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
         .cornerRadius(8)
-        .cardFocusIndicator(isFocused: $isFocused)
-        .accessibilityLabel("Profile: \(profile.name)")
-        .accessibilityHint(isSelected ? "Currently selected profile" : "Tap to select this profile")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .cardFocusIndicator(isFocused: self.$isFocused)
+        .accessibilityLabel("Profile: \(self.profile.name)")
+        .accessibilityHint(self.isSelected ? "Currently selected profile" : "Tap to select this profile")
+        .accessibilityAddTraits(self.isSelected ? .isSelected : [])
         .onTapGesture {
             HapticFeedback.shared.selectionChanged()
         }
@@ -389,37 +386,37 @@ struct GlobalKeyboardShortcuts: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onKeyPress(KeyEquivalent("n")) {
-                createNewProfile()
+                self.createNewProfile()
                 return .handled
             }
             .onKeyPress(KeyEquivalent("s")) {
-                saveCurrentProfile()
+                self.saveCurrentProfile()
                 return .handled
             }
             .onKeyPress(KeyEquivalent("f")) {
-                focusSearch()
+                self.focusSearch()
                 return .handled
             }
             .onKeyPress(KeyEquivalent(",")) {
-                openSettings()
+                self.openSettings()
                 return .handled
             }
             .onKeyPress(KeyEquivalent("q")) {
-                quitApp()
+                self.quitApp()
                 return .handled
             }
     }
 
     private func createNewProfile() {
         Task {
-            _ = try? await profileManager.createProfile(name: "New Profile", results: [:])
+            _ = try? await self.profileManager.createProfile(name: "New Profile", results: [:])
         }
     }
 
     private func saveCurrentProfile() {
         guard let profile = profileManager.currentProfile else { return }
         Task {
-            try? await profileManager.updateProfile(profile)
+            try? await self.profileManager.updateProfile(profile)
         }
     }
 
@@ -429,15 +426,15 @@ struct GlobalKeyboardShortcuts: ViewModifier {
 
     private func openSettings() {
         #if os(macOS)
-        WindowManager.shared.openWindow(type: .settings) {
-            SettingsView()
-        }
+            WindowManager.shared.openWindow(type: .settings) {
+                SettingsView()
+            }
         #endif
     }
 
     private func quitApp() {
         #if os(macOS)
-        NSApplication.shared.terminate(nil)
+            NSApplication.shared.terminate(nil)
         #endif
     }
 }

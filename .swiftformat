@@ -1,0 +1,15 @@
+
+# SwiftFormat Configuration for APGI Explorer
+--indent 4
+--commas always
+--semicolons never
+--self insert
+--selfrequired remove
+--else-position next-line
+--empty-braces linebreak
+--hex-literal-case lowercase
+--exponent-case lowercase
+--binary-grouping 4,8
+--decimal-grouping 3,6
+--ifdef indent
+--header ignore

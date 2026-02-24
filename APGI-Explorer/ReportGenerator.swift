@@ -27,20 +27,20 @@ class ReportGenerator {
             ("ε (Epsilon)", apgiProfile.epsilon, apgiProfile.epsilonCategory.rawValue),
             ("π (Precision)", apgiProfile.precision, apgiProfile.precisionCategory.rawValue),
             ("θₜ (Threshold)", apgiProfile.threshold, apgiProfile.thresholdCategory.rawValue),
-            ("β (Somatic Bias)", apgiProfile.somaticBias, apgiProfile.somaticCategory.rawValue)
+            ("β (Somatic Bias)", apgiProfile.somaticBias, apgiProfile.somaticCategory.rawValue),
         ]
 
-        let parameterBlocks = parameterData.map { parameterBar(label: $0.label, value: $0.value, descriptor: $0.descriptor) }
+        let parameterBlocks = parameterData.map { self.parameterBar(label: $0.label, value: $0.value, descriptor: $0.descriptor) }
 
-        let strengthsHTML = profileType.strengths.map { "<li>\(escape($0))</li>" }.joined()
-        let challengesHTML = profileType.challenges.map { "<li>\(escape($0))</li>" }.joined()
-        let strategiesHTML = profileType.strategies.map { "<li>\(escape($0))</li>" }.joined()
+        let strengthsHTML = profileType.strengths.map { "<li>\(self.escape($0))</li>" }.joined()
+        let challengesHTML = profileType.challenges.map { "<li>\(self.escape($0))</li>" }.joined()
+        let strategiesHTML = profileType.strategies.map { "<li>\(self.escape($0))</li>" }.joined()
 
         let statesHTML = profileType.likelyStates.map {
             """
             <div class="state-card">
                 <div class="state-name">#\($0.stateId) — \($0.likelihood.rawValue)</div>
-                <p>\(escape($0.reason))</p>
+                <p>\(self.escape($0.reason))</p>
             </div>
             """
         }.joined()
@@ -51,29 +51,28 @@ class ReportGenerator {
             let displayDelta = delta == 0 ? "on par with" : "\(abs(delta)) pts \(direction) the normative anchor (50)"
             return """
             <li>
-                <span class="norm-label">\(escape(item.label))</span>
+                <span class="norm-label">\(self.escape(item.label))</span>
                 <span class="norm-value">\(String(format: "%.0f", item.value))</span>
                 <span class="norm-detail">\(displayDelta)</span>
             </li>
             """
         }.joined()
 
-        let historyHTML: String
-        if sortedTimeline.isEmpty {
-            historyHTML = "<p class=\"hint\">No saved snapshots yet. Your current profile will populate once you store it.</p>"
+        let historyHTML: String = if sortedTimeline.isEmpty {
+            "<p class=\"hint\">No saved snapshots yet. Your current profile will populate once you store it.</p>"
         } else {
-            historyHTML = sortedTimeline.map { entry in
+            sortedTimeline.map { entry in
                 let summary = """
                 ε: \(Int(entry.apgiProfile.epsilon)), π: \(Int(entry.apgiProfile.precision)), θₜ: \(Int(entry.apgiProfile.threshold)), β: \(Int(entry.apgiProfile.somaticBias))
                 """
                 return """
                 <div class="history-card">
                     <div class="history-header">
-                        <strong>\(escape(entry.name))</strong>
-                        <span>\(formattedDate(entry.date))</span>
+                        <strong>\(self.escape(entry.name))</strong>
+                        <span>\(self.formattedDate(entry.date))</span>
                     </div>
                     <div class="history-meta">
-                        <span>\(escape(entry.profileType.rawValue))</span>
+                        <span>\(self.escape(entry.profileType.rawValue))</span>
                         <span>\(summary)</span>
                     </div>
                 </div>
@@ -81,11 +80,11 @@ class ReportGenerator {
             }.joined()
         }
 
-        let resourcesHTML = resourceRecommendations.map {
+        let resourcesHTML = self.resourceRecommendations.map {
             """
             <li>
-                <strong>\(escape($0.title))</strong>
-                <p>\(escape($0.subtitle))</p>
+                <strong>\(self.escape($0.title))</strong>
+                <p>\(self.escape($0.subtitle))</p>
             </li>
             """
         }.joined()
@@ -96,7 +95,7 @@ class ReportGenerator {
         <head>
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-            <title>\(escape("APGI Profile — \(profile.name)"))</title>
+            <title>\(self.escape("APGI Profile — \(profile.name)"))</title>
             <style>
                 :root {
                     color-scheme: light;
@@ -319,9 +318,9 @@ class ReportGenerator {
         <body>
             <div class="page">
                 <header class="hero">
-                    <h1>\(escape(profile.name))</h1>
-                    <p>\(escape(profileType.description))</p>
-                    <p><strong>\(escape(profileType.rawValue))</strong> · Generated on \(formattedDate(Date()))</p>
+                    <h1>\(self.escape(profile.name))</h1>
+                    <p>\(self.escape(profileType.description))</p>
+                    <p><strong>\(self.escape(profileType.rawValue))</strong> · Generated on \(self.formattedDate(Date()))</p>
                 </header>
 
                 <section class="section-card">
@@ -371,7 +370,7 @@ class ReportGenerator {
 
                 <section class="section-card">
                     <h2>Scientific Background</h2>
-                    <p>\(escape(profileType.scientificBackground))</p>
+                    <p>\(self.escape(profileType.scientificBackground))</p>
                 </section>
 
                 <section class="section-card">
@@ -390,9 +389,9 @@ class ReportGenerator {
         let clamped = max(0, min(100, value))
         return """
         <div class="parameter-block">
-            <div class="label">\("\(escape(label))")</div>
+            <div class="label">\("\(self.escape(label))")</div>
             <div class="value">\(String(format: "%.0f", clamped))</div>
-            <div class="descriptor">\(escape(descriptor))</div>
+            <div class="descriptor">\(self.escape(descriptor))</div>
             <div class="bar-track">
                 <div class="bar-fill" style="width:\(clamped)%"></div>
             </div>
@@ -414,7 +413,7 @@ class ReportGenerator {
             "<": "&lt;",
             ">": "&gt;",
             "\"": "&quot;",
-            "'": "&#39;"
+            "'": "&#39;",
         ]
         replacements.forEach { sanitized = sanitized.replacingOccurrences(of: $0.key, with: $0.value) }
         return sanitized
@@ -432,7 +431,7 @@ class ReportGenerator {
         (
             "Embodied Strategy Cards",
             "Take the personalized strategies and embed them into rituals, bookmarks or reminders."
-        )
+        ),
     ]
 }
 
@@ -440,21 +439,21 @@ private extension APGIProfileType {
     var scientificBackground: String {
         switch self {
         case .sensitiveIntegrator:
-            return "Sensitive Integrators combine heightened ε and β with a lower θₜ so that subtle prediction errors are felt and acted upon immediately."
+            "Sensitive Integrators combine heightened ε and β with a lower θₜ so that subtle prediction errors are felt and acted upon immediately."
         case .analyticalGuard:
-            return "Analytical Guards blend low ε with high π and θₜ, preserving tight models that resist noise while defending against uncertainty."
+            "Analytical Guards blend low ε with high π and θₜ, preserving tight models that resist noise while defending against uncertainty."
         case .adaptiveBalancer:
-            return "Adaptive Balancers smoothly allocate ε, π, θₜ and β, shifting between exploration and grounded focus."
+            "Adaptive Balancers smoothly allocate ε, π, θₜ and β, shifting between exploration and grounded focus."
         case .openExplorer:
-            return "Open Explorers keep ε high and θₜ loose, allowing novelty to enter freely while curiosity sustains ongoing shifts."
+            "Open Explorers keep ε high and θₜ loose, allowing novelty to enter freely while curiosity sustains ongoing shifts."
         case .contemplativeAnchor:
-            return "Contemplative Anchors stabilize with lower ε and elevated π/θₜ, supporting calm reflection even when surprises arise."
+            "Contemplative Anchors stabilize with lower ε and elevated π/θₜ, supporting calm reflection even when surprises arise."
         case .somaticNavigator:
-            return "Somatic Navigators keep the body central—high β and steady π help translate interoception into adaptive decisions."
+            "Somatic Navigators keep the body central—high β and steady π help translate interoception into adaptive decisions."
         case .cognitiveArchitect:
-            return "Cognitive Architects pair high π and θₜ with moderate ε so that models remain precise and protected from distraction."
+            "Cognitive Architects pair high π and θₜ with moderate ε so that models remain precise and protected from distraction."
         case .dynamicResponder:
-            return "Dynamic Responders flex ε, β and θₜ so that emotional salience can trigger rapid, yet calibrated, mobilization."
+            "Dynamic Responders flex ε, β and θₜ so that emotional salience can trigger rapid, yet calibrated, mobilization."
         }
     }
 }

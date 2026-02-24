@@ -1,0 +1,90 @@
+# SwiftLint Configuration
+# https://github.com/realm/SwiftLint
+
+excluded:
+  - Carthage
+  - Pods
+  - DerivedData
+  - build
+  - .build
+  - "*.generated.swift"
+
+# Opt-in rules
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - missing_docs
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - private_outlet
+  - prohibited_super_call
+  - nimble_operator
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+
+# Disabled rules
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - identifier_name
+  - type_body_length
+  - file_length
+  - function_body_length
+  - type_name
+  - cyclomatic_complexity
+
+# Configured rules
+line_length:
+  warning: 150
+  error: 200
+  ignores_function_declarations: true
+  ignores_comments: true
+  ignores_interpolated_strings: true
+  ignores_urls: true
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 40
+    error: 50
+  excluded:
+    - id
+    - URL
+    - xl
+    - xs
+    - sm
+    - md
+    - lg
+    - xl
+    - xxl
+    - xxxl
+
+function_body_length:
+  warning: 100
+  error: 200
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 500
+  error: 1000
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+# Custom rules
+custom_rules:
+  no_print:
+    name: "No Print Statements"
+    regex: '(?<!#if DEBUG\s)print\('
+    message: "Prefer using logging framework instead of print()"
+    severity: warning
+
+# Reporter configuration
+reporter: "xcode"

@@ -1,8 +1,8 @@
 import SwiftUI
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 // DisplayMode is defined in UserDefaultsManager.swift
@@ -20,7 +20,7 @@ struct PsychologicalStatesView: View {
     @AppStorage("cacheSearchResults") private var cacheSearchResults: Bool = true
 
     private var searchService: StateSearchService {
-        dependencies.getStateSearchService()
+        self.dependencies.getStateSearchService()
     }
 
     private let parameters = ["All", "ε (Prediction Error)", "π (Precision)", "θₜ (Threshold)", "β (Somatic Bias)"]
@@ -31,18 +31,18 @@ struct PsychologicalStatesView: View {
     )
 
     private var filteredStates: [PsychologicalState] {
-        var result = stateModel.states
+        var result = self.stateModel.states
 
-        if !searchText.isEmpty {
+        if !self.searchText.isEmpty {
             // MED-001 Fix: Handle special characters properly in search
-            let sanitizedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            result = searchService.search(query: sanitizedSearchText, in: result)
+            let sanitizedSearchText = self.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            result = self.searchService.search(query: sanitizedSearchText, in: result)
         }
 
         if let key = parameterKey(for: selectedParameter), selectedParameter != "All" {
             result.sort { state1, state2 in
-                let val1 = extractNumericValue(from: getValue(for: state1, key: key))
-                let val2 = extractNumericValue(from: getValue(for: state2, key: key))
+                let val1 = self.extractNumericValue(from: self.getValue(for: state1, key: key))
+                let val2 = self.extractNumericValue(from: self.getValue(for: state2, key: key))
                 return val1 > val2
             }
         } else {
@@ -53,21 +53,21 @@ struct PsychologicalStatesView: View {
     }
 
     private var selectedParameterKey: String? {
-        parameterKey(for: selectedParameter)
+        self.parameterKey(for: self.selectedParameter)
     }
 
     private func colorForParameter(_ key: String) -> Color {
         switch key {
-        case "predictionError": return .red
-        case "precision": return .green
-        case "threshold": return .orange
-        case "somaticBias": return .purple
-        default: return .blue
+        case "predictionError": .red
+        case "precision": .green
+        case "threshold": .orange
+        case "somaticBias": .purple
+        default: .blue
         }
     }
 
     private func formattedParameterValue(_ value: String, for key: String) -> String {
-        let numValue = extractNumericValue(from: value)
+        let numValue = self.extractNumericValue(from: value)
         if key == "threshold" || key == "somaticBias" {
             return String(format: "%.2f", numValue)
         }
@@ -76,48 +76,48 @@ struct PsychologicalStatesView: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            mainContent
+            self.mainContent
         }
         .navigationTitle("Psychological States")
         .toolbar {
             ToolbarItem {
-                if !searchText.isEmpty || selectedParameter != "All" {
-                    Button(action: resetFilters) {
+                if !self.searchText.isEmpty || self.selectedParameter != "All" {
+                    Button(action: self.resetFilters) {
                         Label("Reset", systemImage: "arrow.uturn.left.circle")
                     }
                 }
             }
         }
         .onAppear {
-            stateModel.states.sort { $0.name < $1.name }
+            self.stateModel.states.sort { $0.name < $1.name }
         }
-        .onChange(of: selectedParameter) {
-            showParameterSummary = selectedParameter != "All"
+        .onChange(of: self.selectedParameter) {
+            self.showParameterSummary = self.selectedParameter != "All"
         }
     }
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            searchAndFilterBar
-            contentArea
+            self.searchAndFilterBar
+            self.contentArea
         }
     }
 
     private var searchAndFilterBar: some View {
         VStack(spacing: 0) {
-            searchBar
-            parameterSummaryView
+            self.searchBar
+            self.parameterSummaryView
         }
         .background(Material.ultraThinMaterial)
-        .animation(.easeInOut, value: showParameterSummary)
+        .animation(.easeInOut, value: self.showParameterSummary)
     }
 
     private var searchBar: some View {
         HStack {
-            searchTextField
+            self.searchTextField
             Spacer()
-            displayModeToggle
-            filterMenu
+            self.displayModeToggle
+            self.filterMenu
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
@@ -129,13 +129,13 @@ struct PsychologicalStatesView: View {
                 .foregroundColor(.secondary)
                 .padding(.leading, 8)
 
-            TextField("Search states...", text: $searchText)
+            TextField("Search states...", text: self.$searchText)
                 .textFieldStyle(.plain)
                 .padding(.vertical, 8)
                 .padding(.trailing, 8)
                 .background(AppColors.secondaryBackground.opacity(0.5))
                 .cornerRadius(8)
-                .overlay(searchHintsOverlay)
+                .overlay(self.searchHintsOverlay)
         }
         .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
         .cornerRadius(8)
@@ -147,7 +147,7 @@ struct PsychologicalStatesView: View {
 
     @ViewBuilder
     private var searchHintsOverlay: some View {
-        if showSearchHints && searchText.isEmpty {
+        if self.showSearchHints, self.searchText.isEmpty {
             HStack {
                 Text("Try: anxiety, focus, creativity...")
                     .font(.caption)
@@ -159,7 +159,7 @@ struct PsychologicalStatesView: View {
     }
 
     private var displayModeToggle: some View {
-        Picker("Display Mode", selection: $displayMode) {
+        Picker("Display Mode", selection: self.$displayMode) {
             ForEach(DisplayMode.allCases) { mode in
                 Image(systemName: mode.icon).tag(mode)
             }
@@ -170,9 +170,9 @@ struct PsychologicalStatesView: View {
 
     private var filterMenu: some View {
         Menu {
-            Picker("Sort by", selection: $selectedParameter) {
-                ForEach(parameters, id: \.self) { param in
-                    Label(param, systemImage: iconName(for: parameterKey(for: param)))
+            Picker("Sort by", selection: self.$selectedParameter) {
+                ForEach(self.parameters, id: \.self) { param in
+                    Label(param, systemImage: self.iconName(for: self.parameterKey(for: param)))
                         .tag(param)
                 }
             }
@@ -187,12 +187,12 @@ struct PsychologicalStatesView: View {
 
     @ViewBuilder
     private var parameterSummaryView: some View {
-        if showParameterSummary && selectedParameterKey != nil {
+        if self.showParameterSummary, self.selectedParameterKey != nil {
             HStack {
                 Text("Showing by: ").font(.caption).foregroundColor(.secondary)
-                parameterFilterButtons
+                self.parameterFilterButtons
                 Spacer()
-                Button(action: { showParameterSummary = false }, label: {
+                Button(action: { self.showParameterSummary = false }, label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary)
                 })
@@ -208,7 +208,7 @@ struct PsychologicalStatesView: View {
         HStack(spacing: 16) {
             ForEach(["predictionError", "precision", "threshold", "somaticBias"], id: \.self) { key in
                 if let paramName = parameterName(for: key) {
-                    parameterFilterButton(key: key, paramName: paramName)
+                    self.parameterFilterButton(key: key, paramName: paramName)
                 }
             }
         }
@@ -217,7 +217,7 @@ struct PsychologicalStatesView: View {
     private func parameterFilterButton(key: String, paramName: String) -> some View {
         HStack(spacing: 4) {
             Circle()
-                .fill(colorForParameter(key).opacity(0.7))
+                .fill(self.colorForParameter(key).opacity(0.7))
                 .frame(width: 10, height: 10)
             Text(paramName.prefix(1))
                 .font(.caption)
@@ -226,26 +226,26 @@ struct PsychologicalStatesView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
-            selectedParameterKey == key ?
-            colorForParameter(key).opacity(0.2) :
-            Color.gray.opacity(0.1)
+            self.selectedParameterKey == key ?
+                self.colorForParameter(key).opacity(0.2) :
+                Color.gray.opacity(0.1)
         )
         .cornerRadius(12)
         .accessibleTap(
-            action: { selectedParameter = parameterDisplayName(for: key) ?? "All" },
-            accessibilityLabel: "Select \(parameterDisplayName(for: key) ?? "All") parameter",
-            accessibilityHint: "Filters states by \(parameterDisplayName(for: key) ?? "All") parameter"
+            action: { self.selectedParameter = self.parameterDisplayName(for: key) ?? "All" },
+            accessibilityLabel: "Select \(self.parameterDisplayName(for: key) ?? "All") parameter",
+            accessibilityHint: "Filters states by \(self.parameterDisplayName(for: key) ?? "All") parameter"
         )
     }
 
     @ViewBuilder
     private var contentArea: some View {
-        if filteredStates.isEmpty {
-            emptyStateView
-        } else if displayMode == .list {
-            listView
+        if self.filteredStates.isEmpty {
+            self.emptyStateView
+        } else if self.displayMode == .list {
+            self.listView
         } else {
-            gridView
+            self.gridView
         }
     }
 
@@ -266,19 +266,19 @@ struct PsychologicalStatesView: View {
     // MARK: - View Components
 
     private var listView: some View {
-        List(filteredStates, id: \.id) { state in
+        List(self.filteredStates, id: \.id) { state in
             NavigationLink(destination: StateDetailView(state: state)) {
                 HStack(spacing: 12) {
                     // Icon/Emoji
                     ZStack {
                         Circle()
-                            .fill(colorForState(state).opacity(0.2))
+                            .fill(self.colorForState(state).opacity(0.2))
                             .frame(width: 40, height: 40)
 
                         // Use first letter of state name as fallback
                         Text(state.name.prefix(1))
                             .font(.headline)
-                            .foregroundColor(colorForState(state))
+                            .foregroundColor(self.colorForState(state))
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -287,9 +287,9 @@ struct PsychologicalStatesView: View {
                             .lineLimit(1)
 
                         if let key = selectedParameterKey, key != "All" {
-                            parameterRow(state: state, key: key)
+                            self.parameterRow(state: state, key: key)
                         } else {
-                            allParametersRow(state: state)
+                            self.allParametersRow(state: state)
                         }
                     }
 
@@ -310,21 +310,21 @@ struct PsychologicalStatesView: View {
     private var gridView: some View {
         ScrollView {
             LazyVGrid(columns: [
-                GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 12)
+                GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 12),
             ], spacing: 12) {
-                ForEach(filteredStates, id: \.id) { state in
+                ForEach(self.filteredStates, id: \.id) { state in
                     NavigationLink(destination: StateDetailView(state: state)) {
                         VStack(spacing: 12) {
                             // State icon/emoji
                             ZStack {
                                 Circle()
-                                    .fill(colorForState(state).opacity(0.2))
+                                    .fill(self.colorForState(state).opacity(0.2))
                                     .frame(width: 50, height: 50)
 
                                 // Use first letter of state name as fallback
                                 Text(state.name.prefix(1))
                                     .font(.title3.bold())
-                                    .foregroundColor(colorForState(state))
+                                    .foregroundColor(self.colorForState(state))
                             }
 
                             // State name
@@ -336,15 +336,15 @@ struct PsychologicalStatesView: View {
                             // Parameter value if filtered
                             if let key = selectedParameterKey, key != "All" {
                                 VStack(spacing: 4) {
-                                    Text(parameterDisplayName(for: key)?.prefix(1) ?? "")
+                                    Text(self.parameterDisplayName(for: key)?.prefix(1) ?? "")
                                         .font(.caption.bold())
                                         .frame(width: 24, height: 24)
                                         .background(AppColors.success.opacity(0.2))
                                         .foregroundColor(AppColors.success)
 
-                                    Text(formattedParameterValue(getValue(for: state, key: key), for: key))
+                                    Text(self.formattedParameterValue(self.getValue(for: state, key: key), for: key))
                                         .font(.caption.monospaced())
-                                        .foregroundColor(colorForParameter(key))
+                                        .foregroundColor(self.colorForParameter(key))
                                 }
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 8)
@@ -369,20 +369,20 @@ struct PsychologicalStatesView: View {
     }
 
     private func parameterRow(state: PsychologicalState, key: String) -> some View {
-        let value = getValue(for: state, key: key)
-        _ = extractNumericValue(from: value) // Extract numeric value for potential future use
+        let value = self.getValue(for: state, key: key)
+        _ = self.extractNumericValue(from: value) // Extract numeric value for potential future use
 
         return HStack(spacing: 8) {
             // Parameter indicator
             Text(key.prefix(1).uppercased())
                 .font(.caption2.bold())
                 .frame(width: 20, height: 20, alignment: .center)
-                .background(colorForParameter(key).opacity(0.2))
-                .foregroundColor(colorForParameter(key))
+                .background(self.colorForParameter(key).opacity(0.2))
+                .foregroundColor(self.colorForParameter(key))
                 .clipShape(Circle())
 
             // Parameter name and value
-            Text(parameterDisplayName(for: key) ?? key)
+            Text(self.parameterDisplayName(for: key) ?? key)
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -390,26 +390,26 @@ struct PsychologicalStatesView: View {
 
             // Value with visual indicator
             HStack(spacing: 4) {
-                Text(formattedParameterValue(value, for: key))
+                Text(self.formattedParameterValue(value, for: key))
                     .font(.caption.monospaced())
-                    .foregroundColor(colorForParameter(key))
+                    .foregroundColor(self.colorForParameter(key))
 
                 // Visual indicator (bar or circle)
-                if key != "threshold" && key != "somaticBias" {
+                if key != "threshold", key != "somaticBias" {
                     Circle()
-                        .fill(colorForParameter(key).opacity(0.3))
+                        .fill(self.colorForParameter(key).opacity(0.3))
                         .frame(width: 8, height: 8)
                 }
             }
         }
     }
 
-    private func allParametersRow(state: PsychologicalState) -> some View {
+    private func allParametersRow(state _: PsychologicalState) -> some View {
         HStack(spacing: 4) {
             ForEach(["predictionError", "precision", "threshold", "somaticBias"], id: \.self) { key in
-                if key != "threshold" && key != "somaticBias" {
+                if key != "threshold", key != "somaticBias" {
                     Circle()
-                        .fill(colorForParameter(key).opacity(0.3))
+                        .fill(self.colorForParameter(key).opacity(0.3))
                         .frame(width: 6, height: 6)
                 }
             }
@@ -425,51 +425,51 @@ struct PsychologicalStatesView: View {
 
     private func parameterKey(for option: String) -> String? {
         switch option {
-        case "ε (Prediction Error)": return "predictionError"
-        case "π (Precision)": return "precision"
-        case "θₜ (Threshold)": return "threshold"
-        case "β (Somatic Bias)": return "somaticBias"
-        default: return nil
+        case "ε (Prediction Error)": "predictionError"
+        case "π (Precision)": "precision"
+        case "θₜ (Threshold)": "threshold"
+        case "β (Somatic Bias)": "somaticBias"
+        default: nil
         }
     }
 
     private func parameterDisplayName(for key: String) -> String? {
         switch key {
-        case "predictionError": return "ε"
-        case "precision": return "π"
-        case "threshold": return "θₜ"
-        case "somaticBias": return "β"
-        default: return nil
+        case "predictionError": "ε"
+        case "precision": "π"
+        case "threshold": "θₜ"
+        case "somaticBias": "β"
+        default: nil
         }
     }
 
     private func parameterName(for key: String) -> String? {
         switch key {
-        case "predictionError": return "Prediction Error"
-        case "precision": return "Precision"
-        case "threshold": return "Threshold"
-        case "somaticBias": return "Somatic Bias"
-        default: return nil
+        case "predictionError": "Prediction Error"
+        case "precision": "Precision"
+        case "threshold": "Threshold"
+        case "somaticBias": "Somatic Bias"
+        default: nil
         }
     }
 
     private func iconName(for key: String?) -> String {
         switch key {
-        case "predictionError": return "exclamationmark.triangle"
-        case "precision": return "scope"
-        case "threshold": return "line.horizontal.3.decrease.circle"
-        case "somaticBias": return "brain.head.profile"
-        default: return "list.bullet"
+        case "predictionError": "exclamationmark.triangle"
+        case "precision": "scope"
+        case "threshold": "line.horizontal.3.decrease.circle"
+        case "somaticBias": "brain.head.profile"
+        default: "list.bullet"
         }
     }
 
     private func getValue(for state: PsychologicalState, key: String) -> String {
         switch key {
-        case "predictionError": return state.predictionError
-        case "precision": return state.precision
-        case "threshold": return state.threshold
-        case "somaticBias": return state.somaticBias
-        default: return ""
+        case "predictionError": state.predictionError
+        case "precision": state.precision
+        case "threshold": state.threshold
+        case "somaticBias": state.somaticBias
+        default: ""
         }
     }
 
@@ -491,8 +491,8 @@ struct PsychologicalStatesView: View {
 
     private func resetFilters() {
         withAnimation {
-            searchText = ""
-            selectedParameter = "All"
+            self.searchText = ""
+            self.selectedParameter = "All"
         }
     }
 }

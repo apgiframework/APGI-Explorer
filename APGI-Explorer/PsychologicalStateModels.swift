@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Structured Parameter Models
 
@@ -12,26 +12,26 @@ struct ParameterRange: Codable {
     enum Unit: String, Codable, CaseIterable {
         case percentage = "%"
         case sigma = "σ"
-        case accuracy = "accuracy"
-        case ratio = "ratio"
+        case accuracy
+        case ratio
         case milliseconds = "ms"
         case seconds = "s"
 
         var symbol: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 
     var formattedRange: String {
-        if min == max {
-            return "\(Int(min))\(unit.symbol)"
+        if self.min == self.max {
+            return "\(Int(self.min))\(self.unit.symbol)"
         }
-        return "\(Int(min))-\(Int(max))\(unit.symbol)"
+        return "\(Int(self.min))-\(Int(self.max))\(self.unit.symbol)"
     }
 
     /// The average value of the range
     var average: Double {
-        (min + max) / 2.0
+        (self.min + self.max) / 2.0
     }
 }
 
@@ -59,35 +59,35 @@ struct PrecisionProfile: Codable {
 
         var value: Double {
             switch self {
-            case .veryLow(let val), .low(let val), .moderate(let val),
-                 .high(let val), .veryHigh(let val), .extreme(let val),
-                 .suppressed(let val), .elevated(let val):
-                return val
+            case let .veryLow(val), let .low(val), let .moderate(val),
+                 let .high(val), let .veryHigh(val), let .extreme(val),
+                 let .suppressed(val), let .elevated(val):
+                val
             case .baseline:
-                return 0.0
+                0.0
             }
         }
 
         var description: String {
             switch self {
-            case .veryLow: return "Very Low"
-            case .low: return "Low"
-            case .moderate: return "Moderate"
-            case .high: return "High"
-            case .veryHigh: return "Very High"
-            case .extreme: return "Extreme"
-            case .baseline: return "Baseline"
-            case .suppressed: return "Suppressed"
-            case .elevated: return "Elevated"
+            case .veryLow: "Very Low"
+            case .low: "Low"
+            case .moderate: "Moderate"
+            case .high: "High"
+            case .veryHigh: "Very High"
+            case .extreme: "Extreme"
+            case .baseline: "Baseline"
+            case .suppressed: "Suppressed"
+            case .elevated: "Elevated"
             }
         }
 
         var formatted: String {
             switch self {
             case .baseline:
-                return "baseline"
+                "baseline"
             default:
-                return "\(description)(\(value)σ)"
+                "\(self.description)(\(self.value)σ)"
             }
         }
     }
@@ -110,13 +110,13 @@ struct ThresholdRange: Codable {
         case chaotic
 
         var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 
     var formattedRange: String {
-        let varianceText = variance > 0 ? " (±\(Int(variance))% variance)" : ""
-        return "\(adjustment > 0 ? "+" : "")\(Int(adjustment))\(unit.symbol)\(varianceText)"
+        let varianceText = self.variance > 0 ? " (±\(Int(self.variance))% variance)" : ""
+        return "\(self.adjustment > 0 ? "+" : "")\(Int(self.adjustment))\(self.unit.symbol)\(varianceText)"
     }
 }
 
@@ -135,31 +135,31 @@ struct BiasRange: Codable {
         case variable
 
         var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 
     var formattedRange: String {
-        if min == max {
-            return "\(min) (\(dominance.description))"
+        if self.min == self.max {
+            return "\(self.min) (\(self.dominance.description))"
         }
-        return "\(min)-\(max) (\(dominance.description))"
+        return "\(self.min)-\(self.max) (\(self.dominance.description))"
     }
 
     /// The average value of the bias range
     var average: Double {
-        (min + max) / 2.0
+        (self.min + self.max) / 2.0
     }
 }
 
 // MARK: - Enhanced Psychological State
 
 /// Represents a psychological state with APGI (Active Precision and Goal Inference) parameters
-/// 
+///
 /// This struct models various psychological states using the APGI framework, which includes
 /// parameters for prediction error, precision, threshold, and somatic bias. Each state is
 /// uniquely identified and contains metadata for additional context.
-/// 
+///
 /// - Important: This is a public API used throughout the application for psychological state modeling
 public struct PsychologicalState: Identifiable, Codable {
     public let id: Int
@@ -182,23 +182,23 @@ public struct PsychologicalState: Identifiable, Codable {
 
         enum ErrorContext: String, Codable, CaseIterable {
             case taskAligned = "task-aligned"
-            case social = "social"
-            case threat = "threat"
-            case novelty = "novelty"
-            case homeostatic = "homeostatic"
+            case social
+            case threat
+            case novelty
+            case homeostatic
             case benignViolation = "benign violation"
-            case counterfactual = "counterfactual"
-            case temporal = "temporal"
-            case `internal` = "internal"
-            case external = "external"
+            case counterfactual
+            case temporal
+            case `internal`
+            case external
 
             var description: String {
-                return self.rawValue
+                self.rawValue
             }
         }
 
         var formattedAccuracy: String {
-            return "\(accuracy.formattedRange) \(context.description)"
+            "\(self.accuracy.formattedRange) \(self.context.description)"
         }
     }
 
@@ -218,7 +218,7 @@ public struct PsychologicalState: Identifiable, Codable {
             case tonic = "tonic (ongoing)"
 
             var description: String {
-                return self.rawValue
+                self.rawValue
             }
         }
 
@@ -231,21 +231,21 @@ public struct PsychologicalState: Identifiable, Codable {
             case protective
 
             var description: String {
-                return self.rawValue
+                self.rawValue
             }
         }
 
         enum AdaptiveValue: String, Codable, CaseIterable {
             case highlyAdaptive = "highly adaptive"
-            case adaptive = "adaptive"
+            case adaptive
             case contextDependent = "context-dependent"
-            case maladaptive = "maladaptive"
-            case protective = "protective"
-            case neutral = "neutral"
-            case homeostatic = "homeostatic"
+            case maladaptive
+            case protective
+            case neutral
+            case homeostatic
 
             var description: String {
-                return self.rawValue
+                self.rawValue
             }
         }
     }
@@ -259,11 +259,11 @@ class StateTransitionModel: ObservableObject {
 
     struct Transition: Identifiable, Codable {
         let id: UUID
-        let from: Int  // state ID
-        let toState: Int    // state ID
+        let from: Int // state ID
+        let toState: Int // state ID
         let probability: Double
         let triggers: [Trigger]
-        let duration: TimeInterval  // typical transition time
+        let duration: TimeInterval // typical transition time
         let conditions: [Condition]
 
         init(
@@ -340,62 +340,62 @@ class StateTransitionModel: ObservableObject {
         }
     }
 
-    // Common transitions
+    /// Common transitions
     static let commonTransitions: [Transition] = [
         Transition(
-            from: 13,  // Engagement
-            toState: 1,     // Flow
+            from: 13, // Engagement
+            toState: 1, // Flow
             probability: 0.3,
             triggers: [
                 .parameterShift(parameter: .threshold, direction: .decrease, magnitude: 0.05),
-                .temporalFactor(duration: 600)  // 10 min of sustained engagement
+                .temporalFactor(duration: 600), // 10 min of sustained engagement
             ],
             duration: 300,
             conditions: [
                 .timeInState(duration: 600),
-                .thresholdMet(parameter: .precision, value: 4.0)
+                .thresholdMet(parameter: .precision, value: 4.0),
             ]
         ),
         Transition(
-            from: 1,   // Flow
-            toState: 35,    // Overwhelm
+            from: 1, // Flow
+            toState: 35, // Overwhelm
             probability: 0.15,
             triggers: [
                 .parameterShift(parameter: .precision, direction: .increase, magnitude: 2.0),
-                .externalEvent(type: .threat)
+                .externalEvent(type: .threat),
             ],
             duration: 60,
             conditions: [
-                .thresholdMet(parameter: .predictionError, value: 4.0)
+                .thresholdMet(parameter: .predictionError, value: 4.0),
             ]
         ),
         Transition(
-            from: 15,  // Neutrality
-            toState: 12,    // Curiosity
+            from: 15, // Neutrality
+            toState: 12, // Curiosity
             probability: 0.4,
             triggers: [
                 .externalEvent(type: .novelty),
-                .parameterShift(parameter: .threshold, direction: .decrease, magnitude: 0.1)
+                .parameterShift(parameter: .threshold, direction: .decrease, magnitude: 0.1),
             ],
             duration: 120,
             conditions: [
-                .contextAvailable(context: "novel stimuli")
+                .contextAvailable(context: "novel stimuli"),
             ]
         ),
         Transition(
-            from: 20,  // Anxiety
-            toState: 8,     // Serenity
+            from: 20, // Anxiety
+            toState: 8, // Serenity
             probability: 0.25,
             triggers: [
                 .externalEvent(type: .socialConnection),
-                .parameterShift(parameter: .threshold, direction: .increase, magnitude: 0.2)
+                .parameterShift(parameter: .threshold, direction: .increase, magnitude: 0.2),
             ],
             duration: 600,
             conditions: [
                 .timeInState(duration: 1800),
-                .energyAvailable(level: 0.7)
+                .energyAvailable(level: 0.7),
             ]
-        )
+        ),
     ]
 
     init() {
@@ -403,19 +403,19 @@ class StateTransitionModel: ObservableObject {
     }
 
     func possibleTransitions(from stateId: Int) -> [Transition] {
-        return transitions.filter { $0.from == stateId }
+        self.transitions.filter { $0.from == stateId }
     }
 
     func transitionProbability(from: Int, toState: Int) -> Double {
-        return transitions.first { $0.from == from && $0.toState == toState }?.probability ?? 0.0
+        self.transitions.first { $0.from == from && $0.toState == toState }?.probability ?? 0.0
     }
 
     func addTransition(_ transition: Transition) {
-        transitions.append(transition)
+        self.transitions.append(transition)
     }
 
     func removeTransition(id: UUID) {
-        transitions.removeAll { $0.id == id }
+        self.transitions.removeAll { $0.id == id }
     }
 }
 
@@ -774,7 +774,7 @@ extension PsychologicalState {
                 duration: .brief,
                 metabolicCost: .moderate,
                 neurologicalBasis: [
-                    "Anterior temporal lobe, posterior cingulate, default mode-frontoparietal coupling"
+                    "Anterior temporal lobe, posterior cingulate, default mode-frontoparietal coupling",
                 ],
                 adaptiveValue: .adaptive
             )
@@ -1205,7 +1205,7 @@ extension PsychologicalState {
                 duration: .short,
                 metabolicCost: .high,
                 neurologicalBasis: [
-                    "Anterior cingulate conflict monitoring, frontoparietal control network instability"
+                    "Anterior cingulate conflict monitoring, frontoparietal control network instability",
                 ],
                 adaptiveValue: .maladaptive
             )
@@ -2457,27 +2457,27 @@ extension PsychologicalState {
                 neurologicalBasis: ["Subfornical organ, hypothalamus, anterior cingulate"],
                 adaptiveValue: .homeostatic
             )
-        )
+        ),
     ]
 }
 
 extension PsychologicalState {
     var predictionError: String {
-        parameters.predictionError.formattedAccuracy
+        self.parameters.predictionError.formattedAccuracy
     }
 
     var precision: String {
-        let task = parameters.precision.task.formatted
-        let distractor = parameters.precision.distractor.formatted
+        let task = self.parameters.precision.task.formatted
+        let distractor = self.parameters.precision.distractor.formatted
         return "Task \(task), Distractor \(distractor)"
     }
 
     var threshold: String {
-        parameters.threshold.formattedRange
+        self.parameters.threshold.formattedRange
     }
 
     var somaticBias: String {
-        parameters.somaticBias.formattedRange
+        self.parameters.somaticBias.formattedRange
     }
 
     /// Calculates similarity between two psychological states based on their parameters
@@ -2505,9 +2505,9 @@ extension PsychologicalState {
         // Calculate weighted average (adjust weights as needed)
         let totalWeight = 4.0 // Total of all weights
         let weightedSum = predictionErrorSimilarity * 1.0 +
-                         precisionSimilarity * 1.0 +
-                         thresholdSimilarity * 1.0 +
-                         somaticBiasSimilarity * 1.0
+            precisionSimilarity * 1.0 +
+            thresholdSimilarity * 1.0 +
+            somaticBiasSimilarity * 1.0
 
         return max(0.0, min(1.0, weightedSum / totalWeight))
     }

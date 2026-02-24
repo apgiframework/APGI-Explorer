@@ -16,9 +16,9 @@ struct MainTabView: View {
             NavigationStack {
                 PsychologicalStatesView()
             }
-                .tabItem {
-                    Label("States", systemImage: "brain.head.profile")
-                }
+            .tabItem {
+                Label("States", systemImage: "brain.head.profile")
+            }
 
             PsychologicalStatesVisualizationView()
                 .tabItem {
@@ -36,9 +36,9 @@ struct MainTabView: View {
                 }
         }
         .frame(minWidth: 800, minHeight: 600)
-        .preferredColorScheme(themeManager.currentTheme.getColorScheme())
-        .environment(\.currentTheme, themeManager.currentTheme)
-        .onReceive(themeManager.$currentTheme) { _ in
+        .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
+        .environment(\.currentTheme, self.themeManager.currentTheme)
+        .onReceive(self.themeManager.$currentTheme) { _ in
             // Theme will be applied automatically through preferredColorScheme
         }
     }

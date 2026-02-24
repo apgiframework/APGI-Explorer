@@ -1,13 +1,14 @@
-import Foundation
+import Accessibility
 import AppKit
 import CoreGraphics
+import Foundation
 import ImageIO
-import UniformTypeIdentifiers
-import Accessibility
-import ScreenCaptureKit
 import os.log
+import ScreenCaptureKit
+import UniformTypeIdentifiers
 
 // MARK: - Screenshot Automation Main Entry Point
+
 // This file serves as the main entry point and imports all screenshot automation components
 
 // Import all screenshot automation modules
@@ -22,6 +23,7 @@ import os.log
 // - ScreenshotAutomationRunner.swift - Main execution and CLI
 
 // MARK: - Legacy Compatibility
+
 // These extensions provide backward compatibility with any existing code
 // that might reference the original file structure
 
@@ -38,11 +40,12 @@ extension ScreenshotAutomationEngine {
 extension ScreenshotAccessibilityManager {
     /// Legacy method for backward compatibility
     func tapElement(name: String) -> Bool {
-        return clickElement(withIdentifier: name)
+        clickElement(withIdentifier: name)
     }
 }
 
 // MARK: - Quick Start Functions
+
 /// Quick start function for simple screenshot automation
 func quickStartScreenshotAutomation(outputDirectory: String? = nil) {
     let config = ScreenshotConfig.default
@@ -66,42 +69,44 @@ func quickStartProductionScreenshotAutomation(authToken: String? = nil) {
             engine.run()
         }
     } else {
-        print("🔐 Authentication token required for production mode")
-        print("💡 Provide token or set SCREENSHOT_AUTH_TOKEN environment variable")
+        os_log("🔐 Authentication token required for production mode", log: OSLog.default, type: .info)
+        os_log("💡 Provide token or set SCREENSHOT_AUTH_TOKEN environment variable", log: OSLog.default, type: .info)
     }
 }
 
 // MARK: - Debug Utilities
+
 #if DEBUG
-extension ScreenshotAutomationRunner {
-    /// Debug function to test individual components
-    static func debugTestComponents() {
-        print("🧪 Testing screenshot automation components...")
+    extension ScreenshotAutomationRunner {
+        /// Debug function to test individual components
+        static func debugTestComponents() {
+            os_log("🧪 Testing screenshot automation components...", log: OSLog.default, type: .info)
 
-        // Test logger
-        let logger = Logger(enabled: true)
-        logger.log("📝 Logger test successful")
+            // Test logger
+            let logger = Logger(enabled: true)
+            logger.log("📝 Logger test successful")
 
-        // Test configuration
-        let config = ScreenshotConfig.default
-        print("✅ Configuration test successful")
-        print("   Output directory: \(config.outputDirectory)")
-        print("   Image format: \(config.imageFormat.rawValue)")
+            // Test configuration
+            let config = ScreenshotConfig.default
+            os_log("✅ Configuration test successful", log: OSLog.default, type: .info)
+            os_log("   Output directory: %{public}@", log: OSLog.default, type: .info, config.outputDirectory)
+            os_log("   Image format: %{public}@", log: OSLog.default, type: .info, config.imageFormat.rawValue)
 
-        // Test accessibility manager
-        let accessibilityManager = ScreenshotAccessibilityManager(logger: logger)
-        print("✅ Accessibility manager test successful")
+            // Test accessibility manager
+            let accessibilityManager = ScreenshotAccessibilityManager(logger: logger)
+            os_log("✅ Accessibility manager test successful", log: OSLog.default, type: .info)
 
-        // Test navigator
-        _ = ScreenNavigator(accessibilityManager: accessibilityManager, logger: logger)
-        print("✅ Screen navigator test successful")
+            // Test navigator
+            _ = ScreenNavigator(accessibilityManager: accessibilityManager, logger: logger)
+            os_log("✅ Screen navigator test successful", log: OSLog.default, type: .info)
 
-        print("🎉 All components tested successfully!")
+            os_log("🎉 All components tested successfully!", log: OSLog.default, type: .info)
+        }
     }
-}
 #endif
 
 // MARK: - Entry Point
+
 /// Main entry point for screenshot automation
 func startScreenshotAutomation() {
     let arguments = CommandLine.arguments
@@ -111,6 +116,7 @@ func startScreenshotAutomation() {
 }
 
 // MARK: - Migration Notes
+
 /*
  The original ScreenshotAutomation.swift file has been refactored into multiple
  focused files to address SwiftLint violations:
@@ -124,4 +130,4 @@ func startScreenshotAutomation() {
  - ScreenshotAutomationRunner.swift - Main execution and CLI
 
  This file now serves as the main entry point with legacy compatibility.
-*/
+ */

@@ -1,15 +1,14 @@
-import SwiftUI
 import Combine
 import QuartzCore
+import SwiftUI
 
 class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
 
     @Published var currentTheme: AppTheme = .system {
         didSet {
-            // Debounce rapid theme changes to prevent visual artifacts
-            themeChangeCancellable?.cancel()
-            themeChangeCancellable = Just(currentTheme)
+            self.themeChangeCancellable?.cancel()
+            self.themeChangeCancellable = Just(self.currentTheme)
                 .delay(for: .milliseconds(100), scheduler: DispatchQueue.main)
                 .sink { [weak self] _ in
                     self?.applyTheme()
@@ -23,22 +22,23 @@ class ThemeManager: ObservableObject {
     private var themeChangeCancellable: AnyCancellable?
 
     private init() {
-        loadTheme()
-        applyTheme()
+        self.loadTheme()
+        self.applyTheme()
     }
 
     private func loadTheme() {
         if let rawValue = userDefaults.string(forKey: themeKey),
-           let theme = AppTheme(rawValue: rawValue) {
-            currentTheme = theme
+           let theme = AppTheme(rawValue: rawValue)
+        {
+            self.currentTheme = theme
         } else {
-            currentTheme = .system
+            self.currentTheme = .system
         }
     }
 
     private func saveTheme() {
-        userDefaults.set(currentTheme.rawValue, forKey: themeKey)
-        userDefaults.synchronize()
+        self.userDefaults.set(self.currentTheme.rawValue, forKey: self.themeKey)
+        self.userDefaults.synchronize()
     }
 
     private func applyTheme() {
@@ -62,7 +62,7 @@ class ThemeManager: ObservableObject {
     }
 
     private func applyThemeToWindow(_ window: NSWindow) {
-        switch currentTheme {
+        switch self.currentTheme {
         case .system:
             window.appearance = nil
         case .light:
@@ -73,22 +73,22 @@ class ThemeManager: ObservableObject {
     }
 
     func setTheme(_ theme: AppTheme) {
-        currentTheme = theme
+        self.currentTheme = theme
     }
 
     func getColorScheme() -> ColorScheme? {
-        switch currentTheme {
+        switch self.currentTheme {
         case .system:
-            return nil
+            nil
         case .light:
-            return .light
+            .light
         case .dark:
-            return .dark
+            .dark
         }
     }
 }
 
-// SwiftUI Environment key for theme
+/// SwiftUI Environment key for theme
 struct ThemeEnvironmentKey: EnvironmentKey {
     static let defaultValue: AppTheme = .system
 }
@@ -100,14 +100,14 @@ extension EnvironmentValues {
     }
 }
 
-// View modifier for applying theme
+/// View modifier for applying theme
 struct ThemedView: ViewModifier {
     let theme: AppTheme
 
     func body(content: Content) -> some View {
         content
-            .preferredColorScheme(theme.getColorScheme())
-            .environment(\.currentTheme, theme)
+            .preferredColorScheme(self.theme.getColorScheme())
+            .environment(\.currentTheme, self.theme)
     }
 }
 
@@ -121,11 +121,11 @@ extension AppTheme {
     func getColorScheme() -> ColorScheme? {
         switch self {
         case .system:
-            return nil
+            nil
         case .light:
-            return .light
+            .light
         case .dark:
-            return .dark
+            .dark
         }
     }
 }

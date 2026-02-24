@@ -1,6 +1,6 @@
-import SwiftUI
 import Charts
 import Combine
+import SwiftUI
 
 // MARK: - Supporting Data Structures
 
@@ -30,17 +30,17 @@ class AdvancedAnalyticsManager: ObservableObject {
     // MARK: - Trend Analysis
 
     func analyzeTrends(for profiles: [QuizProfile]) async {
-        isLoading = true
-        error = nil
+        self.isLoading = true
+        self.error = nil
 
         do {
             let historicalData = try await loadHistoricalData()
-            let trendAnalysis = performTrendAnalysis(profiles: profiles, historical: historicalData)
+            let trendAnalysis = self.performTrendAnalysis(profiles: profiles, historical: historicalData)
 
             await MainActor.run {
                 self.trendData = trendAnalysis.trends
                 self.insights = trendAnalysis.insights
-                self.predictions = generatePredictions(from: trendAnalysis.trends)
+                self.predictions = self.generatePredictions(from: trendAnalysis.trends)
                 self.isLoading = false
             }
         } catch {
@@ -55,7 +55,7 @@ class AdvancedAnalyticsManager: ObservableObject {
         // For now, return empty historical data to avoid Sendable issues
         // In a real implementation, you would store historical data
         // in a Sendable format
-        return []
+        []
     }
 
     private func performTrendAnalysis(
@@ -70,11 +70,11 @@ class AdvancedAnalyticsManager: ObservableObject {
         let parameterNames = ["Epsilon", "Precision", "Threshold", "Somatic Bias"]
 
         for (index, parameter) in parameters.enumerated() {
-            let trend = calculateTrend(for: parameter, in: profiles, historical: historical)
+            let trend = self.calculateTrend(for: parameter, in: profiles, historical: historical)
             trends.append(trend)
 
             // Generate insights based on trends
-            let insight = generateInsight(for: parameterNames[index], trend: trend)
+            let insight = self.generateInsight(for: parameterNames[index], trend: trend)
             insights.append(insight)
         }
 
@@ -89,11 +89,11 @@ class AdvancedAnalyticsManager: ObservableObject {
         let profileValues = profiles.map { $0[keyPath: parameter] }
         let historicalValues = historical.map { data in
             switch parameter {
-            case \.epsilon: return data.epsilon
-            case \.precision: return data.precision
-            case \.threshold: return data.threshold
-            case \.somaticBias: return data.somaticBias
-            default: return 0.0
+            case \.epsilon: data.epsilon
+            case \.precision: data.precision
+            case \.threshold: data.threshold
+            case \.somaticBias: data.somaticBias
+            default: 0.0
             }
         }
         let allData = profileValues + historicalValues
@@ -146,10 +146,10 @@ class AdvancedAnalyticsManager: ObservableObject {
             switch trend.trendDirection {
             case .increasing:
                 message = "Your \(parameterName) has been significantly increasing over time. " +
-                         "This may indicate a shift in your psychological patterns."
+                    "This may indicate a shift in your psychological patterns."
             case .decreasing:
                 message = "Your \(parameterName) has been significantly decreasing over time. " +
-                         "This suggests positive development in this area."
+                    "This suggests positive development in this area."
             case .stable:
                 message = "Your \(parameterName) has remained stable, indicating consistent psychological patterns."
             }
@@ -183,8 +183,8 @@ class AdvancedAnalyticsManager: ObservableObject {
     }
 
     private func generatePredictions(from trends: [TrendDataPoint]) -> [PredictionResult] {
-        return trends.map { trend in
-            let prediction = predictFutureValue(for: trend)
+        trends.map { trend in
+            let prediction = self.predictFutureValue(for: trend)
             return PredictionResult(
                 parameter: trend.parameter,
                 currentValue: trend.currentValue,
@@ -203,7 +203,7 @@ class AdvancedAnalyticsManager: ObservableObject {
         let dataPoints = trend.dataPoints.suffix(20)
         let count = Double(dataPoints.count)
 
-        let xValues = Array(0..<dataPoints.count).map(Double.init)
+        let xValues = Array(0 ..< dataPoints.count).map(Double.init)
         let yValues = Array(dataPoints)
 
         let sumX = xValues.reduce(0, +)
@@ -268,17 +268,17 @@ enum TrendDirection {
 
     var displayName: String {
         switch self {
-        case .increasing: return "Increasing"
-        case .decreasing: return "Decreasing"
-        case .stable: return "Stable"
+        case .increasing: "Increasing"
+        case .decreasing: "Decreasing"
+        case .stable: "Stable"
         }
     }
 
     var color: Color {
         switch self {
-        case .increasing: return .green
-        case .decreasing: return .red
-        case .stable: return .blue
+        case .increasing: .green
+        case .decreasing: .red
+        case .stable: .blue
         }
     }
 }
@@ -302,21 +302,21 @@ enum InsightType {
 
     var displayName: String {
         switch self {
-        case .significantChange: return "Significant Change"
-        case .moderateChange: return "Moderate Change"
-        case .minimalChange: return "Minimal Change"
-        case .anomaly: return "Anomaly Detected"
-        case .improvement: return "Improvement"
+        case .significantChange: "Significant Change"
+        case .moderateChange: "Moderate Change"
+        case .minimalChange: "Minimal Change"
+        case .anomaly: "Anomaly Detected"
+        case .improvement: "Improvement"
         }
     }
 
     var icon: String {
         switch self {
-        case .significantChange: return "exclamationmark.triangle"
-        case .moderateChange: return "info.circle"
-        case .minimalChange: return "minus.circle"
-        case .anomaly: return "xmark.octagon"
-        case .improvement: return "arrow.up.circle"
+        case .significantChange: "exclamationmark.triangle"
+        case .moderateChange: "info.circle"
+        case .minimalChange: "minus.circle"
+        case .anomaly: "xmark.octagon"
+        case .improvement: "arrow.up.circle"
         }
     }
 }
@@ -328,17 +328,17 @@ enum InsightSeverity {
 
     var color: Color {
         switch self {
-        case .high: return .red
-        case .medium: return .orange
-        case .low: return .green
+        case .high: .red
+        case .medium: .orange
+        case .low: .green
         }
     }
 
     var priority: Int {
         switch self {
-        case .high: return 3
-        case .medium: return 2
-        case .low: return 1
+        case .high: 3
+        case .medium: 2
+        case .low: 1
         }
     }
 }
@@ -353,17 +353,17 @@ struct PredictionResult: Identifiable {
     let factors: [String]
 
     var changePercentage: Double {
-        guard currentValue != 0 else { return 0 }
-        return ((predictedValue - currentValue) / currentValue) * 100
+        guard self.currentValue != 0 else { return 0 }
+        return ((self.predictedValue - self.currentValue) / self.currentValue) * 100
     }
 
     var changeDirection: TrendDirection {
-        if changePercentage > 5 {
-            return .increasing
-        } else if changePercentage < -5 {
-            return .decreasing
+        if self.changePercentage > 5 {
+            .increasing
+        } else if self.changePercentage < -5 {
+            .decreasing
         } else {
-            return .stable
+            .stable
         }
     }
 }
@@ -391,7 +391,7 @@ struct AdvancedAnalyticsView: View {
     @State private var selectedTimeframe: Timeframe = .all
     @State private var selectedParameter: String?
 
-    init(profileManager: ProfileManager) {
+    init(profileManager _: ProfileManager) {
         let dataStore = FileSystemDataStore(errorRecoveryManager: ErrorRecoveryManager())
         self._analyticsManager = StateObject(wrappedValue: AdvancedAnalyticsManager(dataStore: dataStore))
     }
@@ -401,40 +401,40 @@ struct AdvancedAnalyticsView: View {
             ScrollView {
                 LazyVStack(spacing: 20) {
                     // Timeframe Selector
-                    timeframeSelector
+                    self.timeframeSelector
 
                     // Trend Overview
-                    trendOverviewSection
+                    self.trendOverviewSection
 
                     // Predictions Section
-                    predictionsSection
+                    self.predictionsSection
 
                     // Insights Section
-                    insightsSection
+                    self.insightsSection
 
                     // Detailed Parameter Analysis
-                    if let selectedParameter = selectedParameter {
-                        detailedParameterAnalysis(parameter: selectedParameter)
+                    if let selectedParameter {
+                        self.detailedParameterAnalysis(parameter: selectedParameter)
                     }
                 }
                 .padding()
             }
             .navigationTitle("Advanced Analytics")
             .onAppear {
-                loadAnalytics()
+                self.loadAnalytics()
             }
         }
     }
 
     private var timeframeSelector: some View {
-        Picker("Timeframe", selection: $selectedTimeframe) {
+        Picker("Timeframe", selection: self.$selectedTimeframe) {
             ForEach(Timeframe.allCases) { timeframe in
                 Text(timeframe.displayName).tag(timeframe)
             }
         }
         .pickerStyle(SegmentedPickerStyle())
-        .onChange(of: selectedTimeframe) { _, _ in
-            loadAnalytics()
+        .onChange(of: self.selectedTimeframe) { _, _ in
+            self.loadAnalytics()
         }
     }
 
@@ -443,17 +443,17 @@ struct AdvancedAnalyticsView: View {
             Text("Trend Overview")
                 .font(.headline)
 
-            if analyticsManager.isLoading {
+            if self.analyticsManager.isLoading {
                 ProgressView("Analyzing trends...")
             } else if let error = analyticsManager.error {
                 Text("Error: \(error.localizedDescription)")
                     .foregroundColor(.red)
             } else {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
-                    ForEach(analyticsManager.trendData) { trend in
+                    ForEach(self.analyticsManager.trendData) { trend in
                         TrendCard(trend: trend)
                             .onTapGesture {
-                                selectedParameter = trend.parameter
+                                self.selectedParameter = trend.parameter
                             }
                     }
                 }
@@ -466,8 +466,8 @@ struct AdvancedAnalyticsView: View {
             Text("Predictions")
                 .font(.headline)
 
-            if !analyticsManager.predictions.isEmpty {
-                ForEach(analyticsManager.predictions) { prediction in
+            if !self.analyticsManager.predictions.isEmpty {
+                ForEach(self.analyticsManager.predictions) { prediction in
                     PredictionCard(prediction: prediction)
                 }
             }
@@ -479,7 +479,7 @@ struct AdvancedAnalyticsView: View {
             Text("Insights")
                 .font(.headline)
 
-            let sortedInsights = analyticsManager.insights.sorted { $0.severity.priority > $1.severity.priority }
+            let sortedInsights = self.analyticsManager.insights.sorted { $0.severity.priority > $1.severity.priority }
 
             ForEach(sortedInsights) { insight in
                 InsightCard(insight: insight)
@@ -494,7 +494,7 @@ struct AdvancedAnalyticsView: View {
                     .font(.headline)
                 Spacer()
                 Button("Close") {
-                    selectedParameter = nil
+                    self.selectedParameter = nil
                 }
             }
 
@@ -509,7 +509,7 @@ struct AdvancedAnalyticsView: View {
 
     private func loadAnalytics() {
         Task {
-            await analyticsManager.analyzeTrends(for: profileManager.profiles)
+            await self.analyticsManager.analyzeTrends(for: self.profileManager.profiles)
         }
     }
 }
@@ -521,25 +521,25 @@ struct TrendCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(trend.parameter)
+            Text(self.trend.parameter)
                 .font(.subheadline)
                 .fontWeight(.semibold)
 
-            Text("Current: \(String(format: "%.1f", trend.currentValue))")
+            Text("Current: \(String(format: "%.1f", self.trend.currentValue))")
                 .font(.caption)
 
             HStack {
-                Image(systemName: trend.trendDirection == .increasing ? "arrow.up" :
-                               trend.trendDirection == .decreasing ? "arrow.down" : "arrow.right")
-                    .foregroundColor(trend.trendDirection.color)
+                Image(systemName: self.trend.trendDirection == .increasing ? "arrow.up" :
+                    self.trend.trendDirection == .decreasing ? "arrow.down" : "arrow.right")
+                    .foregroundColor(self.trend.trendDirection.color)
 
-                Text("\(trend.trendDirection.displayName)")
+                Text("\(self.trend.trendDirection.displayName)")
                     .font(.caption)
-                    .foregroundColor(trend.trendDirection.color)
+                    .foregroundColor(self.trend.trendDirection.color)
             }
 
-            ProgressView(value: trend.trendStrength, total: 1.0)
-                .progressViewStyle(LinearProgressViewStyle(tint: trend.trendDirection.color))
+            ProgressView(value: self.trend.trendStrength, total: 1.0)
+                .progressViewStyle(LinearProgressViewStyle(tint: self.trend.trendDirection.color))
         }
         .padding()
         .background(Color.clear)
@@ -553,32 +553,32 @@ struct PredictionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(prediction.parameter)
+            Text(self.prediction.parameter)
                 .font(.subheadline)
                 .fontWeight(.semibold)
 
             HStack {
                 Text("Current:")
-                Text(String(format: "%.1f", prediction.currentValue))
+                Text(String(format: "%.1f", self.prediction.currentValue))
                 Spacer()
                 Text("Predicted:")
-                Text(String(format: "%.1f", prediction.predictedValue))
+                Text(String(format: "%.1f", self.prediction.predictedValue))
             }
             .font(.caption)
 
             HStack {
                 Text("Confidence:")
-                Text(String(format: "%.0f%%", prediction.confidence * 100))
-                    .foregroundColor(prediction.confidence > 0.7 ? .green : .orange)
+                Text(String(format: "%.0f%%", self.prediction.confidence * 100))
+                    .foregroundColor(self.prediction.confidence > 0.7 ? .green : .orange)
                 Spacer()
-                Text("\(prediction.timeframe)")
+                Text("\(self.prediction.timeframe)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
-            Text("Change: \(String(format: "%.1f%%", prediction.changePercentage))")
+            Text("Change: \(String(format: "%.1f%%", self.prediction.changePercentage))")
                 .font(.caption)
-                .foregroundColor(prediction.changeDirection.color)
+                .foregroundColor(self.prediction.changeDirection.color)
         }
         .padding()
         .background(Color.clear)
@@ -593,22 +593,22 @@ struct InsightCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: insight.type.icon)
-                    .foregroundColor(insight.severity.color)
-                Text(insight.type.displayName)
+                Image(systemName: self.insight.type.icon)
+                    .foregroundColor(self.insight.severity.color)
+                Text(self.insight.type.displayName)
                     .font(.caption)
                     .fontWeight(.semibold)
                 Spacer()
                 Circle()
-                    .fill(insight.severity.color)
+                    .fill(self.insight.severity.color)
                     .frame(width: 8, height: 8)
             }
 
-            Text(insight.message)
+            Text(self.insight.message)
                 .font(.body)
                 .multilineTextAlignment(.leading)
 
-            Text(insight.timestamp, style: .relative)
+            Text(self.insight.timestamp, style: .relative)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -626,7 +626,7 @@ struct ParameterDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             // Chart showing trend over time
             Chart {
-                ForEach(Array(trend.dataPoints.enumerated()), id: \.offset) { index, value in
+                ForEach(Array(self.trend.dataPoints.enumerated()), id: \.offset) { index, value in
                     LineMark(
                         x: .value("Index", index),
                         y: .value("Value", value)
@@ -642,9 +642,9 @@ struct ParameterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
-                Text("Mean: \(String(format: "%.2f", trend.mean))")
-                Text("Standard Deviation: \(String(format: "%.2f", trend.standardDeviation))")
-                Text("Trend Strength: \(String(format: "%.2f", trend.trendStrength))")
+                Text("Mean: \(String(format: "%.2f", self.trend.mean))")
+                Text("Standard Deviation: \(String(format: "%.2f", self.trend.standardDeviation))")
+                Text("Trend Strength: \(String(format: "%.2f", self.trend.trendStrength))")
             }
             .font(.caption)
         }
@@ -662,21 +662,21 @@ enum Timeframe: CaseIterable, Identifiable {
 
     var id: String {
         switch self {
-        case .week: return "week"
-        case .month: return "month"
-        case .quarter: return "quarter"
-        case .year: return "year"
-        case .all: return "all"
+        case .week: "week"
+        case .month: "month"
+        case .quarter: "quarter"
+        case .year: "year"
+        case .all: "all"
         }
     }
 
     var displayName: String {
         switch self {
-        case .week: return "Week"
-        case .month: return "Month"
-        case .quarter: return "Quarter"
-        case .year: return "Year"
-        case .all: return "All Time"
+        case .week: "Week"
+        case .month: "Month"
+        case .quarter: "Quarter"
+        case .year: "Year"
+        case .all: "All Time"
         }
     }
 }

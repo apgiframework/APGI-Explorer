@@ -3,10 +3,9 @@ import Foundation
 // MARK: - Enhanced Scoring Algorithm
 
 class APGIScorer {
-
     // MARK: - Scoring Constants
 
-    private struct ScoringConstants {
+    private enum ScoringConstants {
         // Response validation thresholds
         static let minimumCompletionRate: Double = 0.8
         static let maximumAnswerValueDifference: Int = 2
@@ -62,7 +61,7 @@ class APGIScorer {
         let upper: Double
 
         var value: Double {
-            return rawScore
+            self.rawScore
         }
     }
 
@@ -70,70 +69,82 @@ class APGIScorer {
 
     let questionWeights: [String: [Int: Double]] = [
         "epsilon": [
-            1: 0.85,   // "When plans change unexpectedly..." - High reliability
-            2: 1.15,   // "How often do you notice small inconsistencies..." - Very high discrimination
-            3: 1.0,    // "When learning something new..." - Standard reliability
-            4: 1.2,    // "In social situations..." - High discrimination for social contexts
-            5: 0.9     // "How do you experience novelty..." - Good reliability
+            1: 0.85, // "When plans change unexpectedly..." - High reliability
+            2: 1.15, // "How often do you notice small inconsistencies..." - Very high discrimination
+            3: 1.0, // "When learning something new..." - Standard reliability
+            4: 1.2, // "In social situations..." - High discrimination for social contexts
+            5: 0.9, // "How do you experience novelty..." - Good reliability
         ],
         "precision": [
-            6: 0.95,   // "Physical sensations interpretation" - High clinical relevance
-            7: 1.1,    // "Attention in uncertainty" - Strong discrimination
-            8: 1.05,   // "Social feedback influence" - Moderate-high reliability
-            9: 1.0,    // "Logic vs intuition balance" - Standard
-            10: 0.9    // "Opinion formation speed" - Good reliability
+            6: 0.95, // "Physical sensations interpretation" - High clinical relevance
+            7: 1.1, // "Attention in uncertainty" - Strong discrimination
+            8: 1.05, // "Social feedback influence" - Moderate-high reliability
+            9: 1.0, // "Logic vs intuition balance" - Standard
+            10: 0.9, // "Opinion formation speed" - Good reliability
         ],
         "threshold": [
-            11: 1.15,  // "Background sounds interruption" - High discrimination
-            12: 1.2,   // "Reading absorption" - Very high discrimination
-            13: 1.05,  // "Emotional shift detection" - Good reliability
-            14: 1.1,   // "Sensory information awareness" - Strong discrimination
-            15: 1.0    // "Flow state achievement" - Standard reliability
+            11: 1.15, // "Background sounds interruption" - High discrimination
+            12: 1.2, // "Reading absorption" - Very high discrimination
+            13: 1.05, // "Emotional shift detection" - Good reliability
+            14: 1.1, // "Sensory information awareness" - Strong discrimination
+            15: 1.0, // "Flow state achievement" - Standard reliability
         ],
         "somatic": [
-            16: 1.1,   // "Emotion location" - High clinical relevance
-            17: 1.15,  // "Decision making guide" - Strong discrimination
-            18: 1.05,  // "Internal bodily awareness" - Good reliability
-            19: 1.2,   // "Stress experience" - Very high discrimination
-            20: 1.0    // "Abstract concepts embodiment" - Standard
-        ]
+            16: 1.1, // "Emotion location" - High clinical relevance
+            17: 1.15, // "Decision making guide" - Strong discrimination
+            18: 1.05, // "Internal bodily awareness" - Good reliability
+            19: 1.2, // "Stress experience" - Very high discrimination
+            20: 1.0, // "Abstract concepts embodiment" - Standard
+        ],
     ]
 
     // MARK: - Main Scoring Function
 
     func calculateRobustScore(answers: [Int: Int]) -> APGIProfile {
         // 1. Check response validity
-        guard validateResponses(answers) else {
-            return flaggedProfile()
+        guard self.validateResponses(answers) else {
+            return self.flaggedProfile()
         }
 
         // 2. Calculate weighted scores for each parameter
-        let epsilon = calculateWeightedParameter(
+        guard let epsilonWeights = self.questionWeights["epsilon"] else {
+            return self.flaggedProfile()
+        }
+        let epsilon = self.calculateWeightedParameter(
             answers: answers,
             parameter: "epsilon",
-            weights: questionWeights["epsilon"]!
+            weights: epsilonWeights
         )
 
-        let precision = calculateWeightedParameter(
+        guard let precisionWeights = self.questionWeights["precision"] else {
+            return self.flaggedProfile()
+        }
+        let precision = self.calculateWeightedParameter(
             answers: answers,
             parameter: "precision",
-            weights: questionWeights["precision"]!
+            weights: precisionWeights
         )
 
-        let threshold = calculateWeightedParameter(
+        guard let thresholdWeights = self.questionWeights["threshold"] else {
+            return self.flaggedProfile()
+        }
+        let threshold = self.calculateWeightedParameter(
             answers: answers,
             parameter: "threshold",
-            weights: questionWeights["threshold"]!
+            weights: thresholdWeights
         )
 
-        let somatic = calculateWeightedParameter(
+        guard let somaticWeights = self.questionWeights["somatic"] else {
+            return self.flaggedProfile()
+        }
+        let somatic = self.calculateWeightedParameter(
             answers: answers,
             parameter: "somatic",
-            weights: questionWeights["somatic"]!
+            weights: somaticWeights
         )
 
         // 3. Apply nonlinear transformations
-        let transformedScores = applyAdvancedTransformations(
+        let transformedScores = self.applyAdvancedTransformations(
             epsilon: epsilon,
             precision: precision,
             threshold: threshold,
@@ -141,7 +152,7 @@ class APGIScorer {
         )
 
         // 4. Cross-validation checks
-        let validatedScores = performCrossValidation(
+        let validatedScores = self.performCrossValidation(
             epsilon: transformedScores.epsilon,
             precision: transformedScores.precision,
             threshold: transformedScores.threshold,
@@ -150,9 +161,9 @@ class APGIScorer {
         )
 
         // 5. Calculate interaction scores
-        let interactionScore = calculateInteractionScore(answers: answers)
-        let temporalStability = calculateTemporalStability(answers: answers)
-        let environmentalFit = calculateEnvironmentalFit(answers: answers)
+        let interactionScore = self.calculateInteractionScore(answers: answers)
+        let temporalStability = self.calculateTemporalStability(answers: answers)
+        let environmentalFit = self.calculateEnvironmentalFit(answers: answers)
 
         // 6. Return final profile with confidence intervals
         return APGIProfile(
@@ -178,17 +189,17 @@ class APGIScorer {
         }
 
         // Check for straight-lining
-        guard !isStraightLining(answers) else {
+        guard !self.isStraightLining(answers) else {
             return false
         }
 
         // Check for extreme responding
-        guard !isExtremeResponding(answers) else {
+        guard !self.isExtremeResponding(answers) else {
             return false
         }
 
         // Check for random patterns
-        guard !showsRandomPattern(answers) else {
+        guard !self.showsRandomPattern(answers) else {
             return false
         }
 
@@ -210,21 +221,19 @@ class APGIScorer {
 
     private func showsRandomPattern(_ answers: [Int: Int]) -> Bool {
         // Simple check for alternating patterns
-        let sortedAnswers = answers.sorted(by: { $0.key < $1.key }).map { $0.value }
+        let sortedAnswers = answers.sorted(by: { $0.key < $1.key }).map(\.value)
         guard sortedAnswers.count >= ScoringConstants.minimumAlternatingCount else { return false }
 
         var alternatingCount = 0
-        for index in 1..<sortedAnswers.count {
-            if abs(sortedAnswers[index] - sortedAnswers[index-1]) >= ScoringConstants.maximumAnswerValueDifference {
-                alternatingCount += 1
-            }
+        for index in 1 ..< sortedAnswers.count where abs(sortedAnswers[index] - sortedAnswers[index - 1]) >= ScoringConstants.maximumAnswerValueDifference {
+            alternatingCount += 1
         }
 
         return Double(alternatingCount) > Double(sortedAnswers.count) * ScoringConstants.randomPatternThreshold
     }
 
     private func flaggedProfile() -> APGIProfile {
-        return APGIProfile(
+        APGIProfile(
             epsilon: ScoringConstants.defaultScore,
             precision: ScoringConstants.defaultScore,
             threshold: ScoringConstants.defaultScore,
@@ -242,8 +251,7 @@ class APGIScorer {
         parameter: String,
         weights: [Int: Double]
     ) -> WeightedScore {
-
-        let parameterQuestions = getQuestionIds(for: parameter)
+        let parameterQuestions = self.getQuestionIds(for: parameter)
         var weightedSum = 0.0
         var totalWeight = 0.0
         var reliabilitySum = 0.0
@@ -251,20 +259,20 @@ class APGIScorer {
 
         for questionId in parameterQuestions {
             if let answer = answers[questionId],
-               let weight = weights[questionId] {
-
-                let normalizedAnswer = normalizeAnswer(answer: answer)
+               let weight = weights[questionId]
+            {
+                let normalizedAnswer = self.normalizeAnswer(answer: answer)
                 weightedSum += normalizedAnswer * weight
                 totalWeight += weight
 
                 // Calculate reliability for this question
-                let reliability = calculateQuestionReliability(questionId: questionId)
+                let reliability = self.calculateQuestionReliability(questionId: questionId)
                 reliabilitySum += reliability * weight
                 validResponses += 1
             }
         }
 
-        guard totalWeight > 0 && validResponses > 0 else {
+        guard totalWeight > 0, validResponses > 0 else {
             return WeightedScore(
                 rawScore: ScoringConstants.defaultScore,
                 confidence: 0.0,
@@ -281,7 +289,7 @@ class APGIScorer {
         let confidence = min(completionRate * averageReliability, 1.0)
 
         // Calculate confidence intervals
-        let standardError = calculateStandardError(
+        let standardError = self.calculateStandardError(
             score: rawScore,
             reliability: averageReliability,
             sampleSize: validResponses
@@ -304,26 +312,26 @@ class APGIScorer {
     private func getQuestionIds(for parameter: String) -> [Int] {
         switch parameter {
         case "epsilon":
-            return [1, 2, 3, 4, 5]
+            [1, 2, 3, 4, 5]
         case "precision":
-            return [6, 7, 8, 9, 10]
+            [6, 7, 8, 9, 10]
         case "threshold":
-            return [11, 12, 13, 14, 15]
+            [11, 12, 13, 14, 15]
         case "somatic":
-            return [16, 17, 18, 19, 20]
+            [16, 17, 18, 19, 20]
         default:
-            return []
+            []
         }
     }
 
     private func normalizeAnswer(answer: Int) -> Double {
         // Convert 1-4 scale to 0-100 scale
         switch answer {
-        case 1: return ScoringConstants.veryLowValue   // Very Low
-        case 2: return ScoringConstants.lowValue   // Low
-        case 3: return ScoringConstants.highValue   // High
-        case 4: return ScoringConstants.veryHighValue   // Very High
-        default: return ScoringConstants.defaultScore  // Default to middle
+        case 1: ScoringConstants.veryLowValue // Very Low
+        case 2: ScoringConstants.lowValue // Low
+        case 3: ScoringConstants.highValue // High
+        case 4: ScoringConstants.veryHighValue // Very High
+        default: ScoringConstants.defaultScore // Default to middle
         }
     }
 
@@ -333,7 +341,7 @@ class APGIScorer {
             1: 0.95, 2: 0.90, 3: 0.95, 4: 0.85, 5: 0.90,
             6: 0.90, 7: 0.85, 8: 0.80, 9: 0.85, 10: 0.80,
             11: 0.90, 12: 0.85, 13: 0.80, 14: 0.85, 15: 0.90,
-            16: 0.90, 17: 0.85, 18: 0.95, 19: 0.90, 20: 0.85
+            16: 0.90, 17: 0.85, 18: 0.95, 19: 0.90, 20: 0.85,
         ]
 
         return baseReliabilities[questionId] ?? ScoringConstants.baseReliabilityDefault
@@ -361,15 +369,14 @@ class APGIScorer {
         threshold: WeightedScore,
         somatic: WeightedScore
     ) -> WeightedScores {
-
         // Apply sigmoid transformation for extreme values
-        let transformedEpsilon = applySigmoid(epsilon.rawScore, steepness: ScoringConstants.epsilonSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
-        let transformedPrecision = applySigmoid(precision.rawScore, steepness: ScoringConstants.precisionSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
-        let transformedThreshold = applySigmoid(threshold.rawScore, steepness: ScoringConstants.thresholdSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
-        let transformedSomatic = applySigmoid(somatic.rawScore, steepness: ScoringConstants.somaticSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
+        let transformedEpsilon = self.applySigmoid(epsilon.rawScore, steepness: ScoringConstants.epsilonSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
+        let transformedPrecision = self.applySigmoid(precision.rawScore, steepness: ScoringConstants.precisionSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
+        let transformedThreshold = self.applySigmoid(threshold.rawScore, steepness: ScoringConstants.thresholdSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
+        let transformedSomatic = self.applySigmoid(somatic.rawScore, steepness: ScoringConstants.somaticSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
 
         // Multiplicative effects for high scores on certain questions
-        let enhancedEpsilon = applyMultiplicativeEffect(
+        let enhancedEpsilon = self.applyMultiplicativeEffect(
             baseScore: transformedEpsilon,
             answers: [:], // Would need specific answers for this
             enhancementFactor: 1.0
@@ -418,10 +425,10 @@ class APGIScorer {
         return sigmoid * 100
     }
 
-    private func applyMultiplicativeEffect(baseScore: Double, answers: [Int: Int], enhancementFactor: Double) -> Double {
+    private func applyMultiplicativeEffect(baseScore: Double, answers _: [Int: Int], enhancementFactor: Double) -> Double {
         // Apply multiplicative effects for high scores on discriminating questions
         // This is a simplified version - would need specific answer analysis
-        return baseScore * enhancementFactor
+        baseScore * enhancementFactor
     }
 
     // MARK: - Cross-Validation Checks
@@ -433,16 +440,15 @@ class APGIScorer {
         somatic: WeightedScore,
         answers: [Int: Int]
     ) -> WeightedScores {
-
         // Check if precision and threshold answers make sense together
-        let precisionThresholdConsistency = checkPrecisionThresholdConsistency(
+        let precisionThresholdConsistency = self.checkPrecisionThresholdConsistency(
             precision: precision.rawScore,
             threshold: threshold.rawScore,
             answers: answers
         )
 
         // Check if epsilon and somatic responses are coherent
-        let epsilonSomaticConsistency = checkEpsilonSomaticConsistency(
+        let epsilonSomaticConsistency = self.checkEpsilonSomaticConsistency(
             epsilon: epsilon.rawScore,
             somatic: somatic.rawScore,
             answers: answers
@@ -490,7 +496,7 @@ class APGIScorer {
         )
     }
 
-    private func checkPrecisionThresholdConsistency(precision: Double, threshold: Double, answers: [Int: Int]) -> Double {
+    private func checkPrecisionThresholdConsistency(precision: Double, threshold: Double, answers _: [Int: Int]) -> Double {
         // High precision should generally correlate with higher threshold
         // Low precision might correlate with lower threshold (more open to input)
 
@@ -505,7 +511,7 @@ class APGIScorer {
         return max(0.0, 1.0 - deviation * ScoringConstants.consistencyDeviationMultiplier)
     }
 
-    private func checkEpsilonSomaticConsistency(epsilon: Double, somatic: Double, answers: [Int: Int]) -> Double {
+    private func checkEpsilonSomaticConsistency(epsilon: Double, somatic: Double, answers _: [Int: Int]) -> Double {
         // High epsilon with low somatic might indicate cognitive-only processing
         // High epsilon with high somatic might indicate embodied processing
         // Both patterns are valid, but extreme mismatches might be inconsistent
@@ -533,7 +539,7 @@ class APGIScorer {
 
         for questionId in interactionQuestions {
             if let answer = answers[questionId] {
-                totalScore += normalizeAnswer(answer: answer)
+                totalScore += self.normalizeAnswer(answer: answer)
                 count += 1
             }
         }
@@ -549,7 +555,7 @@ class APGIScorer {
 
         for questionId in temporalQuestions {
             if let answer = answers[questionId] {
-                totalScore += normalizeAnswer(answer: answer)
+                totalScore += self.normalizeAnswer(answer: answer)
                 count += 1
             }
         }
@@ -565,7 +571,7 @@ class APGIScorer {
 
         for questionId in environmentalQuestions {
             if let answer = answers[questionId] {
-                totalScore += normalizeAnswer(answer: answer)
+                totalScore += self.normalizeAnswer(answer: answer)
                 count += 1
             }
         }

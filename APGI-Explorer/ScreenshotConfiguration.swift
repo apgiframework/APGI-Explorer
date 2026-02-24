@@ -1,14 +1,15 @@
-import Foundation
+import Accessibility
 import AppKit
 import CoreGraphics
+import Foundation
 import ImageIO
-import UniformTypeIdentifiers
-import Accessibility
-import ScreenCaptureKit
 import os.log
+import ScreenCaptureKit
+import UniformTypeIdentifiers
 
 // MARK: - Screen Recording Permission
-struct ScreenRecordingPermission {
+
+enum ScreenRecordingPermission {
     static var hasPermission: Bool {
         CGPreflightScreenCaptureAccess()
     }
@@ -19,6 +20,7 @@ struct ScreenRecordingPermission {
 }
 
 // MARK: - Configuration
+
 struct ScreenshotConfig: Codable {
     var outputDirectory: String
     var imageFormat: ImageFormat
@@ -34,7 +36,8 @@ struct ScreenshotConfig: Codable {
     let customScreenPaths: [CustomScreenPath]
 
     static let `default` = ScreenshotConfig(
-        outputDirectory: FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!.appendingPathComponent("Screenshots").path,
+        outputDirectory: FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first?.appendingPathComponent("Screenshots").path ??
+            FileManager.default.temporaryDirectory.appendingPathComponent("Screenshots").path,
         imageFormat: .png,
         quality: 0.9,
         appearanceModes: [.light, .dark],
@@ -50,66 +53,70 @@ struct ScreenshotConfig: Codable {
 }
 
 // MARK: - Image Format
+
 enum ImageFormat: String, CaseIterable, Codable {
-    case png = "png"
-    case jpeg = "jpeg"
-    case heic = "heic"
+    case png
+    case jpeg
+    case heic
 
     var utType: UTType {
         switch self {
-        case .png: return .png
-        case .jpeg: return .jpeg
-        case .heic: return .heic
+        case .png: .png
+        case .jpeg: .jpeg
+        case .heic: .heic
         }
     }
 
     var fileExtension: String {
-        return rawValue
+        rawValue
     }
 }
 
 // MARK: - Appearance Mode
+
 enum AppearanceMode: String, CaseIterable, Codable {
-    case light = "light"
-    case dark = "dark"
-    case auto = "auto"
+    case light
+    case dark
+    case auto
 
     var displayName: String {
         switch self {
-        case .light: return "Light Mode"
-        case .dark: return "Dark Mode"
-        case .auto: return "Auto Mode"
+        case .light: "Light Mode"
+        case .dark: "Dark Mode"
+        case .auto: "Auto Mode"
         }
     }
 }
 
 // MARK: - Resolution
+
 enum Resolution: String, CaseIterable, Codable {
-    case `default` = "default"
-    case large = "large"
-    case small = "small"
-    case custom = "custom"
+    case `default`
+    case large
+    case small
+    case custom
 
     var scaleFactor: CGFloat {
         switch self {
-        case .default: return 1.0
-        case .large: return 2.0
-        case .small: return 0.5
-        case .custom: return 1.0
+        case .default: 1.0
+        case .large: 2.0
+        case .small: 0.5
+        case .custom: 1.0
         }
     }
 
     var displayName: String {
         switch self {
-        case .default: return "Default"
-        case .large: return "Large (2x)"
-        case .small: return "Small (0.5x)"
-        case .custom: return "Custom"
+        case .default: "Default"
+        case .large: "Large (2x)"
+        case .small: "Small (0.5x)"
+        case .custom: "Custom"
         }
     }
 }
 
 // MARK: - Custom Screen Path
+
 struct CustomScreenPath: Codable {
     let name: String
     let path: String
@@ -119,17 +126,20 @@ struct CustomScreenPath: Codable {
 }
 
 // MARK: - Direction
+
 enum Direction: Codable {
     case upDirection, downDirection, leftDirection, rightDirection
 }
 
 // MARK: - Navigation Step
+
 struct NavigationStep: Codable {
     let type: NavigationStepType
     let delay: TimeInterval
 }
 
 // MARK: - Navigation Step Type
+
 enum NavigationStepType: Codable {
     case wait(TimeInterval)
     case tapElement(String)
@@ -144,6 +154,7 @@ enum NavigationStepType: Codable {
 }
 
 // MARK: - Custom Modifier Flags
+
 struct ModifierFlags: Codable {
     let shift: Bool
     let control: Bool
@@ -159,15 +170,16 @@ struct ModifierFlags: Codable {
 
     func toNSEventFlags() -> NSEvent.ModifierFlags {
         var result: NSEvent.ModifierFlags = []
-        if shift { result.insert(.shift) }
-        if control { result.insert(.control) }
-        if option { result.insert(.option) }
-        if command { result.insert(.command) }
+        if self.shift { result.insert(.shift) }
+        if self.control { result.insert(.control) }
+        if self.option { result.insert(.option) }
+        if self.command { result.insert(.command) }
         return result
     }
 }
 
 // MARK: - Interaction Types
+
 enum InteractionType: Codable {
     case tapElement(String)
     case typeText(String, String)
@@ -186,6 +198,7 @@ enum InteractionType: Codable {
 }
 
 // MARK: - Screen Navigation
+
 struct ScreenNavigation {
     let name: String
     let identifier: String
@@ -208,7 +221,7 @@ struct ScreenNavigation {
             identifier: "profile_creation",
             navigationSteps: [
                 NavigationStep(type: .tapElement("create_profile_button"), delay: 1.0),
-                NavigationStep(type: .wait(2.0), delay: 0.5)
+                NavigationStep(type: .wait(2.0), delay: 0.5),
             ],
             expectedElements: ["quiz_view", "question_text", "answer_options"],
             screenshotName: "profile_creation",
@@ -219,7 +232,7 @@ struct ScreenNavigation {
             identifier: "profile_results",
             navigationSteps: [
                 NavigationStep(type: .completeQuiz, delay: 1.0),
-                NavigationStep(type: .wait(3.0), delay: 0.5)
+                NavigationStep(type: .wait(3.0), delay: 0.5),
             ],
             expectedElements: ["results_view", "profile_summary", "save_button"],
             screenshotName: "profile_results",
@@ -230,7 +243,7 @@ struct ScreenNavigation {
             identifier: "profile_comparison",
             navigationSteps: [
                 NavigationStep(type: .tapElement("compare_profiles"), delay: 1.0),
-                NavigationStep(type: .wait(2.0), delay: 0.5)
+                NavigationStep(type: .wait(2.0), delay: 0.5),
             ],
             expectedElements: ["comparison_view", "profile_selector", "comparison_chart"],
             screenshotName: "profile_comparison",
@@ -241,7 +254,7 @@ struct ScreenNavigation {
             identifier: "settings",
             navigationSteps: [
                 NavigationStep(type: .tapElement("settings_button"), delay: 1.0),
-                NavigationStep(type: .wait(2.0), delay: 0.5)
+                NavigationStep(type: .wait(2.0), delay: 0.5),
             ],
             expectedElements: ["settings_view", "preferences_section", "privacy_section"],
             screenshotName: "settings",
@@ -252,11 +265,11 @@ struct ScreenNavigation {
             identifier: "data_export",
             navigationSteps: [
                 NavigationStep(type: .tapElement("export_button"), delay: 1.0),
-                NavigationStep(type: .wait(2.0), delay: 0.5)
+                NavigationStep(type: .wait(2.0), delay: 0.5),
             ],
             expectedElements: ["export_view", "format_selector", "export_options"],
             screenshotName: "data_export",
             description: "Data export interface"
-        )
+        ),
     ]
 }

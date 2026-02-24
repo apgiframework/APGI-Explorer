@@ -1,10 +1,10 @@
-import Foundation
 import Combine
+import Foundation
 
 class AppState: ObservableObject {
     @Published var hasCompletedOnboarding: Bool {
         didSet {
-            UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding")
+            UserDefaults.standard.set(self.hasCompletedOnboarding, forKey: "hasCompletedOnboarding")
         }
     }
 
@@ -15,6 +15,6 @@ class AppState: ObservableObject {
     }
 
     func completeOnboarding() {
-        hasCompletedOnboarding = true
+        self.hasCompletedOnboarding = true
     }
 }

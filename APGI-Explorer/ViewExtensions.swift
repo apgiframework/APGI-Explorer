@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - View Extensions
+
 extension View {
     func quizKeyboardShortcuts() -> some View {
         self

@@ -12,7 +12,7 @@ struct LoadingOverlay: View {
     }
 
     var body: some View {
-        if isVisible {
+        if self.isVisible {
             ZStack {
                 AppColors.loadingOverlay
                     .ignoresSafeArea()
@@ -22,7 +22,7 @@ struct LoadingOverlay: View {
                         .scaleEffect(1.5)
                         .tint(.white)
 
-                    Text(message)
+                    Text(self.message)
                         .foregroundColor(.white)
                         .font(.headline)
                         .multilineTextAlignment(.center)
@@ -35,7 +35,7 @@ struct LoadingOverlay: View {
                 )
             }
             .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: isVisible)
+            .animation(.easeInOut(duration: 0.3), value: self.isVisible)
         }
     }
 }
@@ -51,17 +51,17 @@ struct LoadingIndicator: View {
 
         var scale: CGFloat {
             switch self {
-            case .small: return 0.8
-            case .medium: return 1.0
-            case .large: return 1.5
+            case .small: 0.8
+            case .medium: 1.0
+            case .large: 1.5
             }
         }
 
         var font: Font {
             switch self {
-            case .small: return .caption
-            case .medium: return .body
-            case .large: return .headline
+            case .small: .caption
+            case .medium: .body
+            case .large: .headline
             }
         }
     }
@@ -74,12 +74,12 @@ struct LoadingIndicator: View {
     var body: some View {
         VStack(spacing: 12) {
             ProgressView()
-                .scaleEffect(size.scale)
+                .scaleEffect(self.size.scale)
                 .tint(AppColors.progressTint)
 
-            if let message = message {
+            if let message {
                 Text(message)
-                    .font(size.font)
+                    .font(self.size.font)
                     .foregroundColor(AppColors.secondaryText)
             }
         }
@@ -99,7 +99,7 @@ struct FullScreenLoadingView: View {
 
     var body: some View {
         ZStack {
-            if showBackground {
+            if self.showBackground {
                 AppColors.primaryBackground
                     .ignoresSafeArea()
             }
@@ -109,7 +109,7 @@ struct FullScreenLoadingView: View {
                     .scaleEffect(2.0)
                     .tint(AppColors.progressTint)
 
-                Text(message)
+                Text(self.message)
                     .font(.headline)
                     .foregroundColor(AppColors.primaryText)
                     .multilineTextAlignment(.center)
@@ -136,25 +136,25 @@ struct ProgressRingView: View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(AppColors.adaptiveGray5, lineWidth: lineWidth)
+                    .stroke(AppColors.adaptiveGray5, lineWidth: self.lineWidth)
 
                 Circle()
-                    .trim(from: 0, to: progress)
+                    .trim(from: 0, to: self.progress)
                     .stroke(
                         AppColors.progressTint,
-                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+                        style: StrokeStyle(lineWidth: self.lineWidth, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.3), value: progress)
+                    .animation(.easeInOut(duration: 0.3), value: self.progress)
 
-                Text("\(Int(progress * 100))%")
+                Text("\(Int(self.progress * 100))%")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText)
             }
             .frame(width: 120, height: 120)
 
-            if let message = message {
+            if let message {
                 Text(message)
                     .font(.body)
                     .foregroundColor(AppColors.secondaryText)

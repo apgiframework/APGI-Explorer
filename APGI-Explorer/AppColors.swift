@@ -1,7 +1,7 @@
 import SwiftUI
 
 #if os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 enum ParameterLevel: String, CaseIterable {
@@ -13,16 +13,17 @@ enum ParameterLevel: String, CaseIterable {
 
     var rawValue: String {
         switch self {
-        case .veryLow: return "Very Low"
-        case .low: return "Low"
-        case .moderate: return "Moderate"
-        case .high: return "High"
-        case .veryHigh: return "Very High"
+        case .veryLow: "Very Low"
+        case .low: "Low"
+        case .moderate: "Moderate"
+        case .high: "High"
+        case .veryHigh: "Very High"
         }
     }
 }
 
 // MARK: - Color Scheme Contrast
+
 enum ColorSchemeContrast {
     case standard
     case increased
@@ -30,54 +31,59 @@ enum ColorSchemeContrast {
 
 // MARK: - App Color System
 
-struct AppColors {
+enum AppColors {
     // Primary colors from asset catalog
     static let primary = Color("Primary")
     static let secondary = Color("Secondary")
     static let background = Color("Background")
     static let cardBackground = Color("CardBackground")
 
-    // System colors with dark mode support
+    /// System colors with dark mode support
     static var adaptiveGray: Color {
         #if os(macOS)
-        Color(NSColor.systemGray)
+            Color(NSColor.systemGray)
         #else
-        Color(UIColor.systemGray)
+            Color(UIColor.systemGray)
         #endif
     }
+
     static var adaptiveGray2: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.8))
+            Color(NSColor.systemGray.withAlphaComponent(0.8))
         #else
-        Color(UIColor.systemGray2)
+            Color(UIColor.systemGray2)
         #endif
     }
+
     static var adaptiveGray3: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.6))
+            Color(NSColor.systemGray.withAlphaComponent(0.6))
         #else
-        Color(UIColor.systemGray3)
+            Color(UIColor.systemGray3)
         #endif
     }
+
     static var adaptiveGray4: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.4))
+            Color(NSColor.systemGray.withAlphaComponent(0.4))
         #else
-        Color(UIColor.systemGray4)
+            Color(UIColor.systemGray4)
         #endif
     }
+
     static var adaptiveGray5: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.3))
+            Color(NSColor.systemGray.withAlphaComponent(0.3))
         #else
-        Color(UIColor.systemGray5)
+            Color(UIColor.systemGray5)
         #endif
     }
+
     static var adaptiveGray6: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.2))
+            Color(NSColor.systemGray.withAlphaComponent(0.2))
         #else
-        Color(UIColor.systemGray6)
+            Color(UIColor.systemGray6)
         #endif
     }
 
@@ -87,53 +93,57 @@ struct AppColors {
     static let warning = Color.orange
     static let info = Color.blue
 
-    // Background colors
+    /// Background colors
     static var primaryBackground: Color {
         #if os(macOS)
-        Color(NSColor.windowBackgroundColor)
+            Color(NSColor.windowBackgroundColor)
         #else
-        Color(UIColor.systemBackground)
+            Color(UIColor.systemBackground)
         #endif
     }
+
     static var secondaryBackground: Color {
         #if os(macOS)
-        Color(NSColor.controlBackgroundColor)
+            Color(NSColor.controlBackgroundColor)
         #else
-        Color(UIColor.secondarySystemBackground)
+            Color(UIColor.secondarySystemBackground)
         #endif
     }
+
     static var tertiaryBackground: Color {
         #if os(macOS)
-        Color(NSColor.windowBackgroundColor.blended(withFraction: 0.7, of: NSColor.controlBackgroundColor) ?? NSColor.controlBackgroundColor)
+            Color(NSColor.windowBackgroundColor.blended(withFraction: 0.7, of: NSColor.controlBackgroundColor) ?? NSColor.controlBackgroundColor)
         #else
-        Color(UIColor.tertiarySystemBackground)
+            Color(UIColor.tertiarySystemBackground)
         #endif
     }
 
-    // Text colors
+    /// Text colors
     static var primaryText: Color {
         #if os(macOS)
-        Color(NSColor.labelColor)
+            Color(NSColor.labelColor)
         #else
-        Color(UIColor.label)
-        #endif
-    }
-    static var secondaryText: Color {
-        #if os(macOS)
-        Color(NSColor.secondaryLabelColor)
-        #else
-        Color(UIColor.secondaryLabel)
-        #endif
-    }
-    static var tertiaryText: Color {
-        #if os(macOS)
-        Color(NSColor.tertiaryLabelColor)
-        #else
-        Color(UIColor.tertiaryLabel)
+            Color(UIColor.label)
         #endif
     }
 
-    // Accent colors
+    static var secondaryText: Color {
+        #if os(macOS)
+            Color(NSColor.secondaryLabelColor)
+        #else
+            Color(UIColor.secondaryLabel)
+        #endif
+    }
+
+    static var tertiaryText: Color {
+        #if os(macOS)
+            Color(NSColor.tertiaryLabelColor)
+        #else
+            Color(UIColor.tertiaryLabel)
+        #endif
+    }
+
+    /// Accent colors
     static let accent = Color.accentColor
 
     // Custom app-specific colors
@@ -231,20 +241,20 @@ struct FocusIndicatorModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
+                RoundedRectangle(cornerRadius: self.cornerRadius)
                     .stroke(
-                        focusColor,
-                        lineWidth: focusLineWidth
+                        self.focusColor,
+                        lineWidth: self.focusLineWidth
                     )
-                    .opacity(isFocused ? 1.0 : 0.0)
+                    .opacity(self.isFocused ? 1.0 : 0.0)
             )
-            .scaleEffect(isFocused ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: isFocused)
+            .scaleEffect(self.isFocused ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: self.isFocused)
             .accessibilityAddTraits(.isButton)
     }
 
     private var focusColor: Color {
-        switch colorSchemeContrast {
+        switch self.colorSchemeContrast {
         case .increased:
             return AppColors.buttonBackground
         case .standard:
@@ -255,7 +265,7 @@ struct FocusIndicatorModifier: ViewModifier {
     }
 
     private var focusLineWidth: CGFloat {
-        switch colorSchemeContrast {
+        switch self.colorSchemeContrast {
         case .increased:
             return 4
         case .standard:
@@ -286,26 +296,26 @@ struct EnhancedFocusIndicatorModifier: ViewModifier {
         var color: Color {
             switch self {
             case .button:
-                return AppColors.buttonBackground
+                AppColors.buttonBackground
             case .card:
-                return AppColors.accent
+                AppColors.accent
             case .textfield:
-                return AppColors.accent
-            case .custom(let color, _):
-                return color
+                AppColors.accent
+            case let .custom(color, _):
+                color
             }
         }
 
         var lineWidth: CGFloat {
             switch self {
             case .button:
-                return 2
+                2
             case .card:
-                return 1.5
+                1.5
             case .textfield:
-                return 2
-            case .custom(_, let width):
-                return width
+                2
+            case let .custom(_, width):
+                width
             }
         }
     }
@@ -315,30 +325,30 @@ struct EnhancedFocusIndicatorModifier: ViewModifier {
             .background(
                 RoundedRectangle(cornerRadius: LayoutConstants.cardCornerRadius)
                     .stroke(
-                        style.color,
-                        lineWidth: adjustedLineWidth
+                        self.style.color,
+                        lineWidth: self.adjustedLineWidth
                     )
                     .shadow(
-                        color: style.color.opacity(0.3),
-                        radius: isFocused ? 4 : 0,
+                        color: self.style.color.opacity(0.3),
+                        radius: self.isFocused ? 4 : 0,
                         x: 0,
                         y: 0
                     )
-                    .opacity(isFocused ? 1.0 : 0.0)
+                    .opacity(self.isFocused ? 1.0 : 0.0)
             )
             .background(
                 RoundedRectangle(cornerRadius: LayoutConstants.cardCornerRadius)
-                    .fill(style.color.opacity(0.1))
-                    .opacity(isFocused ? 1.0 : 0.0)
+                    .fill(self.style.color.opacity(0.1))
+                    .opacity(self.isFocused ? 1.0 : 0.0)
             )
-            .scaleEffect(isFocused ? 1.01 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isFocused)
+            .scaleEffect(self.isFocused ? 1.01 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: self.isFocused)
             .accessibilityAddTraits(.isButton)
     }
 
     private var adjustedLineWidth: CGFloat {
-        let baseWidth = style.lineWidth
-        switch colorSchemeContrast {
+        let baseWidth = self.style.lineWidth
+        switch self.colorSchemeContrast {
         case .increased:
             return baseWidth * 1.5
         case .standard:
@@ -356,9 +366,9 @@ struct AccessibleTapModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onTapGesture(perform: action)
-            .accessibilityLabel(accessibilityLabel ?? "")
-            .accessibilityHint(accessibilityHint ?? "")
+            .onTapGesture(perform: self.action)
+            .accessibilityLabel(self.accessibilityLabel ?? "")
+            .accessibilityHint(self.accessibilityHint ?? "")
             .accessibilityAddTraits(.isButton)
     }
 }
@@ -395,7 +405,6 @@ extension View {
     func customFocusIndicator(isFocused: FocusState<Bool>.Binding, color: Color, lineWidth: CGFloat = 2, colorSchemeContrast: ColorSchemeContrast = .standard) -> some View {
         self.modifier(EnhancedFocusIndicatorModifier(isFocused: isFocused, style: .custom(color, lineWidth), colorSchemeContrast: colorSchemeContrast))
     }
-
 }
 
 // MARK: - Toast Notification System
@@ -431,19 +440,19 @@ enum ToastType {
 
     var color: Color {
         switch self {
-        case .success: return AppColors.success
-        case .error: return AppColors.error
-        case .warning: return AppColors.warning
-        case .info: return AppColors.info
+        case .success: AppColors.success
+        case .error: AppColors.error
+        case .warning: AppColors.warning
+        case .info: AppColors.info
         }
     }
 
     var icon: String {
         switch self {
-        case .success: return "checkmark.circle.fill"
-        case .error: return "xmark.circle.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .info: return "info.circle.fill"
+        case .success: "checkmark.circle.fill"
+        case .error: "xmark.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .info: "info.circle.fill"
         }
     }
 }
@@ -453,11 +462,11 @@ struct ToastView: View {
 
     var body: some View {
         HStack(spacing: LayoutConstants.smallSpacing) {
-            Image(systemName: message.type.icon)
-                .foregroundColor(message.type.color)
+            Image(systemName: self.message.type.icon)
+                .foregroundColor(self.message.type.color)
                 .font(.system(size: 16, weight: .semibold))
 
-            Text(message.message)
+            Text(self.message.message)
                 .font(.subheadline)
                 .foregroundColor(AppColors.primaryText)
                 .multilineTextAlignment(.leading)
@@ -473,7 +482,7 @@ struct ToastView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: LayoutConstants.cardCornerRadius)
-                .stroke(message.type.color, lineWidth: 1)
+                .stroke(self.message.type.color, lineWidth: 1)
         )
     }
 }
@@ -485,7 +494,7 @@ struct ToastContainer: ViewModifier {
         content
             .overlay(
                 VStack {
-                    if let toast = toast {
+                    if let toast {
                         ToastView(message: toast)
                             .transition(.asymmetric(
                                 insertion: .move(edge: .top).combined(with: .opacity),
@@ -505,7 +514,7 @@ struct ToastContainer: ViewModifier {
                 .padding(.horizontal, LayoutConstants.mediumSpacing),
                 alignment: .top
             )
-            .animation(.easeInOut(duration: 0.3), value: toast)
+            .animation(.easeInOut(duration: 0.3), value: self.toast)
     }
 }
 
@@ -536,31 +545,26 @@ struct StandardCard<Content: View>: View {
     }
 
     var body: some View {
-        content
+        self.content
             .padding(LayoutConstants.mediumSpacing)
-            .background(backgroundColor)
-            .cornerRadius(cornerRadius)
-            .shadow(color: .black.opacity(ColorConstants.shadowOpacity), radius: shadowRadius, x: 0, y: 2)
+            .background(self.backgroundColor)
+            .cornerRadius(self.cornerRadius)
+            .shadow(color: .black.opacity(ColorConstants.shadowOpacity), radius: self.shadowRadius, x: 0, y: 2)
     }
 }
 
 struct InfoCard<Content: View>: View {
     let title: String
-    let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
+    @ViewBuilder let content: Content
 
     var body: some View {
         StandardCard {
             VStack(alignment: .leading, spacing: LayoutConstants.smallSpacing) {
-                Text(title)
+                Text(self.title)
                     .font(.headline)
                     .foregroundColor(AppColors.primaryText)
 
-                content
+                self.content
                     .foregroundColor(AppColors.secondaryText)
             }
         }
@@ -586,31 +590,26 @@ struct ActionButton<Content: View>: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            content
+        Button(action: self.action) {
+            self.content
         }
-        .buttonStyle(AnyButtonStyle(style: style))
-        .disabled(isDisabled)
+        .buttonStyle(AnyButtonStyle(style: self.style))
+        .disabled(self.isDisabled)
     }
 }
 
 struct FormRow<Content: View>: View {
     let title: String
-    let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
+    @ViewBuilder let content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: LayoutConstants.tinySpacing) {
-            Text(title)
+            Text(self.title)
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.primaryText)
 
-            content
+            self.content
         }
         .padding(.vertical, LayoutConstants.smallSpacing)
     }
@@ -635,17 +634,17 @@ struct LoadingButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: LayoutConstants.smallSpacing) {
-                if isLoading {
+                if self.isLoading {
                     LoadingIndicator(size: .small)
                 }
 
-                Text(isLoading ? "Loading..." : title)
+                Text(self.isLoading ? "Loading..." : self.title)
             }
         }
-        .buttonStyle(AnyButtonStyle(style: style))
-        .disabled(isLoading)
+        .buttonStyle(AnyButtonStyle(style: self.style))
+        .disabled(self.isLoading)
     }
 }
 
@@ -655,22 +654,22 @@ extension Color {
     static func parameterLevel(_ level: ParameterLevel) -> Color {
         switch level {
         case .veryLow, .low:
-            return AppColors.parameterLow
+            AppColors.parameterLow
         case .moderate:
-            return AppColors.parameterMedium
+            AppColors.parameterMedium
         case .high, .veryHigh:
-            return AppColors.parameterHigh
+            AppColors.parameterHigh
         }
     }
 
     static func confidenceColor(_ confidence: Double) -> Color {
         switch confidence {
-        case 0.8...1.0:
-            return AppColors.success
-        case 0.6..<0.8:
-            return AppColors.warning
+        case 0.8 ... 1.0:
+            AppColors.success
+        case 0.6 ..< 0.8:
+            AppColors.warning
         default:
-            return AppColors.error
+            AppColors.error
         }
     }
 }
@@ -680,13 +679,13 @@ extension Color {
 struct AnyButtonStyle: ButtonStyle {
     private let _makeBody: (Configuration) -> AnyView
 
-    init<S: ButtonStyle>(style: S) {
-        _makeBody = { configuration in
+    init(style: some ButtonStyle) {
+        self._makeBody = { configuration in
             AnyView(style.makeBody(configuration: configuration))
         }
     }
 
     func makeBody(configuration: Configuration) -> some View {
-        _makeBody(configuration)
+        self._makeBody(configuration)
     }
 }

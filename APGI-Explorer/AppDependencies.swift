@@ -1,16 +1,17 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - App Dependencies Coordinator
 
 /// A centralized dependency injection container that manages shared app instances
 class AppDependencies: ObservableObject {
-
     // MARK: - Published Properties
+
     @Published private(set) var profileManager: ProfileManager
 
     // MARK: - Core Dependencies
+
     let stateModel: StateModel
     let transitionModel: StateTransitionModel
     let analyticsService: AnalyticsService
@@ -35,39 +36,39 @@ class AppDependencies: ObservableObject {
 
     /// Creates a new InteractiveStateView with injected dependencies
     func makeInteractiveStateView(state: PsychologicalState) -> InteractiveStateView {
-        return InteractiveStateView(
+        InteractiveStateView(
             state: state,
-            stateModel: stateModel,
-            transitionModel: transitionModel
+            stateModel: self.stateModel,
+            transitionModel: self.transitionModel
         )
     }
 
     /// Provides dependencies for views that need StateModel
     func getStateModel() -> StateModel {
-        return stateModel
+        self.stateModel
     }
 
     /// Provides dependencies for views that need StateTransitionModel
     func getTransitionModel() -> StateTransitionModel {
-        return transitionModel
+        self.transitionModel
     }
 
     /// Provides dependencies for views that need ProfileManager
     func getProfileManager() -> ProfileManager {
-        return profileManager
+        self.profileManager
     }
 
     func getAnalyticsService() -> AnalyticsService {
-        return analyticsService
+        self.analyticsService
     }
 
     func getStateSearchService() -> StateSearchService {
-        return stateSearchService
+        self.stateSearchService
     }
 
     /// Clears all cached similarity calculations
     func clearStateCache() {
-        stateModel.clearCache()
+        self.stateModel.clearCache()
     }
 }
 

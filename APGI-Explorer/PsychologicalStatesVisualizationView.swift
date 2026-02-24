@@ -23,17 +23,17 @@ struct PsychologicalStatesVisualizationView: View {
 
                         // Legend
                         HStack(spacing: 20) {
-                            legendItem(color: .green, label: "Positive")
-                            legendItem(color: .red, label: "Negative")
-                            legendItem(color: .blue, label: "Neutral")
-                            legendItem(color: .orange, label: "Overwhelm")
-                            legendItem(color: .purple, label: "Transcendent")
+                            self.legendItem(color: .green, label: "Positive")
+                            self.legendItem(color: .red, label: "Negative")
+                            self.legendItem(color: .blue, label: "Neutral")
+                            self.legendItem(color: .orange, label: "Overwhelm")
+                            self.legendItem(color: .purple, label: "Transcendent")
                         }
                     }
                     .padding(.horizontal)
 
                     // Chart
-                    phaseSpaceChart
+                    self.phaseSpaceChart
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding()
 
@@ -44,7 +44,7 @@ struct PsychologicalStatesVisualizationView: View {
                         .padding(.bottom, 8)
 
                     // State Library
-                    stateLibrary
+                    self.stateLibrary
                         .frame(height: 200)
                         .background(Color(NSColor.controlBackgroundColor))
                 }
@@ -53,9 +53,9 @@ struct PsychologicalStatesVisualizationView: View {
                 // Right side - State Details
                 VStack {
                     if let state = selectedState {
-                        stateDetailsView(state: state)
+                        self.stateDetailsView(state: state)
                     } else {
-                        emptyStateDetails
+                        self.emptyStateDetails
                     }
                 }
                 .frame(minWidth: 400, maxWidth: .infinity)
@@ -63,7 +63,7 @@ struct PsychologicalStatesVisualizationView: View {
             }
             .navigationTitle("Psychological States Visualization")
             .onAppear {
-                stateModel.states.sort { $0.name < $1.name }
+                self.stateModel.states.sort { $0.name < $1.name }
             }
         }
     }
@@ -74,19 +74,19 @@ struct PsychologicalStatesVisualizationView: View {
         GeometryReader { geometry in
             ZStack {
                 // Grid lines and quadrant labels
-                quadrantOverlay(size: geometry.size)
+                self.quadrantOverlay(size: geometry.size)
 
                 // Data points
-                ForEach(stateModel.states, id: \.id) { state in
-                    let position = calculatePosition(for: state, in: geometry.size)
-                    let color = colorForState(state)
-                    let isSelected = selectedState?.id == state.id
-                    let isHovered = hoveredStateId == state.id
+                ForEach(self.stateModel.states, id: \.id) { state in
+                    let position = self.calculatePosition(for: state, in: geometry.size)
+                    let color = self.colorForState(state)
+                    let isSelected = self.selectedState?.id == state.id
+                    let isHovered = self.hoveredStateId == state.id
 
                     Circle()
                         .fill(color)
-                        .frame(width: isSelected ? pointSize * 2 : pointSize,
-                               height: isSelected ? pointSize * 2 : pointSize)
+                        .frame(width: isSelected ? self.pointSize * 2 : self.pointSize,
+                               height: isSelected ? self.pointSize * 2 : self.pointSize)
                         .overlay(
                             Circle()
                                 .stroke(Color.white, lineWidth: isSelected ? 2 : 0)
@@ -95,12 +95,12 @@ struct PsychologicalStatesVisualizationView: View {
                         .position(position)
                         .animation(.easeInOut(duration: 0.2), value: isHovered)
                         .accessibleTap(
-                            action: { selectedState = state },
+                            action: { self.selectedState = state },
                             accessibilityLabel: "Select \(state.name) state",
                             accessibilityHint: "View detailed information about \(state.name) psychological state"
                         )
                         .onHover { hovering in
-                            hoveredStateId = hovering ? state.id : nil
+                            self.hoveredStateId = hovering ? state.id : nil
                         }
                 }
             }
@@ -124,15 +124,15 @@ struct PsychologicalStatesVisualizationView: View {
             // Quadrant labels
             VStack {
                 HStack {
-                    quadrantLabel("HIGH THRESHOLD / BLOCKED\n(Stoic, Bored, Depressed)", alignment: .leading)
+                    self.quadrantLabel("HIGH THRESHOLD / BLOCKED\n(Stoic, Bored, Depressed)", alignment: .leading)
                     Spacer()
-                    quadrantLabel("HIGH PRECISION / REACTIVE\n(Flow, Fear, Anger)", alignment: .trailing)
+                    self.quadrantLabel("HIGH PRECISION / REACTIVE\n(Flow, Fear, Anger)", alignment: .trailing)
                 }
                 Spacer()
                 HStack {
-                    quadrantLabel("LOW PRECISION / REACTIVE\n(Anxiety, Chaos)", alignment: .leading)
+                    self.quadrantLabel("LOW PRECISION / REACTIVE\n(Anxiety, Chaos)", alignment: .leading)
                     Spacer()
-                    quadrantLabel("LOW THRESHOLD / BLOCKED\n(Calm, Relaxed)", alignment: .trailing)
+                    self.quadrantLabel("LOW THRESHOLD / BLOCKED\n(Calm, Relaxed)", alignment: .trailing)
                 }
             }
             .padding()
@@ -176,7 +176,7 @@ struct PsychologicalStatesVisualizationView: View {
                     .foregroundColor(.secondary)
                     .padding(.leading, 8)
 
-                TextField("Q Search states...", text: $searchText)
+                TextField("Q Search states...", text: self.$searchText)
                     .textFieldStyle(.plain)
                     .padding(.vertical, 8)
                     .padding(.trailing, 8)
@@ -192,8 +192,8 @@ struct PsychologicalStatesVisualizationView: View {
             // State list
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    ForEach(filteredStates, id: \.id) { state in
-                        stateLibraryItem(state: state)
+                    ForEach(self.filteredStates, id: \.id) { state in
+                        self.stateLibraryItem(state: state)
                     }
                 }
                 .padding(.horizontal)
@@ -202,18 +202,18 @@ struct PsychologicalStatesVisualizationView: View {
     }
 
     private var filteredStates: [PsychologicalState] {
-        if searchText.isEmpty {
-            return stateModel.states
+        if self.searchText.isEmpty {
+            return self.stateModel.states
         }
-        return stateModel.states.filter { state in
-            state.name.localizedCaseInsensitiveContains(searchText)
+        return self.stateModel.states.filter { state in
+            state.name.localizedCaseInsensitiveContains(self.searchText)
         }
     }
 
     private func stateLibraryItem(state: PsychologicalState) -> some View {
         HStack {
             Circle()
-                .fill(colorForState(state))
+                .fill(self.colorForState(state))
                 .frame(width: 8, height: 8)
 
             Text(state.name)
@@ -234,10 +234,10 @@ struct PsychologicalStatesVisualizationView: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        .background(selectedState?.id == state.id ? AppColors.buttonBackground.opacity(0.1) : Color.clear)
+        .background(self.selectedState?.id == state.id ? AppColors.buttonBackground.opacity(0.1) : Color.clear)
         .cornerRadius(6)
         .accessibleTap(
-            action: { selectedState = state },
+            action: { self.selectedState = state },
             accessibilityLabel: "Select \(state.name) from library",
             accessibilityHint: "Choose \(state.name) to view in the main visualization"
         )
@@ -263,7 +263,7 @@ struct PsychologicalStatesVisualizationView: View {
 
                 // Metrics
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(formatStateMetrics(state))
+                    Text(self.formatStateMetrics(state))
                         .font(.subheadline.monospaced())
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -275,7 +275,7 @@ struct PsychologicalStatesVisualizationView: View {
                         .font(.headline)
                         .padding(.horizontal)
 
-                    radarChart(for: state)
+                    self.radarChart(for: state)
                         .frame(height: 250)
                         .padding(.horizontal)
                 }
@@ -326,12 +326,12 @@ struct PsychologicalStatesVisualizationView: View {
         let chartHeight = size.height - (padding * 2)
 
         // Extract precision and threshold values from actual data
-        let precision = extractPrecisionValue(from: state)
-        let threshold = extractThresholdValue(from: state)
+        let precision = self.extractPrecisionValue(from: state)
+        let threshold = self.extractThresholdValue(from: state)
 
         // Normalize to 0-1 range based on actual data ranges
-        let normalizedPrecision = normalizeValue(precision, min: -1, max: 6)
-        let normalizedThreshold = normalizeValue(threshold, min: -40, max: 20)
+        let normalizedPrecision = self.normalizeValue(precision, min: -1, max: 6)
+        let normalizedThreshold = self.normalizeValue(threshold, min: -40, max: 20)
 
         // Convert to coordinates
         let coordX = padding + (normalizedPrecision * chartWidth)
@@ -342,12 +342,12 @@ struct PsychologicalStatesVisualizationView: View {
 
     private func extractPrecisionValue(from state: PsychologicalState) -> Double {
         // Extract precision from the state's precision profile
-        return state.parameters.precision.task.value
+        state.parameters.precision.task.value
     }
 
     private func extractThresholdValue(from state: PsychologicalState) -> Double {
         // Extract threshold adjustment from the state's threshold range
-        return state.parameters.threshold.adjustment
+        state.parameters.threshold.adjustment
     }
 
     private func normalizeValue(_ value: Double, min: Double, max: Double) -> Double {
@@ -358,23 +358,23 @@ struct PsychologicalStatesVisualizationView: View {
 
     private func colorForState(_ state: PsychologicalState) -> Color {
         // Determine color based on state characteristics using actual data
-        let precision = extractPrecisionValue(from: state)
-        let threshold = extractThresholdValue(from: state)
+        let precision = self.extractPrecisionValue(from: state)
+        let threshold = self.extractThresholdValue(from: state)
 
         // Flow state and similar positive states: high precision, moderate negative threshold
-        if precision > 3.0 && threshold > -25 && threshold < -5 {
+        if precision > 3.0, threshold > -25, threshold < -5 {
             return .green // Positive states (like Flow, Joy)
         }
-        // Anxiety, Fear, Anger: high precision, very negative threshold  
-        else if precision > 3.5 && threshold <= -25 {
+        // Anxiety, Fear, Anger: high precision, very negative threshold
+        else if precision > 3.5, threshold <= -25 {
             return .red // Negative states (like Anxiety, Fear)
         }
         // Overwhelm, chaotic states: very high precision, neutral threshold
-        else if precision >= 4.5 && abs(threshold) < 10 {
+        else if precision >= 4.5, abs(threshold) < 10 {
             return .orange // Overwhelm/chaotic states
         }
         // Awe, transcendent states: high precision, very negative threshold
-        else if precision > 3.5 && threshold <= -20 && state.name.contains("Awe") {
+        else if precision > 3.5, threshold <= -20, state.name.contains("Awe") {
             return .purple // Transcendent states
         } else {
             return .blue // Neutral or other states
@@ -393,11 +393,11 @@ struct PsychologicalStatesVisualizationView: View {
     }
 
     private func formatStateMetrics(_ state: PsychologicalState) -> String {
-        let precision = extractPrecisionValue(from: state)
-        let threshold = extractThresholdValue(from: state)
+        let precision = self.extractPrecisionValue(from: state)
+        let threshold = self.extractThresholdValue(from: state)
 
         return "Π_task > \(String(format: "%.1f", precision))σ | " +
-               "θ_i \(threshold > 0 ? "+" : "")\(String(format: "%.0f", threshold))%"
+            "θ_i \(threshold > 0 ? "+" : "")\(String(format: "%.0f", threshold))%"
     }
 
     private func radarChart(for state: PsychologicalState) -> some View {
@@ -422,7 +422,7 @@ struct RadarChartView: View {
         Parameter(name: "Reactivity", value: 0.6, key: "reactivity"),
         Parameter(name: "Somatic Bias", value: 0.4, key: "somaticBias"),
         Parameter(name: "Focus Stability", value: 0.9, key: "focus"),
-        Parameter(name: "Cognitive Load", value: 0.3, key: "cognitive")
+        Parameter(name: "Cognitive Load", value: 0.3, key: "cognitive"),
     ]
 
     var body: some View {
@@ -432,13 +432,13 @@ struct RadarChartView: View {
 
             ZStack {
                 // Background grid
-                radarGrid(center: center, radius: radius)
+                self.radarGrid(center: center, radius: radius)
 
                 // Data polygon
-                radarData(center: center, radius: radius)
+                self.radarData(center: center, radius: radius)
 
                 // Labels
-                radarLabels(center: center, radius: radius)
+                self.radarLabels(center: center, radius: radius)
             }
         }
     }
@@ -446,10 +446,10 @@ struct RadarChartView: View {
     private func radarGrid(center: CGPoint, radius: CGFloat) -> some View {
         ZStack {
             // Concentric pentagons
-            ForEach(1...5, id: \.self) { level in
+            ForEach(1 ... 5, id: \.self) { level in
                 Path { path in
                     let levelRadius = radius * CGFloat(level) / 5
-                    for index in 0..<5 {
+                    for index in 0 ..< 5 {
                         let angle = Double(index) * 2 * .pi / 5 - .pi / 2
                         let pointX = center.x + levelRadius * cos(angle)
                         let pointY = center.y + levelRadius * sin(angle)
@@ -466,7 +466,7 @@ struct RadarChartView: View {
             }
 
             // Spokes
-            ForEach(0..<5, id: \.self) { index in
+            ForEach(0 ..< 5, id: \.self) { index in
                 let angle = Double(index) * 2 * .pi / 5 - .pi / 2
                 let spokeX = center.x + radius * cos(angle)
                 let spokeY = center.y + radius * sin(angle)
@@ -482,9 +482,9 @@ struct RadarChartView: View {
 
     private func radarData(center: CGPoint, radius: CGFloat) -> some View {
         Path { path in
-            for (index, param) in parameters.enumerated() {
+            for (index, param) in self.parameters.enumerated() {
                 let angle = Double(index) * 2 * .pi / 5 - .pi / 2
-                let value = extractParameterValue(for: param.key, from: state)
+                let value = self.extractParameterValue(for: param.key, from: self.state)
                 let distance = radius * CGFloat(value)
                 let dataX = center.x + distance * cos(angle)
                 let dataY = center.y + distance * sin(angle)
@@ -502,7 +502,7 @@ struct RadarChartView: View {
     }
 
     private func radarLabels(center: CGPoint, radius: CGFloat) -> some View {
-        ForEach(Array(parameters.enumerated()), id: \.offset) { index, param in
+        ForEach(Array(self.parameters.enumerated()), id: \.offset) { index, param in
             let angle = Double(index) * 2 * .pi / 5 - .pi / 2
             let labelRadius = radius + 20
             let labelX = center.x + labelRadius * cos(angle)
@@ -518,26 +518,25 @@ struct RadarChartView: View {
     private func extractParameterValue(for key: String, from state: PsychologicalState) -> Double {
         switch key {
         case "precision":
-            return normalizeValue(state.parameters.precision.task.value, min: -1, max: 6)
+            return self.normalizeValue(state.parameters.precision.task.value, min: -1, max: 6)
         case "reactivity":
             // Calculate reactivity based on precision difference between task and distractor
             let taskPrecision = state.parameters.precision.task.value
             let distractorPrecision = state.parameters.precision.distractor.value
             let reactivity = abs(taskPrecision - distractorPrecision)
-            return normalizeValue(reactivity, min: 0, max: 5)
+            return self.normalizeValue(reactivity, min: 0, max: 5)
         case "somaticBias":
             // Use somatic bias range average
             let biasAvg = (state.parameters.somaticBias.min + state.parameters.somaticBias.max) / 2.0
-            return normalizeValue(biasAvg, min: 0.5, max: 2.5)
+            return self.normalizeValue(biasAvg, min: 0.5, max: 2.5)
         case "focus":
             // Focus stability based on threshold variance (inverse)
             let variance = state.parameters.threshold.variance
-            let stability = Swift.max(0.0, 1.0 - normalizeValue(variance, min: 0, max: 50))
-            return stability
+            return Swift.max(0.0, 1.0 - self.normalizeValue(variance, min: 0, max: 50))
         case "cognitive":
             // Cognitive load based on prediction error magnitude
-            let errorValue = extractErrorMagnitude(from: state)
-            return normalizeValue(errorValue, min: 0, max: 15)
+            let errorValue = self.extractErrorMagnitude(from: state)
+            return self.normalizeValue(errorValue, min: 0, max: 15)
         default:
             return 0.5
         }

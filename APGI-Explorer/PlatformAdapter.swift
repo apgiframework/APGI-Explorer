@@ -2,34 +2,32 @@ import SwiftUI
 
 // MARK: - Platform Abstraction Layer
 
-/// Provides platform-agnostic APIs for common functionality
-struct PlatformAdapter {
-
+enum PlatformAdapter {
     // MARK: - Platform Detection
 
     static var isMacOS: Bool {
         #if os(macOS)
-        return true
+            return true
         #else
-        return false
+            return false
         #endif
     }
 
     static var isiOS: Bool {
         #if os(iOS)
-        return true
+            return true
         #else
-        return false
+            return false
         #endif
     }
 
     static var currentPlatform: Platform {
         #if os(macOS)
-        return .macOS
+            return .macOS
         #elseif os(iOS)
-        return .iOS
+            return .iOS
         #else
-        return .unknown
+            return .unknown
         #endif
     }
 
@@ -40,58 +38,58 @@ struct PlatformAdapter {
 
         var name: String {
             switch self {
-            case .macOS: return "macOS"
-            case .iOS: return "iOS"
-            case .unknown: return "Unknown"
+            case .macOS: "macOS"
+            case .iOS: "iOS"
+            case .unknown: "Unknown"
             }
         }
     }
 
     // MARK: - Window Management
 
-    static func openWindow<T: View>(type: WindowManager.WindowType, content: @escaping () -> T) {
+    static func openWindow(type: WindowManager.WindowType, content: @escaping () -> some View) {
         #if os(macOS)
-        WindowManager.shared.openWindow(type: type, content: content)
+            WindowManager.shared.openWindow(type: type, content: content)
         #else
-        // On iOS, we navigate instead of opening new windows
-        NotificationCenter.default.post(
-            name: .navigateToView,
-            object: type,
-            userInfo: ["content": content()]
-        )
+            // On iOS, we navigate instead of opening new windows
+            NotificationCenter.default.post(
+                name: .navigateToView,
+                object: type,
+                userInfo: ["content": content()]
+            )
         #endif
     }
 
     static func minimizeWindow() {
         #if os(macOS)
-        NSApp.keyWindow?.miniaturize(nil)
+            NSApp.keyWindow?.miniaturize(nil)
         #endif
     }
 
     static func zoomWindow() {
         #if os(macOS)
-        NSApp.keyWindow?.zoom(nil)
+            NSApp.keyWindow?.zoom(nil)
         #endif
     }
 
     static func toggleFullScreen() {
         #if os(macOS)
-        NSApp.keyWindow?.toggleFullScreen(nil)
+            NSApp.keyWindow?.toggleFullScreen(nil)
         #endif
     }
 
     static func toggleSidebar() {
         #if os(macOS)
-        NSApp.keyWindow?.firstResponder?.tryToPerform(
-            #selector(NSSplitViewController.toggleSidebar(_:)),
-            with: nil
-        )
+            NSApp.keyWindow?.firstResponder?.tryToPerform(
+                #selector(NSSplitViewController.toggleSidebar(_:)),
+                with: nil
+            )
         #endif
     }
 
     static func quitApp() {
         #if os(macOS)
-        NSApplication.shared.terminate(nil)
+            NSApplication.shared.terminate(nil)
         #endif
     }
 
@@ -99,9 +97,9 @@ struct PlatformAdapter {
 
     static var navigationTitleDisplayMode: Int {
         #if os(iOS)
-        return 1 // .inline
+            return 1 // .inline
         #else
-        return 0 // .large
+            return 0 // .large
         #endif
     }
 
@@ -109,9 +107,9 @@ struct PlatformAdapter {
 
     static func share(items: [Any]) -> some View {
         #if os(macOS)
-        return ShareSheet(items: items)
+            return ShareSheet(items: items)
         #else
-        return ShareSheet(items: items)
+            return ShareSheet(items: items)
         #endif
     }
 
@@ -121,7 +119,7 @@ struct PlatformAdapter {
         #if os(macOS)
         // macOS-specific keyboard shortcuts are handled in MenuCommands
         #else
-        // iOS-specific keyboard shortcuts can be set up here if needed
+            // iOS-specific keyboard shortcuts can be set up here if needed
         #endif
     }
 
@@ -129,9 +127,9 @@ struct PlatformAdapter {
 
     static func toolbarPlacement() -> ToolbarItemPlacement {
         #if os(macOS)
-        return .automatic
+            return .automatic
         #else
-        return .navigationBarTrailing
+            return .navigationBarTrailing
         #endif
     }
 
@@ -139,31 +137,32 @@ struct PlatformAdapter {
 
     static func exportToFile(data: Data, filename: String) -> URL? {
         #if os(macOS)
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.pdf, .text, .json]
-        panel.nameFieldStringValue = filename
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.pdf, .text, .json]
+            panel.nameFieldStringValue = filename
 
-        if panel.runModal() == .OK, let url = panel.url {
-            try? data.write(to: url)
-            return url
-        }
+            if panel.runModal() == .OK, let url = panel.url {
+                try? data.write(to: url)
+                return url
+            }
         #else
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(filename)
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileURL = tempDir.appendingPathComponent(filename)
 
-        try? data.write(to: fileURL)
+            try? data.write(to: fileURL)
 
-        let activityViewController = UIActivityViewController(
-            activityItems: [fileURL],
-            applicationActivities: nil
-        )
+            let activityViewController = UIActivityViewController(
+                activityItems: [fileURL],
+                applicationActivities: nil
+            )
 
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            window.rootViewController?.present(activityViewController, animated: true)
-        }
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first
+            {
+                window.rootViewController?.present(activityViewController, animated: true)
+            }
 
-        return fileURL
+            return fileURL
         #endif
 
         return nil
@@ -173,20 +172,20 @@ struct PlatformAdapter {
 
     static func openURL(_ url: URL) {
         #if os(macOS)
-        NSWorkspace.shared.open(url)
+            NSWorkspace.shared.open(url)
         #else
-        UIApplication.shared.open(url)
+            UIApplication.shared.open(url)
         #endif
     }
 
     static func showSettings() {
         #if os(macOS)
-        WindowManager.shared.openWindow(type: .settings) {
-            SettingsView()
-        }
+            WindowManager.shared.openWindow(type: .settings) {
+                SettingsView()
+            }
         #else
-        // On iOS, navigate to settings
-        NotificationCenter.default.post(name: .navigateToSettings, object: nil)
+            // On iOS, navigate to settings
+            NotificationCenter.default.post(name: .navigateToSettings, object: nil)
         #endif
     }
 
@@ -194,7 +193,7 @@ struct PlatformAdapter {
 
     static func setAccessibilityFocus(to identifier: String) {
         #if canImport(UIKit)
-        UIAccessibility.post(notification: .screenChanged, argument: identifier)
+            UIAccessibility.post(notification: .screenChanged, argument: identifier)
         #endif
     }
 
@@ -203,22 +202,22 @@ struct PlatformAdapter {
     static var preferredCacheSize: Int {
         switch currentPlatform {
         case .macOS:
-            return 200 // More memory available on macOS
+            200 // More memory available on macOS
         case .iOS:
-            return 50 // Conservative on iOS
+            50 // Conservative on iOS
         case .unknown:
-            return 100
+            100
         }
     }
 
     static var maxConcurrentOperations: Int {
         switch currentPlatform {
         case .macOS:
-            return ProcessInfo.processInfo.processorCount
+            ProcessInfo.processInfo.processorCount
         case .iOS:
-            return min(4, ProcessInfo.processInfo.processorCount)
+            min(4, ProcessInfo.processInfo.processorCount)
         case .unknown:
-            return 2
+            2
         }
     }
 
@@ -227,33 +226,33 @@ struct PlatformAdapter {
     static var defaultPadding: EdgeInsets {
         switch currentPlatform {
         case .macOS:
-            return EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
+            EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
         case .iOS:
-            return EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+            EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
         case .unknown:
-            return EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+            EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
         }
     }
 
     static var cornerRadius: CGFloat {
         switch currentPlatform {
         case .macOS:
-            return 8
+            8
         case .iOS:
-            return 12
+            12
         case .unknown:
-            return 8
+            8
         }
     }
 
     static var shadowRadius: CGFloat {
         switch currentPlatform {
         case .macOS:
-            return 2
+            2
         case .iOS:
-            return 4
+            4
         case .unknown:
-            return 2
+            2
         }
     }
 }
@@ -311,89 +310,89 @@ extension Color {
 enum PlatformColor {
     static var adaptiveBackground: Color {
         #if os(macOS)
-        Color(NSColor.windowBackgroundColor)
+            Color(NSColor.windowBackgroundColor)
         #else
-        Color(.systemBackground)
+            Color(.systemBackground)
         #endif
     }
 
     static var adaptiveSecondaryBackground: Color {
         #if os(macOS)
-        Color(NSColor.controlBackgroundColor)
+            Color(NSColor.controlBackgroundColor)
         #else
-        Color(.secondarySystemBackground)
+            Color(.secondarySystemBackground)
         #endif
     }
 
     static var adaptiveTertiaryBackground: Color {
         #if os(macOS)
-        Color(NSColor.windowBackgroundColor.blended(withFraction: 0.7, of: NSColor.controlBackgroundColor) ?? NSColor.controlBackgroundColor)
+            Color(NSColor.windowBackgroundColor.blended(withFraction: 0.7, of: NSColor.controlBackgroundColor) ?? NSColor.controlBackgroundColor)
         #else
-        Color(.tertiarySystemBackground)
+            Color(.tertiarySystemBackground)
         #endif
     }
 
     static var adaptivePrimaryText: Color {
         #if os(macOS)
-        Color(NSColor.labelColor)
+            Color(NSColor.labelColor)
         #else
-        Color(.label)
+            Color(.label)
         #endif
     }
 
     static var adaptiveSecondaryText: Color {
         #if os(macOS)
-        Color(NSColor.secondaryLabelColor)
+            Color(NSColor.secondaryLabelColor)
         #else
-        Color(.secondaryLabel)
+            Color(.secondaryLabel)
         #endif
     }
 
     static var adaptiveGray: Color {
         #if os(macOS)
-        Color(NSColor.systemGray)
+            Color(NSColor.systemGray)
         #else
-        Color(.systemGray)
+            Color(.systemGray)
         #endif
     }
 
     static var adaptiveGray2: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.8))
+            Color(NSColor.systemGray.withAlphaComponent(0.8))
         #else
-        Color(.systemGray2)
+            Color(.systemGray2)
         #endif
     }
 
     static var adaptiveGray3: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.6))
+            Color(NSColor.systemGray.withAlphaComponent(0.6))
         #else
-        Color(.systemGray3)
+            Color(.systemGray3)
         #endif
     }
 
     static var adaptiveGray4: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.4))
+            Color(NSColor.systemGray.withAlphaComponent(0.4))
         #else
-        Color(.systemGray4)
+            Color(.systemGray4)
         #endif
     }
 
     static var adaptiveGray5: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.3))
+            Color(NSColor.systemGray.withAlphaComponent(0.3))
         #else
-        Color(.systemGray5)
+            Color(.systemGray5)
         #endif
     }
 
     static var adaptiveGray6: Color {
         #if os(macOS)
-        Color(NSColor.systemGray.withAlphaComponent(0.2))
+            Color(NSColor.systemGray.withAlphaComponent(0.2))
         #else
-        Color(.systemGray6)
+            Color(.systemGray6)
         #endif
     }
 }
@@ -405,10 +404,10 @@ struct PlatformNavigationTitle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .navigationTitle(title)
-            #if os(iOS)
+            .navigationTitle(self.title)
+        #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
+        #endif
     }
 }
 
@@ -417,19 +416,19 @@ struct PlatformToolbar<ToolbarContent: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         #if os(macOS)
-        content
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    self.content
+            content
+                .toolbar {
+                    ToolbarItem(placement: .automatic) {
+                        self.content
+                    }
                 }
-            }
         #else
-        content
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    self.content
+            content
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        self.content
+                    }
                 }
-            }
         #endif
     }
 }
@@ -462,7 +461,7 @@ extension View {
         modifier(PlatformNavigationTitle(title: title))
     }
 
-    func platformToolbar<ToolbarContent: View>(@ViewBuilder content: () -> ToolbarContent) -> some View {
+    func platformToolbar(@ViewBuilder content: () -> some View) -> some View {
         modifier(PlatformToolbar(content: content()))
     }
 
@@ -489,9 +488,9 @@ extension Notification.Name {
 // MARK: - Required Imports
 
 #if os(macOS)
-import AppKit
-import UniformTypeIdentifiers
+    import AppKit
+    import UniformTypeIdentifiers
 #else
-import UIKit
-import UniformTypeIdentifiers
+    import UIKit
+    import UniformTypeIdentifiers
 #endif

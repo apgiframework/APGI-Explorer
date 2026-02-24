@@ -1,6 +1,8 @@
+import os.log
 import SwiftUI
 
 // MARK: - Advanced Settings View
+
 struct AdvancedSettingsView: View {
     @AppStorage("enableExperimentalFeatures") private var enableExperimentalFeatures: Bool = false
     @AppStorage("betaUpdates") private var betaUpdates: Bool = false
@@ -19,10 +21,10 @@ struct AdvancedSettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Toggle("Enable Experimental Features", isOn: $enableExperimentalFeatures)
+                    Toggle("Enable Experimental Features", isOn: self.$enableExperimentalFeatures)
                         .help("Enable access to experimental features that may be unstable")
 
-                    Toggle("Beta Updates", isOn: $betaUpdates)
+                    Toggle("Beta Updates", isOn: self.$betaUpdates)
                         .help("Receive early access to beta versions and features")
                 }
                 .padding()
@@ -35,10 +37,10 @@ struct AdvancedSettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Toggle("Show Performance Metrics", isOn: $showPerformanceMetrics)
+                    Toggle("Show Performance Metrics", isOn: self.$showPerformanceMetrics)
                         .help("Display performance metrics and debugging information")
 
-                    Toggle("Enable Debug Mode", isOn: $enableDebugMode)
+                    Toggle("Enable Debug Mode", isOn: self.$enableDebugMode)
                         .help("Enable additional debugging features and logging")
                 }
                 .padding()
@@ -53,13 +55,13 @@ struct AdvancedSettingsView: View {
                         .foregroundColor(.red)
 
                     Button("Reset All Settings") {
-                        showingResetAlert = true
+                        self.showingResetAlert = true
                     }
                     .buttonStyle(.bordered)
                     .tint(.orange)
 
                     Button("Clear All Data") {
-                        showingClearDataAlert = true
+                        self.showingClearDataAlert = true
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
@@ -71,18 +73,20 @@ struct AdvancedSettingsView: View {
             .padding()
         }
         .navigationTitle("Advanced")
-        .alert("Reset Settings", isPresented: $showingResetAlert) {
-            Button("Cancel", role: .cancel) { }
+        .alert("Reset Settings", isPresented: self.$showingResetAlert) {
+            Button("Cancel", role: .cancel) {
+            }
             Button("Reset", role: .destructive) {
-                resetAllSettings()
+                self.resetAllSettings()
             }
         } message: {
             Text("This will reset all settings to their default values. This action cannot be undone.")
         }
-        .alert("Clear All Data", isPresented: $showingClearDataAlert) {
-            Button("Cancel", role: .cancel) { }
+        .alert("Clear All Data", isPresented: self.$showingClearDataAlert) {
+            Button("Cancel", role: .cancel) {
+            }
             Button("Clear", role: .destructive) {
-                clearAllData()
+                self.clearAllData()
             }
         } message: {
             Text("This will permanently delete all profiles and data. This action cannot be undone.")
@@ -91,7 +95,9 @@ struct AdvancedSettingsView: View {
 
     private func resetAllSettings() {
         // Reset all UserDefaults to default values
-        UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
+        if let bundleId = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleId)
+        }
         UserDefaults.standard.synchronize()
     }
 
@@ -109,7 +115,7 @@ struct AdvancedSettingsView: View {
                 do {
                     try context.execute(deleteRequest)
                 } catch {
-                    print("Error deleting \(entityName): \(error)")
+                    os_log("Error deleting %@: %@", entityName, error.localizedDescription)
                 }
             }
         }
@@ -117,7 +123,7 @@ struct AdvancedSettingsView: View {
         do {
             try context.save()
         } catch {
-            print("Error saving context after clearing data: \(error)")
+            os_log("Error saving context after clearing data: %@", error.localizedDescription)
         }
     }
 }

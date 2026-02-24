@@ -1,4 +1,3 @@
-// ParameterSliderView.swift
 import SwiftUI
 
 struct ParameterSliderView: View {
@@ -32,38 +31,38 @@ struct ParameterSliderView: View {
 
             ParameterSlider(
                 name: "Prediction Error",
-                value: $predictionError,
-                range: 0...100,
+                value: self.$predictionError,
+                range: 0 ... 100,
                 step: 1
             ) { value in
-                onParameterChange("predictionError", value)
+                self.onParameterChange("predictionError", value)
             }
 
             ParameterSlider(
                 name: "Precision",
-                value: $precision,
-                range: 0...5,
+                value: self.$precision,
+                range: 0 ... 5,
                 step: 0.1
             ) { value in
-                onParameterChange("precision", value)
+                self.onParameterChange("precision", value)
             }
 
             ParameterSlider(
                 name: "Threshold",
-                value: $threshold,
-                range: 0...100,
+                value: self.$threshold,
+                range: 0 ... 100,
                 step: 1
             ) { value in
-                onParameterChange("threshold", value)
+                self.onParameterChange("threshold", value)
             }
 
             ParameterSlider(
                 name: "Somatic Bias",
-                value: $somaticBias,
-                range: 0...3,
+                value: self.$somaticBias,
+                range: 0 ... 3,
                 step: 0.1
             ) { value in
-                onParameterChange("somaticBias", value)
+                self.onParameterChange("somaticBias", value)
             }
         }
         .padding()
@@ -82,23 +81,23 @@ struct ParameterSlider: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
-                Text(name)
+                Text(self.name)
                     .font(.subheadline)
                 Spacer()
-                Text(String(format: "%.1f", value))
+                Text(String(format: "%.1f", self.value))
                     .font(.caption.monospacedDigit())
                     .foregroundColor(.secondary)
             }
 
             Slider(
-                value: $value,
-                in: range,
-                step: step
+                value: self.$value,
+                in: self.range,
+                step: self.step
             ) {
-                Text(name)
+                Text(self.name)
             } onEditingChanged: { editing in
                 if !editing {
-                    onValueChanged(value)
+                    self.onValueChanged(self.value)
                 }
             }
         }

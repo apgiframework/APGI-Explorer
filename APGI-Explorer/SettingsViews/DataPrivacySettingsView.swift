@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - Data & Privacy Settings View
+
 struct DataPrivacySettingsView: View {
     @AppStorage("enableCrashReporting") private var enableCrashReporting: Bool = true
     @AppStorage("enableDataCollection") private var enableDataCollection: Bool = false
@@ -21,13 +22,13 @@ struct DataPrivacySettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Toggle("Enable Crash Reporting", isOn: $enableCrashReporting)
+                    Toggle("Enable Crash Reporting", isOn: self.$enableCrashReporting)
                         .help("Automatically send crash reports to help improve the app")
 
-                    Toggle("Enable Data Collection", isOn: $enableDataCollection)
+                    Toggle("Enable Data Collection", isOn: self.$enableDataCollection)
                         .help("Allow collection of anonymous usage data for analytics")
 
-                    Toggle("Privacy Policy Accepted", isOn: $privacyPolicyAccepted)
+                    Toggle("Privacy Policy Accepted", isOn: self.$privacyPolicyAccepted)
                         .help("You must accept the privacy policy to use the app")
                 }
                 .padding()
@@ -40,10 +41,10 @@ struct DataPrivacySettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Toggle("Analytics Consent", isOn: $analyticsConsent)
+                    Toggle("Analytics Consent", isOn: self.$analyticsConsent)
                         .help("Consent to analytics data collection")
 
-                    Toggle("Crash Reporting Consent", isOn: $crashReportingConsent)
+                    Toggle("Crash Reporting Consent", isOn: self.$crashReportingConsent)
                         .help("Consent to automatic crash reporting")
                 }
                 .padding()
@@ -57,17 +58,17 @@ struct DataPrivacySettingsView: View {
                         .fontWeight(.semibold)
 
                     Button("View Privacy Policy") {
-                        showingPrivacyPolicy = true
+                        self.showingPrivacyPolicy = true
                     }
                     .buttonStyle(.bordered)
 
                     Button("Export My Data") {
-                        showingDataExport = true
+                        self.showingDataExport = true
                     }
                     .buttonStyle(.bordered)
 
                     Button("Delete All Data") {
-                        showingDataDeletion = true
+                        self.showingDataDeletion = true
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
@@ -79,20 +80,22 @@ struct DataPrivacySettingsView: View {
             .padding()
         }
         .navigationTitle("Data & Privacy")
-        .sheet(isPresented: $showingPrivacyPolicy) {
+        .sheet(isPresented: self.$showingPrivacyPolicy) {
             PrivacyPolicyView()
                 .frame(minWidth: 600, minHeight: 500)
         }
-        .alert("Export Data", isPresented: $showingDataExport) {
-            Button("Cancel", role: .cancel) { }
+        .alert("Export Data", isPresented: self.$showingDataExport) {
+            Button("Cancel", role: .cancel) {
+            }
             Button("Export") {
                 // Handle data export
             }
         } message: {
             Text("Export all your profile data in a portable format.")
         }
-        .alert("Delete All Data", isPresented: $showingDataDeletion) {
-            Button("Cancel", role: .cancel) { }
+        .alert("Delete All Data", isPresented: self.$showingDataDeletion) {
+            Button("Cancel", role: .cancel) {
+            }
             Button("Delete", role: .destructive) {
                 // Handle data deletion
             }

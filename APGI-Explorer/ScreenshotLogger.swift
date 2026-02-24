@@ -2,6 +2,7 @@ import Foundation
 import os.log
 
 // MARK: - Logger
+
 class Logger {
     private let enabled: Bool
     private let logFile: URL?
@@ -12,92 +13,102 @@ class Logger {
         self.logFile = logFile
         self.osLog = OSLog(subsystem: "com.apgi.explorer", category: "ScreenshotAutomation")
 
-        if enabled && logFile != nil {
-            createLogFileIfNeeded()
+        if enabled, logFile != nil {
+            self.createLogFileIfNeeded()
         }
     }
 
     func log(_ message: String) {
-        guard enabled else { return }
+        guard self.enabled else { return }
 
         let timestamp = DateFormatter.logTimestamp.string(from: Date())
         let formattedMessage = "[\(timestamp)] \(message)"
 
         // Log to console
-        print(formattedMessage)
+        #if DEBUG
+            print(formattedMessage)
+        #endif
 
         // Log to OS Log
-        os_log("%{public}@", log: osLog, type: .info, message)
+        os_log("%{public}@", log: self.osLog, type: .info, message)
 
         // Log to file if configured
-        if let logFile = logFile {
-            writeToFile(formattedMessage, to: logFile)
+        if let logFile {
+            self.writeToFile(formattedMessage, to: logFile)
         }
     }
 
     func logError(_ message: String) {
-        guard enabled else { return }
+        guard self.enabled else { return }
 
         let timestamp = DateFormatter.logTimestamp.string(from: Date())
         let formattedMessage = "[\(timestamp)] ❌ ERROR: \(message)"
 
         // Log to console
-        print(formattedMessage)
+        #if DEBUG
+            print(formattedMessage)
+        #endif
 
         // Log to OS Log
-        os_log("%{public}@", log: osLog, type: .error, message)
+        os_log("%{public}@", log: self.osLog, type: .error, message)
 
         // Log to file if configured
-        if let logFile = logFile {
-            writeToFile(formattedMessage, to: logFile)
+        if let logFile {
+            self.writeToFile(formattedMessage, to: logFile)
         }
     }
 
     func logWarning(_ message: String) {
-        guard enabled else { return }
+        guard self.enabled else { return }
 
         let timestamp = DateFormatter.logTimestamp.string(from: Date())
         let formattedMessage = "[\(timestamp)] ⚠️ WARNING: \(message)"
 
         // Log to console
-        print(formattedMessage)
+        #if DEBUG
+            print(formattedMessage)
+        #endif
 
         // Log to OS Log
-        os_log("%{public}@", log: osLog, type: .default, message)
+        os_log("%{public}@", log: self.osLog, type: .default, message)
 
         // Log to file if configured
-        if let logFile = logFile {
-            writeToFile(formattedMessage, to: logFile)
+        if let logFile {
+            self.writeToFile(formattedMessage, to: logFile)
         }
     }
 
     func logSuccess(_ message: String) {
-        guard enabled else { return }
+        guard self.enabled else { return }
 
         let timestamp = DateFormatter.logTimestamp.string(from: Date())
         let formattedMessage = "[\(timestamp)] ✅ \(message)"
 
         // Log to console
-        print(formattedMessage)
+        #if DEBUG
+            print(formattedMessage)
+        #endif
 
         // Log to OS Log
-        os_log("%{public}@", log: osLog, type: .info, message)
+        os_log("%{public}@", log: self.osLog, type: .info, message)
 
         // Log to file if configured
-        if let logFile = logFile {
-            writeToFile(formattedMessage, to: logFile)
+        if let logFile {
+            self.writeToFile(formattedMessage, to: logFile)
         }
     }
 
     private func createLogFileIfNeeded() {
-        guard let logFile = logFile else { return }
+        guard let logFile else { return }
 
         let directory = logFile.deletingLastPathComponent()
         if !FileManager.default.fileExists(atPath: directory.path) {
             do {
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             } catch {
-                print("Failed to create log directory: \(error)")
+                #if DEBUG
+                    print("Failed to create log directory: \(error)")
+                #endif
             }
         }
 
@@ -105,7 +116,9 @@ class Logger {
             do {
                 try "".write(to: logFile, atomically: true, encoding: .utf8)
             } catch {
-                print("Failed to create log file: \(error)")
+                #if DEBUG
+                    print("Failed to create log file: \(error)")
+                #endif
             }
         }
     }
@@ -119,12 +132,15 @@ class Logger {
             guard let data = (message + "\n").data(using: .utf8) else { return }
             fileHandle.write(data)
         } catch {
-            print("Failed to write to log file: \(error)")
+            #if DEBUG
+                print("Failed to write to log file: \(error)")
+            #endif
         }
     }
 }
 
 // MARK: - Date Formatter Extension
+
 extension DateFormatter {
     static let logTimestamp: DateFormatter = {
         let formatter = DateFormatter()
