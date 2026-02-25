@@ -20,7 +20,7 @@ final class LocalizationTests: XCTestCase {
 
     func testSupportedLanguages() {
         let languages: [LocalizationManager.SupportedLanguage] = [
-            .english, .spanish, .french, .german, .chineseSimplified,
+            .english, .spanish, .french, .german, .russian,
         ]
 
         for language in languages {
@@ -48,8 +48,8 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(LocalizationManager.SupportedLanguage.german.localeIdentifier, "de_DE")
 
         // Test Chinese Simplified
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.chineseSimplified.rawValue, "zh-Hans")
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.chineseSimplified.localeIdentifier, "zh_Hans_CN")
+        XCTAssertEqual(LocalizationManager.SupportedLanguage.russian.rawValue, "zh-Hans")
+        XCTAssertEqual(LocalizationManager.SupportedLanguage.russian.localeIdentifier, "zh_Hans_CN")
     }
 
     func testLanguageSwitching() throws {

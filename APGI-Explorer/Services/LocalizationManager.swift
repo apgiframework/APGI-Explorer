@@ -5,10 +5,12 @@ import SwiftUI
 class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
 
-    @Published var currentLanguage: SupportedLanguage = .english
+    @Published var currentLanguage: SupportedLanguage = .russian
 
     private init() {
         self.loadSavedLanguage()
+        // Ensure bundle is set for the current language
+        Bundle.setLanguage(self.currentLanguage.rawValue)
     }
 
     enum SupportedLanguage: String, CaseIterable, Identifiable {
@@ -16,7 +18,7 @@ class LocalizationManager: ObservableObject {
         case spanish = "es"
         case french = "fr"
         case german = "de"
-        case chineseSimplified = "zh-Hans"
+        case russian = "ru"
 
         var id: String {
             rawValue
@@ -32,8 +34,8 @@ class LocalizationManager: ObservableObject {
                 NSLocalizedString("Français", comment: "Language name")
             case .german:
                 NSLocalizedString("Deutsch", comment: "Language name")
-            case .chineseSimplified:
-                NSLocalizedString("简体中文", comment: "Language name")
+            case .russian:
+                NSLocalizedString("Русский", comment: "Language name")
             }
         }
 
@@ -47,8 +49,8 @@ class LocalizationManager: ObservableObject {
                 "Français"
             case .german:
                 "Deutsch"
-            case .chineseSimplified:
-                "简体中文"
+            case .russian:
+                "Русский"
             }
         }
 
@@ -62,8 +64,8 @@ class LocalizationManager: ObservableObject {
                 "fr_FR"
             case .german:
                 "de_DE"
-            case .chineseSimplified:
-                "zh_Hans_CN"
+            case .russian:
+                "ru_RU"
             }
         }
     }
@@ -140,12 +142,11 @@ struct LocalizationModifier: ViewModifier {
 
 extension String {
     var localized: String {
-        NSLocalizedString(self, comment: "")
+        LocalizationManager.shared.localizedString(for: self)
     }
 
     func localized(arguments: CVarArg...) -> String {
-        let format = NSLocalizedString(self, comment: "")
-        return String(format: format, arguments: arguments)
+        LocalizationManager.shared.localizedString(for: self, arguments: arguments)
     }
 }
 
@@ -153,12 +154,11 @@ extension String {
 
 extension Text {
     init(localized key: String) {
-        self.init(NSLocalizedString(key, comment: ""))
+        self.init(LocalizationManager.shared.localizedString(for: key))
     }
 
     init(localized key: String, arguments: CVarArg...) {
-        let format = NSLocalizedString(key, comment: "")
-        let localizedString = String(format: format, arguments: arguments)
+        let localizedString = LocalizationManager.shared.localizedString(for: key, arguments: arguments)
         self.init(localizedString)
     }
 }
@@ -185,16 +185,16 @@ struct LocalizationSettingsView: View {
                 }
                 .pickerStyle(MenuPickerStyle())
 
-                Text("Changing the language will restart the application.")
+                Text("Changing the language will restart the application.".localized)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             Section("About Localization".localized) {
-                Text("APGI Explorer supports multiple languages to make psychological assessment accessible to users worldwide.")
+                Text("APGI Explorer supports multiple languages to make psychological assessment accessible to users worldwide.".localized)
                     .font(.body)
 
-                Text("Contributions for additional translations are welcome on GitHub.")
+                Text("Contributions for additional translations are welcome on GitHub.".localized)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -241,7 +241,7 @@ enum LocalizationUtils {
 #if DEBUG
     extension LocalizationManager.SupportedLanguage {
         static var previewLanguages: [LocalizationManager.SupportedLanguage] {
-            [.english, .spanish, .french, .german, .chineseSimplified]
+            [.english, .spanish, .french, .german, .russian]
         }
     }
 
