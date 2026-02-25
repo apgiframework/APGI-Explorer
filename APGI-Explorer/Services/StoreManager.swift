@@ -81,9 +81,9 @@ class StoreManager: ObservableObject {
 
             DispatchQueue.main.async {
                 self.products = storeProducts.sorted { (product1: Product, product2: Product) -> Bool in
-                    if product1.type == .autoRenewable && product2.type != .autoRenewable {
+                    if product1.type == .autoRenewable, product2.type != .autoRenewable {
                         return true
-                    } else if product1.type != .autoRenewable && product2.type == .autoRenewable {
+                    } else if product1.type != .autoRenewable, product2.type == .autoRenewable {
                         return false
                     } else {
                         return product1.displayPrice < product2.displayPrice
@@ -216,7 +216,7 @@ class StoreManager: ObservableObject {
 
         for await result in StoreKit.Transaction.currentEntitlements {
             do {
-                let transaction = try await MainActor.run { try checkVerified(result) }
+                let transaction = try await MainActor.run { try self.checkVerified(result) }
                 purchasedIDs.insert(transaction.productID)
             } catch {
                 print("Failed to verify transaction: \(error)")
@@ -253,26 +253,22 @@ class StoreManager: ObservableObject {
     // MARK: - Feature Access
 
     var hasPremiumFeatures: Bool {
-        UserDefaults.standard.bool(forKey: "premium_features_enabled") ||
-            self.purchasedProductIDs.contains(ProductID.premiumMonthly.rawValue) ||
+        self.purchasedProductIDs.contains(ProductID.premiumMonthly.rawValue) ||
             self.purchasedProductIDs.contains(ProductID.premiumYearly.rawValue)
     }
 
     var hasProfessionalFeatures: Bool {
-        UserDefaults.standard.bool(forKey: "professional_features_enabled") ||
-            self.purchasedProductIDs.contains(ProductID.professionalFeatures.rawValue) ||
+        self.purchasedProductIDs.contains(ProductID.professionalFeatures.rawValue) ||
             self.hasPremiumFeatures
     }
 
     var hasResearchFeatures: Bool {
-        UserDefaults.standard.bool(forKey: "research_features_enabled") ||
-            self.purchasedProductIDs.contains(ProductID.researchPack.rawValue) ||
+        self.purchasedProductIDs.contains(ProductID.researchPack.rawValue) ||
             self.hasPremiumFeatures
     }
 
     var hasUnlimitedProfiles: Bool {
-        UserDefaults.standard.bool(forKey: "unlimited_profiles_enabled") ||
-            self.purchasedProductIDs.contains(ProductID.unlimitedProfiles.rawValue) ||
+        self.purchasedProductIDs.contains(ProductID.unlimitedProfiles.rawValue) ||
             self.hasPremiumFeatures
     }
 
@@ -297,7 +293,7 @@ class StoreManager: ObservableObject {
     }
 
     func isSubscriptionActive(for productID: String) async -> Bool {
-        guard purchasedProductIDs.contains(productID) else { return false }
+        guard self.purchasedProductIDs.contains(productID) else { return false }
 
         guard let subscriptionStatus = await getSubscriptionStatus(for: productID) else { return false }
 
@@ -341,6 +337,10 @@ enum StoreError: Error, LocalizedError {
             NSLocalizedString("An unknown error occurred", comment: "Store error")
         }
     }
+}
+
+enum ProfileError: Error {
+    case invalidData
 }
 
 // MARK: - Store Settings View
@@ -454,19 +454,19 @@ struct ProductsSection: View {
 
     var body: some View {
         Section {
-            if storeManager.isLoading {
+            if self.storeManager.isLoading {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.8)
                     Text("Loading products...")
                         .foregroundColor(.secondary)
                 }
-            } else if storeManager.products.isEmpty {
+            } else if self.storeManager.products.isEmpty {
                 Text("No products available")
                     .foregroundColor(.secondary)
             } else {
-                ForEach(storeManager.products, id: \.id) { product in
-                    ProductRow(product: product, storeManager: storeManager)
+                ForEach(self.storeManager.products, id: \.id) { product in
+                    ProductRow(product: product, storeManager: self.storeManager)
                 }
             }
         } header: {
@@ -482,9 +482,9 @@ struct PurchasedProductsSection: View {
     let products: [Product]
 
     var body: some View {
-        if !purchasedProductIDs.isEmpty {
+        if !self.purchasedProductIDs.isEmpty {
             Section("Purchased Items") {
-                ForEach(Array(purchasedProductIDs), id: \.self) { productID in
+                ForEach(Array(self.purchasedProductIDs), id: \.self) { productID in
                     if let product = products.first(where: { $0.id == productID }) {
                         HStack {
                             VStack(alignment: .leading) {

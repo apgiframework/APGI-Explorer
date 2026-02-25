@@ -2,8 +2,8 @@
 import XCTest
 
 final class ResearchExportTests: XCTestCase {
-    var researchExportManager: ResearchExportManager!
-    var testProfile: ProfileExport!
+    var researchExportManager: ResearchExportManager?
+    var testProfile: ProfileExport?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -49,7 +49,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testJSONExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .json)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .json) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -65,7 +65,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testCSVExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .csv)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .csv) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -80,7 +80,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testXMLExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .xml)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .xml) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -95,21 +95,21 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testSPSSExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .spss)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .spss) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
         XCTAssertGreaterThanOrEqual(exportData.count, 100) // SPSS files have binary headers
     }
 
     func testStataExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .stata)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .stata) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
         XCTAssertGreaterThanOrEqual(exportData.count, 100) // Stata files have binary headers
     }
 
     func testRDataExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .rData)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .rData) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -123,7 +123,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testExcelExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .excel)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .excel) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -134,7 +134,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testBibTeXExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .bibTeX)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .bibTeX) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -149,7 +149,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testEndNoteExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .endNote)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .endNote) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -164,7 +164,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testAPAReportExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .apa)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .apa) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 
@@ -173,7 +173,7 @@ final class ResearchExportTests: XCTestCase {
     }
 
     func testMLAReportExport() throws {
-        let exportData = try researchExportManager.exportProfile(self.testProfile, format: .mla)
+        let exportData = try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .mla) ?? Data()
 
         XCTAssertFalse(exportData.isEmpty)
 

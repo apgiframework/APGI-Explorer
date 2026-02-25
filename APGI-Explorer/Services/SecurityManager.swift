@@ -1,23 +1,37 @@
 import Combine
 import CoreData
 import Foundation
+import OSLog
 
 extension CodingUserInfoKey {
-    static let managedObjectContext = CodingUserInfoKey(rawValue: "managedObjectContext")!
+    static let managedObjectContext = CodingUserInfoKey(rawValue: "managedObjectContext")
+}
+
+enum SecurityManagerError: Error {
+    case persistenceLoadFailed(Error)
 }
 
 class SecurityManager: ObservableObject {
     static let shared = SecurityManager()
     private let keychain = KeychainManager.shared
-    private let persistentContainer: NSPersistentContainer
+    private var persistentContainer: NSPersistentContainer
 
     private init() {
         self.persistentContainer = NSPersistentContainer(name: "APGISignature")
+        let semaphore = DispatchSemaphore(value: 0)
         self.persistentContainer.loadPersistentStores { _, error in
             if let error {
-                fatalError("Core Data failed to load: \(error)")
+                os_log(OSLogType.fault, "Core Data load failed: %@", error.localizedDescription)
+                self.persistentContainer = NSPersistentContainer(name: "APGISignature")
+                self.persistentContainer.persistentStoreDescriptions.first!.type = NSInMemoryStoreType
+                self.persistentContainer.loadPersistentStores { _, _ in
+                    semaphore.signal()
+                }
+            } else {
+                semaphore.signal()
             }
         }
+        semaphore.wait()
     }
 
     enum SecurityKeys {
@@ -39,7 +53,7 @@ class SecurityManager: ObservableObject {
         }
         let data = try keychain.retrieve(forKey: SecurityKeys.userProfile)
         let decoder = JSONDecoder()
-        decoder.userInfo[CodingUserInfoKey.managedObjectContext] = self.persistentContainer.viewContext
+        decoder.userInfo[CodingUserInfoKey.managedObjectContext!] = self.persistentContainer.viewContext
         return try decoder.decode(ProfileEntity.self, from: data)
     }
 
@@ -161,7 +175,7 @@ extension SecurityManager {
     func importSecureData(_ data: [String: Any]) throws {
         if let profileData = data["userProfile"] as? Data {
             let decoder = JSONDecoder()
-            decoder.userInfo[CodingUserInfoKey.managedObjectContext] = self.persistentContainer.viewContext
+            decoder.userInfo[CodingUserInfoKey.managedObjectContext!] = self.persistentContainer.viewContext
             let profile = try decoder.decode(ProfileEntity.self, from: profileData)
             try self.storeUserProfile(profile)
         }

@@ -21,41 +21,20 @@ final class CloudSyncTests: XCTestCase {
     }
 
     func testAccountStatusCheck() {
-        let expectation = XCTestExpectation(description: "Account status check completes")
-
-        self.cloudSyncManager?.checkAccountStatus()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 5.0)
-
         // Note: In a real test environment, we might not have iCloud access
         // so we just verify the method doesn't crash
-        XCTAssertTrue(true)
+        self.cloudSyncManager?.checkAccountStatus()
     }
 
     func testDiscoverabilityPermissionRequest() {
-        let expectation = XCTestExpectation(description: "Discoverability permission request completes")
-
-        self.cloudSyncManager?.requestDiscoverabilityPermission()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 5.0)
-
         // Verify the method doesn't crash
-        XCTAssertTrue(true)
+        self.cloudSyncManager?.requestDiscoverabilityPermission()
     }
 
     func testCloudSyncErrorDescriptions() {
         let errors: [CloudSyncManager.CloudSyncError] = [
             .accountNotAvailable,
             .accountRestricted,
-            .accountNoiCloud,
             .networkUnavailable,
             .quotaExceeded,
             .zoneNotFound,

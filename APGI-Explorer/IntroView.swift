@@ -21,87 +21,85 @@ struct IntroView: View {
                             .background(Circle().fill(Color.blue.opacity(0.1)))
                             .padding(.top, 20)
 
-                        Text("APGI Consciousness Assessment")
+                        Text(NSLocalizedString("intro_title", comment: ""))
                             .font(.largeTitle)
                             .fontWeight(.bold)
 
-                        Text("Understand Your Mind's Explorer")
+                        Text(NSLocalizedString("intro_subtitle", comment: ""))
                             .font(.title2)
                             .foregroundColor(.secondary)
                     }
 
                     // Introduction section
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Welcome to the APGI Assessment")
+                        Text(NSLocalizedString("intro_welcome_title", comment: ""))
                             .font(.title2)
 
-                        Text("""
-                        This quiz measures four fundamental parameters of consciousness that shape your experience:
-                        """)
-                        .font(.body)
+                        Text(NSLocalizedString("intro_welcome_description", comment: ""))
+                            .font(.body)
                     }
                 }
 
                 StandardCard {
                     VStack(alignment: .leading, spacing: LayoutConstants.smallSpacing) {
-                        Text("APGI Assessment")
+                        Text(NSLocalizedString("intro_assessment_title", comment: ""))
                             .font(.title2.bold())
-                        Text("Discover your unique consciousness profile through our comprehensive assessment")
+                        Text(NSLocalizedString("intro_assessment_description", comment: ""))
                             .font(.body)
-                        Text("Estimated time: 10-15 minutes")
+                        Text(NSLocalizedString("intro_assessment_time", comment: ""))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
                 }
 
                 // APGI Parameters Overview
-                InfoCard(title: "What You'll Discover") {
+                InfoCard(title: NSLocalizedString("intro_discover_title", comment: "")) {
                     VStack(spacing: LayoutConstants.smallSpacing) {
                         ParameterCard(
                             symbol: "bolt.fill",
                             color: .orange,
-                            title: "Prediction Error (ε)",
-                            description: "Your sensitivity to surprises and changes"
+                            title: NSLocalizedString("intro_prediction_error_title", comment: ""),
+                            description: NSLocalizedString("intro_prediction_error_description", comment: "")
                         )
                         ParameterCard(
                             symbol: "scale.3d",
                             color: .green,
-                            title: "Precision (π)",
-                            description: "Which signals you prioritize"
+                            title: NSLocalizedString("intro_precision_title", comment: ""),
+                            description: NSLocalizedString("intro_precision_description", comment: "")
                         )
                         ParameterCard(
                             symbol: "target",
                             color: .purple,
-                            title: "Ignition Threshold (θₜ)",
-                            description: "What grabs your attention"
+                            title: NSLocalizedString("intro_threshold_title", comment: ""),
+                            description: NSLocalizedString("intro_threshold_description", comment: "")
                         )
                         ParameterCard(
                             symbol: "figure.walk",
                             color: .blue,
-                            title: "Somatic Bias (β)",
-                            description: "Your body-world awareness balance"
+                            title: NSLocalizedString("intro_somatic_title", comment: ""),
+                            description: NSLocalizedString("intro_somatic_description", comment: "")
                         )
                     }
                 }
 
                 // Benefits section
-                InfoCard(title: "Why Take This Assessment?") {
+                InfoCard(title: NSLocalizedString("intro_benefits_title", comment: "")) {
                     VStack(spacing: LayoutConstants.smallSpacing) {
                         BenefitItem(
                             symbol: "lightbulb.fill",
-                            text: "Understand your cognitive strengths and challenges"
+                            text: NSLocalizedString("intro_benefit1", comment: "")
                         )
                         BenefitItem(
                             symbol: "chart.bar.fill",
-                            text: "Get personalized insights about your consciousness profile"
+                            text: NSLocalizedString("intro_benefit2", comment: "")
                         )
                         BenefitItem(
                             symbol: "person.2.fill",
-                            text: "Learn how you process information differently from others"
+                            text: NSLocalizedString("intro_benefit3", comment: "")
                         )
                         BenefitItem(
                             symbol: "gearshape.fill",
-                            text: "Discover strategies tailored to your mind's explorer"
+                            text: NSLocalizedString("intro_benefit4", comment: "")
                         )
                     }
                 }
@@ -110,7 +108,7 @@ struct IntroView: View {
                 Button(action: {
                     self.showQuiz = true
                 }, label: {
-                    Text("Begin Assessment")
+                    Text(NSLocalizedString("intro_begin_assessment", comment: ""))
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -131,18 +129,18 @@ struct IntroView: View {
 
                 // Footer
                 VStack(spacing: 8) {
-                    Text("Your results are confidential and saved only on this device")
+                    Text(NSLocalizedString("intro_footer_confidential", comment: ""))
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
-                    Text("APGI Framework ©2025 Consciousness Research Institute")
+                    Text(NSLocalizedString("intro_footer_copyright", comment: ""))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
             .padding()
         }
-        .navigationTitle("Introduction")
+        .navigationTitle(NSLocalizedString("intro_navigation_title", comment: ""))
         #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
         #endif

@@ -11,6 +11,41 @@ struct ExportView: View {
     @State private var exportFileURL: URL?
     @State private var toast: ToastMessage?
 
+    private var previewSection: some View {
+        Section(header: Text("Preview")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Profile: \(self.profile.name)")
+                    .font(.headline)
+
+                let profileType = self.profileManager.determineProfileType(for: self.profile.results)
+                Text("Type: \(profileType.rawValue)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Divider()
+
+                Text(profileType.description)
+                    .font(.body)
+                    .padding(.vertical, 4)
+
+                Divider()
+
+                // Show a preview of the scores
+                let apgiProfile = (try? self.profileManager.profile(from: self.profile.results)) ?? APGIProfile(epsilon: 0, precision: 0, threshold: 0, somaticBias: 0, interactionScore: 0, temporalStability: 0, environmentalFit: 0)
+                VStack(alignment: .leading, spacing: 4) {
+                    ScoreRow(parameter: "ε (Epsilon)", value: apgiProfile.epsilon)
+                    ScoreRow(parameter: "π (Precision)", value: apgiProfile.precision)
+                    ScoreRow(parameter: "θₜ (Threshold)", value: apgiProfile.threshold)
+                    ScoreRow(parameter: "β (Somatic Bias)", value: apgiProfile.somaticBias)
+                    ScoreRow(parameter: "ι (Interaction Score)", value: apgiProfile.interactionScore)
+                    ScoreRow(parameter: "τ (Temporal Stability)", value: apgiProfile.temporalStability)
+                    ScoreRow(parameter: "φ (Environmental Fit)", value: apgiProfile.environmentalFit)
+                }
+            }
+            .padding(.vertical, 8)
+        }
+    }
+
     var body: some View {
         NavigationView {
             Form {
@@ -31,35 +66,7 @@ struct ExportView: View {
                         .foregroundColor(.secondary)
                 }
 
-                Section(header: Text("Preview")) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Profile: \(self.profile.name)")
-                            .font(.headline)
-
-                        let profileType = self.profileManager.determineProfileType(for: self.profile.results)
-                        Text("Type: \(profileType.rawValue)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
-                        Divider()
-
-                        Text(profileType.description)
-                            .font(.body)
-                            .padding(.vertical, 4)
-
-                        Divider()
-
-                        // Show a preview of the scores
-                        let apgiProfile = self.profileManager.profile(from: self.profile.results)
-                        VStack(alignment: .leading, spacing: 4) {
-                            ScoreRow(parameter: "ε (Epsilon)", value: apgiProfile.epsilon)
-                            ScoreRow(parameter: "π (Precision)", value: apgiProfile.precision)
-                            ScoreRow(parameter: "θₜ (Threshold)", value: apgiProfile.threshold)
-                            ScoreRow(parameter: "β (Somatic Bias)", value: apgiProfile.somaticBias)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
+                self.previewSection
             }
             .navigationTitle("Export Profile")
             .toolbar {
@@ -91,7 +98,7 @@ struct ExportView: View {
 
                 // Use ResearchExportManager for specialized formats
                 if self.exportFormat.category == .statistical || self.exportFormat.category == .bibliography || self.exportFormat.category == .academic {
-                    let apgiScores = self.profileManager.profile(from: self.profile.results)
+                    let apgiScores = try self.profileManager.profile(from: self.profile.results)
                     let profileExport = ProfileExport(
                         version: "1.0",
                         timestamp: Date(),
@@ -151,11 +158,11 @@ struct ScoreRow: View {
 
     private var scoreColor: Color {
         switch self.value {
-        case 0 ..< 25: .red
-        case 25 ..< 40: .orange
-        case 40 ..< 60: .yellow
-        case 60 ..< 75: .green
-        case 75 ... 100: .blue
+        case 0 ..< 25: Color(NSColor.systemRed)
+        case 25 ..< 40: Color(NSColor.systemOrange)
+        case 40 ..< 60: Color(NSColor.systemYellow)
+        case 60 ..< 75: Color(NSColor.systemGreen)
+        case 75 ... 100: Color(NSColor.systemBlue)
         default: .primary
         }
     }

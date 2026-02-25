@@ -144,20 +144,13 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
         run: |
-          # Upload for notarization
-          xcrun altool --notarize-app \
-            --primary-bundle-id "com.lesoto.APGI-Explorer" \
-            --username "$APPLE_ID" \
+          # Upload for notarization using notarytool
+          xcrun notarytool submit \
+            --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
-            --asc-provider "$TEAM_ID" \
+            --team-id "$TEAM_ID" \
             --file APGI-Explorer-${{ github.event.inputs.version || '1.0.0' }}.dmg \
-            --output-format xml
-
-          # Wait for notarization (simplified - in production, you'd poll for status)
-          sleep 300
-
-          # Staple the notarization
-          xcrun stapler staple APGI-Explorer-${{ github.event.inputs.version || '1.0.0' }}.dmg
+            --wait
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
@@ -201,7 +194,7 @@ jobs:
         run: |
           xcrun altool --upload-app \
             --type osx \
-            --file APGI-Explorer-${{ github.event.inputs.version || '1.0.0' }}.dmg \
+            --file DerivedData/Export/APGI-Explorer.app \
             --username "${{ secrets.APPLE_ID }}" \
             --password "${{ secrets.APPLE_ID_PASSWORD }}" \
             --asc-provider "${{ secrets.TEAM_ID }}"

@@ -9,10 +9,35 @@ final class APGI_ExplorerTests: XCTestCase {
     override func tearDownWithError() throws {
     }
 
-    func testAPGIScorerInitialization() {
+    func testAPGIScorerCalculateScore() {
         let scorer = APGIScorer()
-        XCTAssertNotNil(scorer)
-        XCTAssertEqual(scorer.currentProfile, nil)
+        let sampleAnswers: [Int: Int] = [
+            1: 3, 2: 4, 3: 2, 4: 3, 5: 4, // epsilon
+            6: 2, 7: 3, 8: 4, 9: 2, 10: 3, // precision
+            11: 4, 12: 3, 13: 2, 14: 4, 15: 3, // threshold
+            16: 3, 17: 4, 18: 2, 19: 3, 20: 4, // somatic
+            21: 3, 22: 2, 23: 4, 24: 3, 25: 2, // interactions
+            26: 4, 27: 3, 28: 2, 29: 4, 30: 3, // temporal
+            31: 2, 32: 4, 33: 3, 34: 2, 35: 4, // environmental
+        ]
+
+        let profile = scorer.calculateRobustScore(answers: sampleAnswers)
+
+        XCTAssertNotNil(profile)
+        XCTAssertGreaterThanOrEqual(profile.epsilon, 0)
+        XCTAssertLessThanOrEqual(profile.epsilon, 100)
+        XCTAssertGreaterThanOrEqual(profile.precision, 0)
+        XCTAssertLessThanOrEqual(profile.precision, 100)
+        XCTAssertGreaterThanOrEqual(profile.threshold, 0)
+        XCTAssertLessThanOrEqual(profile.threshold, 100)
+        XCTAssertGreaterThanOrEqual(profile.somaticBias, 0)
+        XCTAssertLessThanOrEqual(profile.somaticBias, 100)
+        XCTAssertGreaterThanOrEqual(profile.interactionScore, 0)
+        XCTAssertLessThanOrEqual(profile.interactionScore, 100)
+        XCTAssertGreaterThanOrEqual(profile.temporalStability, 0)
+        XCTAssertLessThanOrEqual(profile.temporalStability, 100)
+        XCTAssertGreaterThanOrEqual(profile.environmentalFit, 0)
+        XCTAssertLessThanOrEqual(profile.environmentalFit, 100)
     }
 
     func testProfileCreation() {

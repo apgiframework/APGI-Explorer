@@ -27,15 +27,17 @@ final class APGI_ExplorerUITests: XCTestCase {
     func testMainWindowExists() {
         let mainWindow = self.app.windows.firstMatch
         XCTAssertTrue(mainWindow.exists)
-        XCTAssertTrue(mainFrame.waitForExistence(timeout: 5))
+        XCTAssertTrue(mainWindow.waitForExistence(timeout: 5))
     }
 
     func testMenuItemsExist() {
-        self.app.menuBars.firstMatch.buttons["APGI-Explorer"].tap()
+        let menuBar = self.app.menuBars.firstMatch
+        menuBar.buttons["APGI-Explorer"].tap()
 
-        XCTAssertTrue(self.app.menuItems["About APGI-Explorer"].exists)
-        XCTAssertTrue(self.app.menuItems["Preferences…"].exists)
-        XCTAssertTrue(self.app.menuItems["Quit APGI-Explorer"].exists)
+        let menuItems = menuBar.children(matching: .menuItem)
+        XCTAssertTrue(menuItems["About APGI-Explorer"].exists)
+        XCTAssertTrue(menuItems["Preferences…"].exists)
+        XCTAssertTrue(menuItems["Quit APGI-Explorer"].exists)
     }
 
     func testTabNavigation() {

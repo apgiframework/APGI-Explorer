@@ -106,6 +106,9 @@ class ResearchExportManager: ObservableObject {
     }
 
     private func exportSPSS(_ profile: ProfileExport) throws -> Data {
+        // WARNING: This is a hardcoded binary format for SPSS .sav files.
+        // It may not be robust and could break with future SPSS format changes.
+        // Consider using a dedicated third-party library for production use.
         var spssData = Data()
 
         let header: [UInt8] = [
@@ -153,6 +156,9 @@ class ResearchExportManager: ObservableObject {
     }
 
     private func exportStata(_ profile: ProfileExport) throws -> Data {
+        // WARNING: This is a hardcoded binary format for Stata .dta files.
+        // It may not be robust and could break with future Stata format changes.
+        // Consider using a dedicated third-party library for production use.
         var stataData = Data()
 
         let header = Data([
@@ -448,8 +454,37 @@ class ResearchExportManager: ObservableObject {
 
             return pdfData as Data
         #else
-            // PDF generation not implemented for macOS
-            return Data()
+            let pdfMetaData = [
+                kCGPDFContextCreator: "APGI Explorer",
+                kCGPDFContextAuthor: "APGI Explorer",
+                kCGPDFContextTitle: title,
+            ]
+
+            let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+            let pdfData = NSMutableData()
+
+            let consumer = CGDataConsumer(data: pdfData as CFMutableData)!
+            var mediaBox = pageRect
+            let context = CGContext(consumer: consumer, mediaBox: &mediaBox, pdfMetaData as CFDictionary)
+
+            context?.beginPDFPage(NSDictionary())
+            context?.setFillColor(NSColor.black.cgColor)
+
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = .left
+
+            let attributes = [
+                NSAttributedString.Key.font: NSFont.systemFont(ofSize: 12),
+                NSAttributedString.Key.paragraphStyle: paragraphStyle,
+            ]
+
+            let textRect = CGRect(x: 50, y: 50, width: 512, height: 692)
+            (content as NSString).draw(in: textRect, withAttributes: attributes)
+
+            context?.endPDFPage()
+            context?.closePDF()
+
+            return pdfData as Data
         #endif
     }
 }

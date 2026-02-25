@@ -26,6 +26,10 @@ class ProfileManager: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
+    enum ProfileError: Error {
+        case invalidData
+    }
+
     init() {
         Task {
             await self.loadProfiles()
@@ -430,26 +434,28 @@ class ProfileManager: ObservableObject {
         }
     }
 
-    func profile(from results: [String: Int]) -> APGIProfile {
-        // Validate input
-        guard !results.isEmpty else {
-            os_log("Empty results dictionary provided to profile", type: .error)
-            return APGIProfile(
-                epsilon: 0.0,
-                precision: 0.0,
-                threshold: 0.0,
-                somaticBias: 0.0,
-                interactionScore: 0,
-                temporalStability: 0,
-                environmentalFit: 0
-            )
+    func profile(from results: [String: Int]) throws -> APGIProfile {
+        guard let epsilon = results["epsilon"], epsilon >= 0, epsilon <= 100 else {
+            throw ProfileError.invalidData
+        }
+
+        guard let precision = results["precision"], precision >= 0, precision <= 100 else {
+            throw ProfileError.invalidData
+        }
+
+        guard let threshold = results["threshold"], threshold >= 0, threshold <= 100 else {
+            throw ProfileError.invalidData
+        }
+
+        guard let somatic = results["somatic"], somatic >= 0, somatic <= 100 else {
+            throw ProfileError.invalidData
         }
 
         return APGIProfile(
-            epsilon: Double(results["epsilon"] ?? 0),
-            precision: Double(results["precision"] ?? 0),
-            threshold: Double(results["threshold"] ?? 0),
-            somaticBias: Double(results["somatic"] ?? 0),
+            epsilon: Double(epsilon),
+            precision: Double(precision),
+            threshold: Double(threshold),
+            somaticBias: Double(somatic),
             interactionScore: 0,
             temporalStability: 0,
             environmentalFit: 0
@@ -723,8 +729,10 @@ class ProfileManager: ObservableObject {
             }
             return nil
         case .png:
-            let apgiScores = self.profile(from: profile.results)
-            return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
+            if let apgiScores = try? self.profile(from: profile.results) {
+                return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
+            }
+            return nil
         case .spss, .stata, .rData, .excel, .xml, .bibTeX, .endNote, .apa, .mla:
             // For these formats, fall back to CSV export for now
             if let data = exportToCSV(profile: profile) {

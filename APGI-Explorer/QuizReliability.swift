@@ -3,7 +3,6 @@ import os.log
 
 // MARK: - Response Quality Analysis
 
-/// Analyzes response patterns to detect potential data quality issues
 class ResponseQualityAnalyzer {
     private let minAnswerTime: TimeInterval = 3.0 // Minimum reasonable time per question (seconds)
     private let maxAnswerTime: TimeInterval = 60.0 // Maximum expected time per question (seconds)
@@ -11,9 +10,6 @@ class ResponseQualityAnalyzer {
     private let optimalMaxTime: TimeInterval = 30.0 // Upper bound of optimal time range
     private let straightLineThreshold = 0.8 // 80% of answers the same value
 
-    /// Detects if responses show a straight-lining pattern (all or most answers the same)
-    /// - Parameter answers: Dictionary of question IDs to answer values
-    /// - Returns: Boolean indicating if straight-lining was detected
     func detectStraightLining(answers: [Int: Int]) -> Bool {
         guard !answers.isEmpty else { return false }
 
@@ -26,16 +22,10 @@ class ResponseQualityAnalyzer {
         return modeRatio > self.straightLineThreshold
     }
 
-    /// Identifies questions that were answered too quickly (potential random responding)
-    /// - Parameter answerTimes: Dictionary of question IDs to time taken (in seconds)
-    /// - Returns: Array of question IDs that were answered too quickly
     func detectSpeedingWarnings(answerTimes: [Int: TimeInterval]) -> [Int] {
         answerTimes.filter { $0.value < self.minAnswerTime }.map(\.key).sorted()
     }
 
-    /// Calculates an engagement score based on response times
-    /// - Parameter answerTimes: Dictionary of question IDs to time taken (in seconds)
-    /// - Returns: Score from 0 (poor engagement) to 1 (excellent engagement)
     func calculateEngagementScore(answerTimes: [Int: TimeInterval]) -> Double {
         guard !answerTimes.isEmpty else { return 0 }
 
@@ -67,11 +57,6 @@ class ResponseQualityAnalyzer {
         return score / Double(times.count)
     }
 
-    /// Generates a quality report for the response data
-    /// - Parameters:
-    ///   - answers: Dictionary of question IDs to answer values
-    ///   - answerTimes: Dictionary of question IDs to time taken (in seconds)
-    /// - Returns: A tuple containing the engagement score and any quality warnings
     func generateQualityReport(answers: [Int: Int], answerTimes: [Int: TimeInterval]) -> (score: Double, warnings: [String]) {
         var warnings: [String] = []
 

@@ -7,11 +7,11 @@ final class KeychainTests: XCTestCase {
 
     override func setUpWithError() throws {
         self.keychain = KeychainManager.shared
-        try? self.keychain!.delete(forKey: self.testKey)
+        try? self.keychain?.delete(forKey: self.testKey)
     }
 
     override func tearDownWithError() throws {
-        try? self.keychain!.delete(forKey: self.testKey)
+        try? self.keychain?.delete(forKey: self.testKey)
     }
 
     func testStoreAndRetrieveData() throws {
@@ -86,9 +86,9 @@ final class KeychainTests: XCTestCase {
             do {
                 for i in 0 ..< 10 {
                     let key = "\(testKey)_\(i)"
-                    try keychain!.store(testData, forKey: key)
-                    _ = try self.keychain!.retrieve(forKey: key)
-                    try self.keychain!.delete(forKey: key)
+                    try keychain?.store(testData, forKey: key)
+                    _ = try self.keychain?.retrieve(forKey: key)
+                    try self.keychain?.delete(forKey: key)
                 }
             }
             catch {

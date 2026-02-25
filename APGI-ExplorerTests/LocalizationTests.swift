@@ -68,8 +68,8 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(self.localizationManager?.currentLanguage, originalLanguage)
     }
 
-    func testLocalizedStringRetrieval() throws {
-        let testKey = "test_key"
+    func testLocalizedStringFallback() throws {
+        let testKey = "nonexistent_key_12345"
         let localizedString = try XCTUnwrap(self.localizationManager?.localizedString(for: testKey))
 
         // Should return the key if not found in localization

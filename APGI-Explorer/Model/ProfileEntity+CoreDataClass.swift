@@ -24,7 +24,7 @@ public class ProfileEntity: NSManagedObject, Codable {
     }
 
     public required convenience init(from decoder: Decoder) throws {
-        guard let context = decoder.userInfo[CodingUserInfoKey.managedObjectContext] as? NSManagedObjectContext else {
+        guard let context = decoder.userInfo[CodingUserInfoKey.managedObjectContext!] as? NSManagedObjectContext else {
             throw DecodingError.missingContext
         }
         self.init(context: context)

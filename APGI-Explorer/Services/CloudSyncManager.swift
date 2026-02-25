@@ -15,6 +15,8 @@ class CloudSyncManager: ObservableObject {
     @Published var syncError: CloudSyncError?
     @Published var accountStatus: CKAccountStatus = .couldNotDetermine
 
+    private let syncCoordinator = SyncCoordinator()
+
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -63,6 +65,16 @@ class CloudSyncManager: ObservableObject {
         }
     }
 
+    actor SyncCoordinator {
+        private var isSyncing = false
+        func performSync(_ work: @escaping () async throws -> Void) async throws {
+            guard !self.isSyncing else { throw CloudSyncError.syncInProgress }
+            self.isSyncing = true
+            defer { isSyncing = false }
+            try await work()
+        }
+    }
+
     func checkAccountStatus() {
         self.container.accountStatus { [weak self] status, error in
             DispatchQueue.main.async {
@@ -75,28 +87,26 @@ class CloudSyncManager: ObservableObject {
     }
 
     func syncProfiles() async throws {
-        guard !self.isSyncing else {
-            throw CloudSyncError.syncInProgress
-        }
-
-        await MainActor.run {
-            self.isSyncing = true
-            self.syncError = nil
-        }
-
-        Task { @MainActor in
-            self.isSyncing = false
-            self.lastSyncDate = Date()
-        }
-
-        do {
-            try await self.ensureCustomZoneExists()
-            try await self.performProfileSync()
-        } catch {
+        try await self.syncCoordinator.performSync {
             await MainActor.run {
-                self.syncError = self.mapCloudKitError(error)
+                self.isSyncing = true
+                self.syncError = nil
             }
-            throw error
+            defer {
+                Task { await MainActor.run { self.isSyncing = false } }
+            }
+            do {
+                try await self.ensureCustomZoneExists()
+                try await self.performProfileSync()
+                await MainActor.run {
+                    self.lastSyncDate = Date()
+                }
+            } catch {
+                await MainActor.run {
+                    self.syncError = self.mapCloudKitError(error)
+                }
+                throw error
+            }
         }
     }
 
@@ -214,15 +224,39 @@ class CloudSyncManager: ObservableObject {
         saveOperation.savePolicy = .changedKeys
 
         return try await withCheckedThrowingContinuation { continuation in
+            var recordsToReSave: [CKRecord] = []
+            saveOperation.perRecordSaveBlock = { recordID, result in
+                if case let .failure(error) = result,
+                   let ckError = error as? CKError,
+                   ckError.code == .serverRecordChanged,
+                   let serverRecord = ckError.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord,
+                   let record = records.first(where: { $0.recordID == recordID }),
+                   let localUpdated = record["updatedAt"] as? Date,
+                   let serverUpdated = serverRecord["updatedAt"] as? Date,
+                   localUpdated > serverUpdated
+                {
+                    recordsToReSave.append(record)
+                }
+            }
             saveOperation.modifyRecordsResultBlock = { result in
                 switch result {
                 case .success:
-                    continuation.resume()
+                    if recordsToReSave.isEmpty {
+                        continuation.resume()
+                    } else {
+                        Task {
+                            do {
+                                try await self.saveRecords(recordsToReSave)
+                                continuation.resume()
+                            } catch {
+                                continuation.resume(throwing: error)
+                            }
+                        }
+                    }
                 case let .failure(error):
                     continuation.resume(throwing: error)
                 }
             }
-
             self.privateDatabase.add(saveOperation)
         }
     }
@@ -235,7 +269,8 @@ class CloudSyncManager: ObservableObject {
               let id = UUID(uuidString: idStr),
               let name = profileDict["name"] as? String,
               let createdAt = profileDict["createdAt"] as? Date,
-              let updatedAt = profileDict["updatedAt"] as? Date else {
+              let updatedAt = profileDict["updatedAt"] as? Date
+        else {
             return
         }
 

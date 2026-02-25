@@ -10,11 +10,15 @@ struct QuizView: View {
     @State private var currentQuestionIndex = 0
     @State private var isNavigatingToResults = false
     @State private var handoffActivity: NSUserActivity?
+    @State private var isPaused = false
+
+    private let savedQuizKey = "savedQuizState"
 
     var body: some View {
         self.mainContent
             .navigationBarBackButtonHidden(true)
             .onAppear {
+                self.loadQuizState()
                 self.setupHandoffActivity()
             }
             .onDisappear {
@@ -56,18 +60,55 @@ struct QuizView: View {
     }
 
     private var mainContent: some View {
+        if self.isPaused {
+            AnyView(self.pausedContent)
+        } else {
+            AnyView(self.quizContent)
+        }
+    }
+
+    private var quizContent: some View {
         VStack(spacing: 0) {
             self.progressBarSection
             self.progressTextSection
             self.liveScoreSection
-            self.currentSectionSection
             if self.currentQuestionIndex < self.quizModel.questions.count {
+                self.currentSectionSection
                 self.questionSection
                 self.navigationButtonsSection
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: self.pauseQuiz) {
+                    Label("Pause", systemImage: "pause.fill")
+                }
+            }
+        }
+    }
+
+    private var pausedContent: some View {
+        VStack {
+            Spacer()
+            Text("Quiz Paused")
+                .font(.largeTitle)
+                .padding()
+            Text("Your progress has been saved.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .padding()
+            Button(action: self.resumeQuiz) {
+                Label("Resume Quiz", systemImage: "play.fill")
+                    .font(.title)
+                    .padding()
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.gray.opacity(0.1))
     }
 
     private var progressBarSection: some View {
@@ -164,6 +205,39 @@ struct QuizView: View {
             currentQuestionIndex: self.currentQuestionIndex
         )
         self.handoffActivity?.becomeCurrent()
+    }
+
+    private func pauseQuiz() {
+        self.saveQuizState()
+        self.isPaused = true
+    }
+
+    private func resumeQuiz() {
+        self.isPaused = false
+    }
+
+    private func saveQuizState() {
+        let state: [String: Any] = [
+            "currentQuestionIndex": currentQuestionIndex,
+            "answers": quizModel.answers,
+        ]
+        UserDefaults.standard.set(state, forKey: self.savedQuizKey)
+    }
+
+    private func loadQuizState() {
+        guard let state = UserDefaults.standard.dictionary(forKey: savedQuizKey) else { return }
+        if let index = state["currentQuestionIndex"] as? Int {
+            self.currentQuestionIndex = index
+        }
+        if let answers = state["answers"] as? [Int: Int] {
+            self.quizModel.restoreAnswers(answers)
+        }
+        // Clear after loading to prevent reloading on future appears
+        self.clearQuizState()
+    }
+
+    private func clearQuizState() {
+        UserDefaults.standard.removeObject(forKey: self.savedQuizKey)
     }
 
     private func sectionName(for question: QuizQuestion) -> String {

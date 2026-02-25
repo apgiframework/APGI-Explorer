@@ -97,6 +97,8 @@ class LocalizationManager: ObservableObject {
 }
 
 extension Bundle {
+    private static var currentLanguageBundle: Bundle?
+
     static func setLanguage(_ language: String) {
         guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
               let bundle = Bundle(path: path)
@@ -104,14 +106,11 @@ extension Bundle {
             return
         }
 
-        object_setClass(Bundle.main, type(of: bundle))
-        objc_setAssociatedObject(Bundle.main, &Bundle.languageKey, bundle, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        self.currentLanguageBundle = bundle
     }
 
-    private static var languageKey: UInt8 = 0
-
     func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
-        if let bundle = objc_getAssociatedObject(self, &Bundle.languageKey) as? Bundle {
+        if let bundle = Bundle.currentLanguageBundle {
             return bundle.localizedString(forKey: key, value: value, table: tableName)
         }
         return NSLocalizedString(key, tableName: tableName, bundle: self, value: value ?? "", comment: "")

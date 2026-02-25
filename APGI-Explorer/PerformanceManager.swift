@@ -85,7 +85,7 @@ class PerformanceManager: ObservableObject {
 
     #if os(macOS)
         private func updatePerformanceMode() {
-            let isOnBattery = !ProcessInfo.processInfo.isLowPowerModeEnabled
+            let isOnBattery = ProcessInfo.processInfo.isLowPowerModeEnabled
             self.performanceMode = isOnBattery ? .memory : .power
         }
     #endif

@@ -18,130 +18,114 @@ struct OnboardingStep: Identifiable {
 
 let steps: [OnboardingStep] = [
     OnboardingStep(
-        title: "Welcome to APGI Explorer",
-        subtitle: "Your Cognitive Profile Navigator",
-        description: "Discover how your mind works through the APGI framework. " +
-            "Explore psychological states, take assessments, and track your cognitive " +
-            "journey with precision and insight.",
+        title: NSLocalizedString("onboarding_welcome_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_welcome_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_welcome_description", comment: ""),
         imageName: "brain.head.profile",
         imageType: .system,
         tips: [
-            "Take the assessment to discover your cognitive profile",
-            "Explore how different psychological states are mapped",
-            "Compare your results with various cognitive patterns",
-            "Track changes in your profile over time",
+            NSLocalizedString("onboarding_welcome_tip1", comment: ""),
+            NSLocalizedString("onboarding_welcome_tip2", comment: ""),
+            NSLocalizedString("onboarding_welcome_tip3", comment: ""),
+            NSLocalizedString("onboarding_welcome_tip4", comment: ""),
         ],
         highlightColor: .blue
     ),
     OnboardingStep(
-        title: "Interactive Assessment",
-        subtitle: "Map Your Cognitive Profile",
-        description: "Our comprehensive quiz evaluates your cognitive patterns " +
-            "across key APGI dimensions. Answer naturally—there are no right " +
-            "or wrong answers, just insights waiting to be discovered.",
+        title: NSLocalizedString("onboarding_assessment_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_assessment_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_assessment_description", comment: ""),
         imageName: "doc.text.magnifyingglass",
         imageType: .system,
         tips: [
-            "Takes about 15-20 minutes to complete",
-            "Save and resume your progress anytime",
-            "Questions adapt based on your responses",
-            "Get immediate results upon completion",
+            NSLocalizedString("onboarding_assessment_tip1", comment: ""),
+            NSLocalizedString("onboarding_assessment_tip2", comment: ""),
+            NSLocalizedString("onboarding_assessment_tip3", comment: ""),
+            NSLocalizedString("onboarding_assessment_tip4", comment: ""),
         ],
         highlightColor: .teal
     ),
     OnboardingStep(
-        title: "APGI Framework",
-        subtitle: "The Science Behind Your Mind",
-        description: "The APGI model breaks down cognition into four key parameters " +
-            "that shape your experience. Understanding these helps explain " +
-            "how you perceive and interact with the world.",
+        title: NSLocalizedString("onboarding_framework_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_framework_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_framework_description", comment: ""),
         imageName: "atom",
         imageType: .system,
         tips: [
-            "ε (Prediction Error): Your sensitivity to unexpected events",
-            "π (Precision): How you weigh sensory vs. prior information",
-            "θₜ (Threshold): Your awareness threshold for stimuli",
-            "β (Somatic Bias): How bodily states influence your perception",
+            NSLocalizedString("onboarding_framework_tip1", comment: ""),
+            NSLocalizedString("onboarding_framework_tip2", comment: ""),
+            NSLocalizedString("onboarding_framework_tip3", comment: ""),
+            NSLocalizedString("onboarding_framework_tip4", comment: ""),
         ],
         highlightColor: .indigo
     ),
     OnboardingStep(
-        title: "State Explorer",
-        subtitle: "Understand Psychological Patterns",
-        description: "Browse our comprehensive library of psychological states, " +
-            "each mapped to the APGI framework. See how different cognitive " +
-            "patterns manifest in thoughts, emotions, and behaviors.",
+        title: NSLocalizedString("onboarding_explorer_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_explorer_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_explorer_description", comment: ""),
         imageName: "square.grid.3x3",
         imageType: .system,
         tips: [
-            "Search by state name or description",
-            "Filter by APGI parameters",
-            "View detailed parameter breakdowns",
-            "Save favorite states for quick reference",
+            NSLocalizedString("onboarding_explorer_tip1", comment: ""),
+            NSLocalizedString("onboarding_explorer_tip2", comment: ""),
+            NSLocalizedString("onboarding_explorer_tip3", comment: ""),
+            NSLocalizedString("onboarding_explorer_tip4", comment: ""),
         ],
         highlightColor: .purple
     ),
     OnboardingStep(
-        title: "Profile Insights",
-        subtitle: "Your Cognitive Blueprint",
-        description: "After completing the assessment, receive a detailed analysis " +
-            "of your cognitive profile. See how your scores compare to " +
-            "population averages and understand what they mean for your daily experience.",
+        title: NSLocalizedString("onboarding_insights_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_insights_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_insights_description", comment: ""),
         imageName: "chart.bar.fill",
         imageType: .system,
         tips: [
-            "Visual representation of your cognitive patterns",
-            "Personalized insights and observations",
-            "Actionable recommendations",
-            "Exportable reports for professional review",
+            NSLocalizedString("onboarding_insights_tip1", comment: ""),
+            NSLocalizedString("onboarding_insights_tip2", comment: ""),
+            NSLocalizedString("onboarding_insights_tip3", comment: ""),
+            NSLocalizedString("onboarding_insights_tip4", comment: ""),
         ],
         highlightColor: .orange
     ),
     OnboardingStep(
-        title: "Track & Compare",
-        subtitle: "Your Cognitive Journey",
-        description: "Save multiple assessment results to track how your cognitive " +
-            "patterns evolve. Compare different profiles to understand changes " +
-            "in your mental landscape over time.",
+        title: NSLocalizedString("onboarding_track_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_track_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_track_description", comment: ""),
         imageName: "chart.line.uptrend.xyaxis",
         imageType: .system,
         tips: [
-            "Save unlimited profiles",
-            "Visual timeline of your progress",
-            "Detailed comparison tools",
-            "Set reminders for follow-up assessments",
+            NSLocalizedString("onboarding_track_tip1", comment: ""),
+            NSLocalizedString("onboarding_track_tip2", comment: ""),
+            NSLocalizedString("onboarding_track_tip3", comment: ""),
+            NSLocalizedString("onboarding_track_tip4", comment: ""),
         ],
         highlightColor: .green
     ),
     OnboardingStep(
-        title: "Personalized Strategies",
-        subtitle: "Optimize Your Mind",
-        description: "Based on your profile, discover tailored strategies and " +
-            "exercises to enhance your cognitive flexibility, emotional " +
-            "regulation, and overall mental well-being.",
+        title: NSLocalizedString("onboarding_strategies_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_strategies_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_strategies_description", comment: ""),
         imageName: "sparkles",
         imageType: .system,
         tips: [
-            "Daily cognitive exercises",
-            "Mindfulness practices",
-            "Coping strategies",
-            "Growth opportunities",
+            NSLocalizedString("onboarding_strategies_tip1", comment: ""),
+            NSLocalizedString("onboarding_strategies_tip2", comment: ""),
+            NSLocalizedString("onboarding_strategies_tip3", comment: ""),
+            NSLocalizedString("onboarding_strategies_tip4", comment: ""),
         ],
         highlightColor: .pink
     ),
     OnboardingStep(
-        title: "Ready to Begin?",
-        subtitle: "Your Cognitive Adventure Awaits",
-        description: "You're all set to explore the fascinating landscape of your mind. " +
-            "Start with the assessment or browse psychological states to begin " +
-            "your journey of self-discovery.",
+        title: NSLocalizedString("onboarding_ready_title", comment: ""),
+        subtitle: NSLocalizedString("onboarding_ready_subtitle", comment: ""),
+        description: NSLocalizedString("onboarding_ready_description", comment: ""),
         imageName: "checkmark.seal.fill",
         imageType: .system,
         tips: [
-            "Take the assessment first for personalized insights",
-            "Bookmark interesting states to explore later",
-            "Check back regularly for new content",
-            "Your data is private and secure",
+            NSLocalizedString("onboarding_ready_tip1", comment: ""),
+            NSLocalizedString("onboarding_ready_tip2", comment: ""),
+            NSLocalizedString("onboarding_ready_tip3", comment: ""),
+            NSLocalizedString("onboarding_ready_tip4", comment: ""),
         ],
         highlightColor: .blue
     ),
@@ -206,8 +190,8 @@ struct OnboardingView: View {
                         self.currentStep = index
                     }
                 },
-                accessibilityLabel: "Go to step \(index + 1)",
-                accessibilityHint: index == self.currentStep ? "Current step" : "Navigate to onboarding step \(index + 1)"
+                accessibilityLabel: String(format: NSLocalizedString("onboarding_go_to_step", comment: ""), index + 1),
+                accessibilityHint: index == self.currentStep ? NSLocalizedString("onboarding_current_step", comment: "") : String(format: NSLocalizedString("onboarding_navigate_to_step", comment: ""), index + 1)
             )
     }
 }
@@ -283,7 +267,7 @@ struct OnboardingStepView: View {
                     Button(action: {
                         self.dismiss()
                     }, label: {
-                        Text("Close")
+                        Text(NSLocalizedString("onboarding_close", comment: ""))
                             .font(.headline)
                             .foregroundColor(self.step.highlightColor)
                             .frame(maxWidth: 120)
@@ -300,7 +284,7 @@ struct OnboardingStepView: View {
 
                 // Continue/Get Started Button
                 Button(action: self.action, label: {
-                    Text(self.isLastStep ? "Get Started" : "Continue")
+                    Text(self.isLastStep ? NSLocalizedString("onboarding_get_started", comment: "") : NSLocalizedString("onboarding_continue", comment: ""))
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: self.isLastStep ? 120 : 200)

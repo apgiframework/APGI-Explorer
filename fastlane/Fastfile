@@ -1,6 +1,3 @@
-# APGI Explorer Fastfile
-# For more information about fastlane, see https://fastlane.tools
-
 default_platform(:mac)
 
 platform :mac do
@@ -84,12 +81,17 @@ platform :mac do
   lane :upload_to_app_store do
     deliver(
       app_id: "com.lesoto.APGI-Explorer",
-      ipa: "./fastlane/build/APGI-Explorer-1.0.dmg",
+      app: "./fastlane/build/APGI-Explorer.app",
       skip_metadata: false,
       skip_screenshots: false,
       force: true,
       submit_for_review: false
     )
+  end
+
+  desc "Upload to TestFlight"
+  lane :testflight do
+    UI.message "TestFlight is not applicable for Mac apps. Use upload_to_app_store instead."
   end
 
   desc "Complete release pipeline"

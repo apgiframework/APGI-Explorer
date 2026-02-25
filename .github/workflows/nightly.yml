@@ -1,0 +1,55 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            .build
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.xcodeproj/**') }}
+
+      - name: Run tests
+        run: |
+          xcodebuild test \
+            -project APGI-Explorer.xcodeproj \
+            -scheme APGI-Explorer \
+            -destination 'platform=macOS' \
+            -enableCodeCoverage YES \
+            -derivedDataPath DerivedData
+
+      - name: Generate test coverage report
+        run: |
+          xcrun xccov view --report --json DerivedData/Logs/Test/*.xcresult > coverage.json
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.json
+          fail_ci_if_error: false
+
+  notify:
+    needs: test
+    runs-on: macos-latest
+    if: failure()
+    steps:
+      - name: Notify failure
+        run: |
+          echo "❌ Nightly build failed!"
+          echo "Check the logs for details."

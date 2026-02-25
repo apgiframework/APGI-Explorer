@@ -50,6 +50,9 @@ class APGIScorer {
         static let minimumAlternatingCount: Int = 4
     }
 
+    private let subscoreStartID = 21
+    private let subscoreGroupSize = 5
+
     // MARK: - Weighted Score Structure
 
     struct WeightedScore {
@@ -144,7 +147,8 @@ class APGIScorer {
         )
 
         // 3. Apply nonlinear transformations
-        let transformedScores = self.applyAdvancedTransformations(
+        let transformedScores = self.applyWeightedTransformations(
+            answers: answers,
             epsilon: epsilon,
             precision: precision,
             threshold: threshold,
@@ -363,7 +367,8 @@ class APGIScorer {
         let somatic: WeightedScore
     }
 
-    private func applyAdvancedTransformations(
+    private func applyWeightedTransformations(
+        answers: [Int: Int],
         epsilon: WeightedScore,
         precision: WeightedScore,
         threshold: WeightedScore,
@@ -376,10 +381,11 @@ class APGIScorer {
         let transformedSomatic = self.applySigmoid(somatic.rawScore, steepness: ScoringConstants.somaticSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
 
         // Multiplicative effects for high scores on certain questions
+        let epsilonQuestionIDs = Array(questionWeights["epsilon"]!.keys)
+        let epsilonAnswers = answers.filter { epsilonQuestionIDs.contains($0.key) }
         let enhancedEpsilon = self.applyMultiplicativeEffect(
             baseScore: transformedEpsilon,
-            answers: [:], // Would need specific answers for this
-            enhancementFactor: 1.0
+            answers: epsilonAnswers
         )
 
         return WeightedScores(
@@ -425,10 +431,10 @@ class APGIScorer {
         return sigmoid * 100
     }
 
-    private func applyMultiplicativeEffect(baseScore: Double, answers _: [Int: Int], enhancementFactor: Double) -> Double {
-        // Apply multiplicative effects for high scores on discriminating questions
-        // This is a simplified version - would need specific answer analysis
-        baseScore * enhancementFactor
+    private func applyMultiplicativeEffect(baseScore: Double, answers: [Int: Int]) -> Double {
+        let highScoreCount = answers.values.filter { $0 == 4 }.count
+        let enhancementFactor = 1.0 + Double(highScoreCount) * 0.02
+        return baseScore * enhancementFactor
     }
 
     // MARK: - Cross-Validation Checks
@@ -532,8 +538,8 @@ class APGIScorer {
     // MARK: - Interaction and Meta-Scores
 
     private func calculateInteractionScore(answers: [Int: Int]) -> Double {
-        // Calculate based on interaction questions (21-25)
-        let interactionQuestions = [21, 22, 23, 24, 25]
+        // Calculate based on interaction questions
+        let interactionQuestions = Array(subscoreStartID ..< (subscoreStartID + self.subscoreGroupSize))
         var totalScore = 0.0
         var count = 0
 
@@ -548,8 +554,8 @@ class APGIScorer {
     }
 
     private func calculateTemporalStability(answers: [Int: Int]) -> Double {
-        // Calculate based on temporal questions (26-30)
-        let temporalQuestions = [26, 27, 28, 29, 30]
+        // Calculate based on temporal questions
+        let temporalQuestions = Array((subscoreStartID + self.subscoreGroupSize) ..< (self.subscoreStartID + 2 * self.subscoreGroupSize))
         var totalScore = 0.0
         var count = 0
 
@@ -564,8 +570,8 @@ class APGIScorer {
     }
 
     private func calculateEnvironmentalFit(answers: [Int: Int]) -> Double {
-        // Calculate based on environmental questions (31-35)
-        let environmentalQuestions = [31, 32, 33, 34, 35]
+        // Calculate based on environmental questions
+        let environmentalQuestions = Array((subscoreStartID + 2 * self.subscoreGroupSize) ..< (self.subscoreStartID + 3 * self.subscoreGroupSize))
         var totalScore = 0.0
         var count = 0
 
