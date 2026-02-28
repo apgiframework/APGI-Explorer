@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import OSLog
 import StoreKit
 import SwiftUI
 
@@ -177,7 +178,7 @@ class StoreManager: ObservableObject {
                         self.purchasedProductIDs.insert(transaction.productID)
                     }
                 } catch {
-                    print("Transaction verification failed: \(error)")
+                    os_log("Transaction verification failed: %@", error.localizedDescription)
                 }
             }
         }
@@ -219,7 +220,7 @@ class StoreManager: ObservableObject {
                 let transaction = try await MainActor.run { try self.checkVerified(result) }
                 purchasedIDs.insert(transaction.productID)
             } catch {
-                print("Failed to verify transaction: \(error)")
+                os_log("Failed to verify transaction: %@", error.localizedDescription)
             }
         }
 
@@ -287,7 +288,7 @@ class StoreManager: ObservableObject {
             let statuses = try await subscription.status
             return statuses.first
         } catch {
-            print("Failed to get subscription status: \(error)")
+            os_log("Failed to get subscription status: %@", error.localizedDescription)
             return nil
         }
     }
@@ -377,14 +378,14 @@ struct StoreSettingsView: View {
                 await self.storeManager.loadProducts()
                 await self.storeManager.updatePurchasedProducts()
             }
-            .alert("Purchase Error", isPresented: self.$showingPurchaseError) {
+            .alert("Purchase Error", isPresented: self.$showingPurchaseError, actions: {
                 Button("OK") {
                 }
-            } message: {
+            }, message: {
                 if let errorMessage = storeManager.errorMessage {
                     Text(errorMessage)
                 }
-            }
+            })
             .onChange(of: self.storeManager.errorMessage) { _, newValue in
                 self.showingPurchaseError = newValue != nil
             }

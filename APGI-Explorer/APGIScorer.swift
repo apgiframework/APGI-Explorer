@@ -381,7 +381,15 @@ class APGIScorer {
         let transformedSomatic = self.applySigmoid(somatic.rawScore, steepness: ScoringConstants.somaticSteepness, midpoint: ScoringConstants.sigmoidMidpoint)
 
         // Multiplicative effects for high scores on certain questions
-        let epsilonQuestionIDs = Array(questionWeights["epsilon"]!.keys)
+        guard let epsilonWeights = questionWeights["epsilon"] else {
+            return WeightedScores(
+                epsilon: epsilon,
+                precision: precision,
+                threshold: threshold,
+                somatic: somatic
+            )
+        }
+        let epsilonQuestionIDs = Array(epsilonWeights.keys)
         let epsilonAnswers = answers.filter { epsilonQuestionIDs.contains($0.key) }
         let enhancedEpsilon = self.applyMultiplicativeEffect(
             baseScore: transformedEpsilon,

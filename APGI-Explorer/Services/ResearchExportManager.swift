@@ -463,7 +463,9 @@ class ResearchExportManager: ObservableObject {
             let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
             let pdfData = NSMutableData()
 
-            let consumer = CGDataConsumer(data: pdfData as CFMutableData)!
+            guard let consumer = CGDataConsumer(data: pdfData as CFMutableData) else {
+                throw ExportError.unknown
+            }
             var mediaBox = pageRect
             let context = CGContext(consumer: consumer, mediaBox: &mediaBox, pdfMetaData as CFDictionary)
 

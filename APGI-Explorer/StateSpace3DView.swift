@@ -55,7 +55,7 @@ private extension StateSpace3DView {
         // Add light
         let lightNode = SCNNode()
         lightNode.light = SCNLight()
-        lightNode.light!.type = .omni
+        lightNode.light?.type = .omni
         lightNode.position = SCNVector3(x: 10, y: 10, z: 10)
         sceneView.scene?.rootNode.addChildNode(lightNode)
 

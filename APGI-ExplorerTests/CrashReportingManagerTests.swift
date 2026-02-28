@@ -2,7 +2,7 @@
 import XCTest
 
 final class CrashReportingManagerTests: XCTestCase {
-    var crashReportingManager: CrashReportingManager!
+    var crashReportingManager: CrashReportingManager?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -18,29 +18,45 @@ final class CrashReportingManagerTests: XCTestCase {
     }
 
     func testEnableDisableCrashReporting() {
-        self.crashReportingManager.enableCrashReporting()
-        XCTAssertTrue(self.crashReportingManager.isEnabled)
+        guard let crashReportingManager = self.crashReportingManager else {
+            XCTFail("Crash reporting manager not initialized")
+            return
+        }
+        crashReportingManager.enableCrashReporting()
+        XCTAssertTrue(crashReportingManager.isEnabled)
 
-        self.crashReportingManager.disableCrashReporting()
-        XCTAssertFalse(self.crashReportingManager.isEnabled)
+        crashReportingManager.disableCrashReporting()
+        XCTAssertFalse(crashReportingManager.isEnabled)
     }
 
     func testReportCrashWhenDisabled() {
-        self.crashReportingManager.disableCrashReporting()
+        guard let crashReportingManager = self.crashReportingManager else {
+            XCTFail("Crash reporting manager not initialized")
+            return
+        }
+        crashReportingManager.disableCrashReporting()
         let error = NSError(domain: "Test", code: 1, userInfo: nil)
-        self.crashReportingManager.reportCrash(error, context: "Test")
+        crashReportingManager.reportCrash(error, context: "Test")
         // Should not crash, and since disabled, should not save
         XCTAssertTrue(true)
     }
 
     func testGetCrashReports() {
-        let reports = self.crashReportingManager.getCrashReports()
+        guard let crashReportingManager = self.crashReportingManager else {
+            XCTFail("Crash reporting manager not initialized")
+            return
+        }
+        let reports = crashReportingManager.getCrashReports()
         XCTAssertNotNil(reports)
         // May be empty
     }
 
     func testClearCrashReports() {
-        self.crashReportingManager.clearCrashReports()
+        guard let crashReportingManager = self.crashReportingManager else {
+            XCTFail("Crash reporting manager not initialized")
+            return
+        }
+        crashReportingManager.clearCrashReports()
         // Should not crash
         XCTAssertTrue(true)
     }

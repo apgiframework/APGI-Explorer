@@ -23,7 +23,9 @@ class SecurityManager: ObservableObject {
             if let error {
                 os_log(OSLogType.fault, "Core Data load failed: %@", error.localizedDescription)
                 self.persistentContainer = NSPersistentContainer(name: "APGISignature")
-                self.persistentContainer.persistentStoreDescriptions.first!.type = NSInMemoryStoreType
+                if let storeDescription = self.persistentContainer.persistentStoreDescriptions.first {
+                    storeDescription.type = NSInMemoryStoreType
+                }
                 self.persistentContainer.loadPersistentStores { _, _ in
                     semaphore.signal()
                 }
@@ -53,7 +55,9 @@ class SecurityManager: ObservableObject {
         }
         let data = try keychain.retrieve(forKey: SecurityKeys.userProfile)
         let decoder = JSONDecoder()
-        decoder.userInfo[CodingUserInfoKey.managedObjectContext!] = self.persistentContainer.viewContext
+        if let contextKey = CodingUserInfoKey.managedObjectContext {
+            decoder.userInfo[contextKey] = self.persistentContainer.viewContext
+        }
         return try decoder.decode(ProfileEntity.self, from: data)
     }
 
@@ -175,7 +179,9 @@ extension SecurityManager {
     func importSecureData(_ data: [String: Any]) throws {
         if let profileData = data["userProfile"] as? Data {
             let decoder = JSONDecoder()
-            decoder.userInfo[CodingUserInfoKey.managedObjectContext!] = self.persistentContainer.viewContext
+            if let contextKey = CodingUserInfoKey.managedObjectContext {
+                decoder.userInfo[contextKey] = self.persistentContainer.viewContext
+            }
             let profile = try decoder.decode(ProfileEntity.self, from: profileData)
             try self.storeUserProfile(profile)
         }

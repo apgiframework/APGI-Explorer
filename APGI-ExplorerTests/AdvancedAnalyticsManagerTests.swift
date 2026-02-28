@@ -2,13 +2,15 @@
 import XCTest
 
 final class AdvancedAnalyticsManagerTests: XCTestCase {
-    var analyticsManager: AdvancedAnalyticsManager!
-    var mockDataStore: MockDataStore!
+    var analyticsManager: AdvancedAnalyticsManager?
+    var mockDataStore: MockDataStore?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
         self.mockDataStore = MockDataStore()
-        self.analyticsManager = AdvancedAnalyticsManager(dataStore: self.mockDataStore)
+        if let mockDataStore = self.mockDataStore {
+            self.analyticsManager = AdvancedAnalyticsManager(dataStore: mockDataStore)
+        }
     }
 
     override func tearDownWithError() throws {
@@ -17,22 +19,30 @@ final class AdvancedAnalyticsManagerTests: XCTestCase {
     }
 
     func testAdvancedAnalyticsManagerInitialization() {
-        XCTAssertNotNil(self.analyticsManager)
-        XCTAssertTrue(self.analyticsManager.trendData.isEmpty)
-        XCTAssertTrue(self.analyticsManager.predictions.isEmpty)
-        XCTAssertTrue(self.analyticsManager.insights.isEmpty)
-        XCTAssertFalse(self.analyticsManager.isLoading)
-        XCTAssertNil(self.analyticsManager.error)
+        guard let analyticsManager = self.analyticsManager else {
+            XCTFail("Analytics manager not initialized")
+            return
+        }
+        XCTAssertNotNil(analyticsManager)
+        XCTAssertTrue(analyticsManager.trendData.isEmpty)
+        XCTAssertTrue(analyticsManager.predictions.isEmpty)
+        XCTAssertTrue(analyticsManager.insights.isEmpty)
+        XCTAssertFalse(analyticsManager.isLoading)
+        XCTAssertNil(analyticsManager.error)
     }
 
     func testAnalyzeTrendsWithEmptyProfiles() async {
-        await self.analyticsManager.analyzeTrends(for: [])
+        guard let analyticsManager = self.analyticsManager else {
+            XCTFail("Analytics manager not initialized")
+            return
+        }
+        await analyticsManager.analyzeTrends(for: [])
 
-        XCTAssertTrue(self.analyticsManager.trendData.isEmpty)
-        XCTAssertTrue(self.analyticsManager.predictions.isEmpty)
-        XCTAssertTrue(self.analyticsManager.insights.isEmpty)
-        XCTAssertFalse(self.analyticsManager.isLoading)
-        XCTAssertNil(self.analyticsManager.error)
+        XCTAssertTrue(analyticsManager.trendData.isEmpty)
+        XCTAssertTrue(analyticsManager.predictions.isEmpty)
+        XCTAssertTrue(analyticsManager.insights.isEmpty)
+        XCTAssertFalse(analyticsManager.isLoading)
+        XCTAssertNil(analyticsManager.error)
     }
 
     func testTrendDirectionDisplayNames() {

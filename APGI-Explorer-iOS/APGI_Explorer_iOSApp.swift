@@ -92,9 +92,9 @@ struct iOSNavigationModifier: ViewModifier {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: {
                             // Settings action
-                        }) {
+                        }, label: {
                             Image(systemName: "gearshape")
-                        }
+                        })
                     }
                 }
         }

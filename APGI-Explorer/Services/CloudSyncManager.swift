@@ -2,6 +2,7 @@ import CloudKit
 import Combine
 import CoreData
 import Foundation
+import OSLog
 
 class CloudSyncManager: ObservableObject {
     static let shared = CloudSyncManager()
@@ -181,7 +182,7 @@ class CloudSyncManager: ObservableObject {
                         profiles.append(profile)
                     }
                 case let .failure(error):
-                    print("Error fetching record: \(error)")
+                    os_log("Error fetching record: %@", error.localizedDescription)
                 }
             }
 

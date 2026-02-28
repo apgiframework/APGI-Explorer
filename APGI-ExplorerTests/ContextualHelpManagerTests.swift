@@ -2,7 +2,7 @@
 import XCTest
 
 final class ContextualHelpManagerTests: XCTestCase {
-    var helpManager: ContextualHelpManager!
+    var helpManager: ContextualHelpManager?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -14,34 +14,50 @@ final class ContextualHelpManagerTests: XCTestCase {
     }
 
     func testContextualHelpManagerInitialization() {
-        XCTAssertNotNil(self.helpManager)
-        XCTAssertFalse(self.helpManager.isHelpVisible)
-        XCTAssertNil(self.helpManager.currentHelpContext)
-        XCTAssertFalse(self.helpManager.completedTutorials.isEmpty) // Has default tutorials
+        guard let helpManager = self.helpManager else {
+            XCTFail("Help manager not initialized")
+            return
+        }
+        XCTAssertNotNil(helpManager)
+        XCTAssertFalse(helpManager.isHelpVisible)
+        XCTAssertNil(helpManager.currentHelpContext)
+        XCTAssertFalse(helpManager.completedTutorials.isEmpty) // Has default tutorials
     }
 
     func testShowAndDismissHelp() {
+        guard let helpManager = self.helpManager else {
+            XCTFail("Help manager not initialized")
+            return
+        }
         let context = HelpContext.profileCreation
-        self.helpManager.showHelp(for: context)
-        XCTAssertTrue(self.helpManager.isHelpVisible)
-        XCTAssertEqual(self.helpManager.currentHelpContext, context)
+        helpManager.showHelp(for: context)
+        XCTAssertTrue(helpManager.isHelpVisible)
+        XCTAssertEqual(helpManager.currentHelpContext, context)
 
-        self.helpManager.dismissHelp()
-        XCTAssertFalse(self.helpManager.isHelpVisible)
-        XCTAssertNil(self.helpManager.currentHelpContext)
+        helpManager.dismissHelp()
+        XCTAssertFalse(helpManager.isHelpVisible)
+        XCTAssertNil(helpManager.currentHelpContext)
     }
 
     func testMarkTutorialCompleted() {
+        guard let helpManager = self.helpManager else {
+            XCTFail("Help manager not initialized")
+            return
+        }
         let tutorialId = "test_tutorial"
-        XCTAssertFalse(self.helpManager.isTutorialCompleted(tutorialId))
+        XCTAssertFalse(helpManager.isTutorialCompleted(tutorialId))
 
-        self.helpManager.markTutorialCompleted(tutorialId)
-        XCTAssertTrue(self.helpManager.isTutorialCompleted(tutorialId))
+        helpManager.markTutorialCompleted(tutorialId)
+        XCTAssertTrue(helpManager.isTutorialCompleted(tutorialId))
     }
 
     func testGetTutorialForContext() throws {
+        guard let helpManager = self.helpManager else {
+            XCTFail("Help manager not initialized")
+            return
+        }
         let context = HelpContext.profileCreation
-        let tutorial = self.helpManager.getTutorial(for: context)
+        let tutorial = helpManager.getTutorial(for: context)
         XCTAssertNotNil(tutorial)
         XCTAssertTrue(try XCTUnwrap(tutorial?.contexts.contains(context)))
     }
