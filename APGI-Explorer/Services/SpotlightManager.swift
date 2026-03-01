@@ -6,6 +6,7 @@ class SpotlightManager {
     static let shared = SpotlightManager()
 
     private let searchableIndex = CSSearchableIndex.default()
+    private let log = OSLog(subsystem: "com.lesoto.APGI-Explorer", category: "Spotlight")
 
     private init() {
     }
@@ -19,18 +20,18 @@ class SpotlightManager {
 
         do {
             try await self.searchableIndex.indexSearchableItems([searchableItem])
-            os_log("Successfully indexed profile %{public}@", log: OSLog.default, type: .info, profile.name)
+            os_log("Successfully indexed profile %{public}@", log: self.log, type: .info, profile.name)
         } catch {
-            os_log("Failed to index profile %{public}@: %{public}@", log: OSLog.default, type: .error, profile.name, error.localizedDescription)
+            os_log("Failed to index profile %{public}@: %{public}@", log: self.log, type: .error, profile.name, error.localizedDescription)
         }
     }
 
     func removeProfileFromIndex(_ profile: QuizProfile) async {
         do {
             try await self.searchableIndex.deleteSearchableItems(withIdentifiers: [profile.id.uuidString])
-            os_log("Successfully removed profile %{public}@ from index", log: OSLog.default, type: .info, profile.name)
+            os_log("Successfully removed profile %{public}@ from index", log: self.log, type: .info, profile.name)
         } catch {
-            os_log("Failed to remove profile %{public}@ from index: %{public}@", log: OSLog.default, type: .error, profile.name, error.localizedDescription)
+            os_log("Failed to remove profile %{public}@ from index: %{public}@", log: self.log, type: .error, profile.name, error.localizedDescription)
         }
     }
 
@@ -38,7 +39,7 @@ class SpotlightManager {
         var searchableItems: [CSSearchableItem] = []
 
         for profile in profiles {
-            let apgiProfile = profileManager.enhancedProfile(from: profile.results)
+            let apgiProfile = await profileManager.enhancedProfile(from: profile.results)
             let profileType = profileManager.determineProfileType(for: apgiProfile)
             let searchableItem = CSSearchableItem(
                 uniqueIdentifier: profile.id.uuidString,
@@ -50,9 +51,9 @@ class SpotlightManager {
 
         do {
             try await self.searchableIndex.indexSearchableItems(searchableItems)
-            os_log("Successfully reindexed all profiles", log: OSLog.default, type: .info)
+            os_log("Successfully reindexed all profiles", log: self.log, type: .info)
         } catch {
-            os_log("Failed to reindex all profiles: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+            os_log("Failed to reindex all profiles: %{public}@", log: self.log, type: .error, error.localizedDescription)
         }
     }
 

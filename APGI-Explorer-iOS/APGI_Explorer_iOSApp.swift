@@ -42,7 +42,7 @@ struct APGI_Explorer_iOSApp: App {
         navBarAppearance.configureWithTransparentBackground()
         navBarAppearance.titleTextAttributes = [
             .foregroundColor: UIColor.label,
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold),
+            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
         ]
 
         UINavigationBar.appearance().standardAppearance = navBarAppearance
@@ -54,11 +54,11 @@ struct APGI_Explorer_iOSApp: App {
         tabBarAppearance.configureWithTransparentBackground()
         tabBarAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
             .foregroundColor: UIColor.systemBlue,
-            .font: UIFont.systemFont(ofSize: 12, weight: .semibold),
+            .font: UIFont.systemFont(ofSize: 12, weight: .semibold)
         ]
         tabBarAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
             .foregroundColor: UIColor.secondaryLabel,
-            .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+            .font: UIFont.systemFont(ofSize: 12, weight: .regular)
         ]
 
         UITabBar.appearance().standardAppearance = tabBarAppearance

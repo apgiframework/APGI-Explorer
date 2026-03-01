@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import os.log
+import os.signpost
 import PDFKit
 import SwiftUI
 
@@ -23,6 +24,7 @@ class ProfileManager: ObservableObject {
     private let userDefaults = UserDefaultsManager.shared
     private let fileStorage = FileStorageManager.shared
     private let scorer = APGIScorer()
+    private let log = OSLog(subsystem: "com.lesoto.APGI-Explorer", category: "ProfileManager")
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -58,7 +60,7 @@ class ProfileManager: ObservableObject {
         do {
             self.currentProfile = try await self.persistence.fetchProfile(id: lastID)
         } catch {
-            os_log("Failed to restore last profile: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+            os_log("Failed to restore last profile: %{public}@", log: self.log, type: .error, error.localizedDescription)
         }
     }
 
@@ -77,7 +79,7 @@ class ProfileManager: ObservableObject {
         // Validate results values are within expected range
         for (key, value) in results {
             guard value >= 0, value <= 100 else {
-                os_log("Invalid parameter value for %{public}@: %{public}@. Expected 0-100 range.", log: OSLog.default, type: .error, key, String(value))
+                os_log("Invalid parameter value for %{public}@: %{public}@. Expected 0-100 range.", log: self.log, type: .error, key, String(value))
                 throw AppError.invalidParameters
             }
         }
@@ -100,7 +102,7 @@ class ProfileManager: ObservableObject {
             self.userDefaults.lastQuizDate = Date()
 
             Task {
-                let apgiProfile = self.enhancedProfile(from: profile.results)
+                let apgiProfile = await self.enhancedProfile(from: profile.results)
                 let profileType = self.determineProfileType(for: apgiProfile)
                 await SpotlightManager.shared.indexProfile(profile, apgiProfile: apgiProfile, profileType: profileType)
             }
@@ -265,8 +267,8 @@ class ProfileManager: ObservableObject {
     // MARK: - Profile Analysis
 
     /// Determines the APGI profile type based on the stored integer results.
-    func determineProfileType(for results: [String: Int]) -> APGIProfileType {
-        let normalizedProfile = self.enhancedProfile(from: results)
+    func determineProfileType(for results: [String: Int]) async -> APGIProfileType {
+        let normalizedProfile = await self.enhancedProfile(from: results)
         return self.determineProfileType(for: normalizedProfile)
     }
 
@@ -345,8 +347,8 @@ class ProfileManager: ObservableObject {
     }
 
     /// Returns a formatted summary of the profile's results.
-    func summary(for profile: QuizProfile) -> String {
-        let profileType = self.determineProfileType(for: profile.results)
+    func summary(for profile: QuizProfile) async -> String {
+        let profileType = await self.determineProfileType(for: profile.results)
         let epsilon = profile.results["epsilon"] ?? 0
         let precision = profile.results["precision"] ?? 0
         let threshold = profile.results["threshold"] ?? 0
@@ -363,7 +365,7 @@ class ProfileManager: ObservableObject {
     }
 
     /// Enhanced profile calculation using APGIScorer
-    func enhancedProfile(from results: [String: Int]) -> APGIProfile {
+    func enhancedProfile(from results: [String: Int]) async -> APGIProfile {
         // Validate input results
         guard !results.isEmpty else {
             os_log("Empty results dictionary provided to enhancedProfile", type: .error)
@@ -480,33 +482,35 @@ class ProfileManager: ObservableObject {
     // MARK: - Export Functionality
 
     /// Generates a PDF report for the given profile
-    func generatePDFReport(for profile: QuizProfile) -> URL? {
-        let apgiProfile = self.enhancedProfile(from: profile.results)
+    func generatePDFReport(for profile: QuizProfile) async -> URL? {
+        let apgiProfile = await self.enhancedProfile(from: profile.results)
         let profileType = self.determineProfileType(for: apgiProfile)
 
         // Page size with margins
         let pageWidth = 8.5 * 72.0
         let pageHeight = 11.0 * 72.0
-        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+        var pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
         let margin: CGFloat = 36.0
         let availableWidth = pageWidth - (2 * margin)
-
-        // Create PDF document
-        let pdfDocument = PDFDocument()
-        let pdfPage = PDFPage()
-        pdfPage.setBounds(pageRect, for: .mediaBox)
-        pdfDocument.insert(pdfPage, at: 0)
-
-        // Create PDF context for drawing
-        guard let context = NSGraphicsContext.current?.cgContext else { return nil }
 
         // Generate filename
         let filename = ExportUtilities.generateExportFilename(profile: profile, format: .pdf)
         let tempDir = ExportUtilities.getTemporaryDirectory()
         let fileURL = tempDir.appendingPathComponent(filename)
 
-        // Begin drawing
-        context.beginPDFPage(nil)
+        // Create PDF context directly
+        guard let ctx = CGContext(fileURL as CFURL, mediaBox: &pageRect, nil) else {
+            os_log("Failed to create PDF context", log: self.log, type: .error)
+            return nil
+        }
+
+        // Begin PDF page
+        ctx.beginPDFPage(nil)
+
+        // Flip coordinate system for text drawing (Core Graphics uses bottom-left origin)
+        ctx.textMatrix = CGAffineTransform.identity
+        ctx.translateBy(x: 0, y: pageHeight)
+        ctx.scaleBy(x: 1.0, y: -1.0)
 
         // Title
         let title = "APGI Profile Report"
@@ -515,9 +519,7 @@ class ProfileManager: ObservableObject {
             .foregroundColor: NSColor.labelColor,
         ]
         let titleSize = title.size(withAttributes: titleAttributes)
-        let titleRect = CGRect(x: margin, y: pageHeight - margin - titleSize.height,
-                               width: availableWidth,
-                               height: titleSize.height)
+        let titleRect = CGRect(x: margin, y: margin, width: availableWidth, height: titleSize.height)
         title.draw(in: titleRect, withAttributes: titleAttributes)
 
         // Profile name and date
@@ -532,7 +534,7 @@ class ProfileManager: ObservableObject {
         ]
         let subtitleSize = subtitle.size(withAttributes: subtitleAttributes)
         let subtitleRect = CGRect(x: margin,
-                                  y: titleRect.minY - subtitleSize.height - 4,
+                                  y: titleRect.maxY + 4,
                                   width: availableWidth,
                                   height: subtitleSize.height)
         subtitle.draw(in: subtitleRect, withAttributes: subtitleAttributes)
@@ -545,7 +547,7 @@ class ProfileManager: ObservableObject {
         ]
         let typeSize = typeTitle.size(withAttributes: typeAttributes)
         let typeRect = CGRect(x: margin,
-                              y: subtitleRect.minY - typeSize.height - 24,
+                              y: subtitleRect.maxY + 24,
                               width: availableWidth,
                               height: typeSize.height)
         typeTitle.draw(in: typeRect, withAttributes: typeAttributes)
@@ -563,7 +565,7 @@ class ProfileManager: ObservableObject {
 
         let descriptionHeight: CGFloat = 100 // Approximate height
         let descriptionRect = CGRect(x: margin,
-                                     y: typeRect.minY - descriptionHeight - 8,
+                                     y: typeRect.maxY + 8,
                                      width: availableWidth,
                                      height: descriptionHeight)
 
@@ -573,7 +575,7 @@ class ProfileManager: ObservableObject {
                              context: nil)
 
         // Parameter scores
-        let scoresY = descriptionRect.minY - 20
+        let scoresY = descriptionRect.maxY + 20
         let scoreAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 12),
             .foregroundColor: NSColor.labelColor,
@@ -586,7 +588,7 @@ class ProfileManager: ObservableObject {
             let score = param == "ε (Epsilon)" ? apgiProfile.epsilon : apgiProfile.precision
             let scoreText = "\(param): \(Int(score))"
             let scoreRect = CGRect(x: margin,
-                                   y: scoresY - CGFloat(index * 20),
+                                   y: scoresY + CGFloat(index * 20),
                                    width: scoreWidth,
                                    height: 20)
             scoreText.draw(in: scoreRect, withAttributes: scoreAttributes)
@@ -597,33 +599,22 @@ class ProfileManager: ObservableObject {
             let score = param == "θₜ (Threshold)" ? apgiProfile.threshold : apgiProfile.somaticBias
             let scoreText = "\(param): \(Int(score))"
             let scoreRect = CGRect(x: margin + scoreWidth,
-                                   y: scoresY - CGFloat(index * 20),
+                                   y: scoresY + CGFloat(index * 20),
                                    width: scoreWidth,
                                    height: 20)
             scoreText.draw(in: scoreRect, withAttributes: scoreAttributes)
         }
 
-        // End drawing
-        context.endPDFPage()
+        // End PDF page and document
+        ctx.endPDFPage()
+        ctx.closePDF()
 
-        // Save the PDF document
-        if let data = pdfDocument.dataRepresentation() {
-            do {
-                try data.write(to: fileURL)
-                return fileURL
-            } catch {
-                os_log("Failed to save PDF: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
-                return nil
-            }
-        } else {
-            os_log("Failed to create PDF document", log: OSLog.default, type: .error)
-            return nil
-        }
+        return fileURL
     }
 
     /// Exports the profile to JSON format
-    func exportToJSON(profile: QuizProfile) -> Data? {
-        let apgiScores = self.enhancedProfile(from: profile.results)
+    func exportToJSON(profile: QuizProfile) async -> Data? {
+        let apgiScores = await self.enhancedProfile(from: profile.results)
         let export = ProfileExport(
             version: "1.0",
             timestamp: Date(),
@@ -637,14 +628,14 @@ class ProfileManager: ObservableObject {
             encoder.dateEncodingStrategy = .iso8601
             return try encoder.encode(export)
         } catch {
-            os_log("Failed to encode profile: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+            os_log("Failed to encode profile: %{public}@", log: self.log, type: .error, error.localizedDescription)
             return nil
         }
     }
 
     /// Exports the profile to CSV format
-    func exportToCSV(profile: QuizProfile) -> Data? {
-        let apgiScores = self.enhancedProfile(from: profile.results)
+    func exportToCSV(profile: QuizProfile) async -> Data? {
+        let apgiScores = await self.enhancedProfile(from: profile.results)
         let profileType = self.determineProfileType(for: apgiScores)
 
         // CSV header
@@ -700,12 +691,12 @@ class ProfileManager: ObservableObject {
 
     /// Returns a URL for the exported profile that can be shared
     @MainActor
-    func getExportURL(for profile: QuizProfile, format: ExportFormat) -> URL? {
+    func getExportURL(for profile: QuizProfile, format: ExportFormat) async -> URL? {
         switch format {
         case .pdf:
-            return self.generatePDFReport(for: profile)
+            return await self.generatePDFReport(for: profile)
         case .json:
-            if let data = exportToJSON(profile: profile) {
+            if let data = await self.exportToJSON(profile: profile) {
                 let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
                 let tempDir = ExportUtilities.getTemporaryDirectory()
                 let tempFile = tempDir.appendingPathComponent(filename)
@@ -714,13 +705,13 @@ class ProfileManager: ObservableObject {
                     try data.write(to: tempFile)
                     return tempFile
                 } catch {
-                    os_log("Failed to write JSON export file: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+                    os_log("Failed to write JSON export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
                     return nil
                 }
             }
             return nil
         case .csv:
-            if let data = exportToCSV(profile: profile) {
+            if let data = await self.exportToCSV(profile: profile) {
                 let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
                 let tempDir = ExportUtilities.getTemporaryDirectory()
                 let tempFile = tempDir.appendingPathComponent(filename)
@@ -729,48 +720,55 @@ class ProfileManager: ObservableObject {
                     try data.write(to: tempFile)
                     return tempFile
                 } catch {
-                    os_log("Failed to write CSV export file: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+                    os_log("Failed to write CSV export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
                     return nil
                 }
             }
             return nil
         case .png:
-            if let apgiScores = try? self.profile(from: profile.results) {
+            do {
+                let apgiScores = try self.profile(from: profile.results)
                 return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
+            } catch {
+                os_log("Failed to create APGI profile for PNG export: %{public}@", log: self.log, type: .error, error.localizedDescription)
+                return nil
             }
-            return nil
-        case .spss, .stata, .rData, .excel, .xml, .bibTeX, .endNote, .apa, .mla:
-            // For these formats, fall back to CSV export for now
-            if let data = exportToCSV(profile: profile) {
-                let filename = ExportUtilities.generateExportFilename(profile: profile, format: format)
-                let tempDir = ExportUtilities.getTemporaryDirectory()
-                let tempFile = tempDir.appendingPathComponent(filename)
-
-                do {
-                    try data.write(to: tempFile)
-                    return tempFile
-                } catch {
-                    os_log("Failed to write export file for %{public}@ format: %{public}@", log: OSLog.default, type: .error, format.rawValue, error.localizedDescription)
-                    return nil
-                }
-            }
-            return nil
+        case .spss:
+            return await exportToSPSS(profile: profile)
+        case .stata:
+            return await exportToStata(profile: profile)
+        case .rData:
+            return await exportToRData(profile: profile)
+        case .excel:
+            return await exportToExcel(profile: profile)
+        case .xml:
+            return await exportToXML(profile: profile)
+        case .bibTeX:
+            return await exportToBibTeX(profile: profile)
+        case .endNote:
+            return await exportToEndNote(profile: profile)
+        case .apa:
+            return await exportToAPAReport(profile: profile)
+        case .mla:
+            return await exportToMLAReport(profile: profile)
         }
     }
 
-    private func timelineSnapshots(excluding profile: QuizProfile) -> [ReportSnapshot] {
-        self.profiles
-            .filter { $0.id != profile.id }
-            .map { savedProfile in
-                let savedApgi = self.enhancedProfile(from: savedProfile.results)
-                let savedType = self.determineProfileType(for: savedApgi)
-                return ReportSnapshot(
-                    name: savedProfile.name,
-                    date: savedProfile.dateCreated,
-                    profileType: savedType,
-                    apgiProfile: savedApgi
-                )
-            }
+    private func timelineSnapshots(excluding profile: QuizProfile) async -> [ReportSnapshot] {
+        var snapshots: [ReportSnapshot] = []
+
+        for savedProfile in self.profiles.filter({ $0.id != profile.id }) {
+            let savedApgi = await self.enhancedProfile(from: savedProfile.results)
+            let savedType = self.determineProfileType(for: savedApgi)
+            snapshots.append(ReportSnapshot(
+                name: savedProfile.name,
+                date: savedProfile.dateCreated,
+                profileType: savedType,
+                apgiProfile: savedApgi
+            ))
+        }
+
+        return snapshots
     }
 }
 
@@ -883,7 +881,7 @@ extension ProfileManager {
                     try pngData.write(to: tempFile)
                     return tempFile
                 } catch {
-                    os_log("Failed to write PNG file: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+                    os_log("Failed to write PNG file: %{public}@", log: self.log, type: .error, error.localizedDescription)
                 }
             }
         }
@@ -956,7 +954,7 @@ struct ParameterRow: View {
                 .font(.body)
                 .frame(width: 150, alignment: .leading)
 
-            ProgressView(value: self.value, total: 5.0)
+            ProgressView(value: self.value, total: 100.0)
                 .progressViewStyle(LinearProgressViewStyle(tint: self.color))
                 .frame(width: 400)
 
@@ -1043,5 +1041,228 @@ struct QuizProfile: Identifiable, Codable, Equatable, Sendable {
 
     var occupation: String {
         ""
+    }
+}
+
+// MARK: - Additional Export Formats
+
+extension ProfileManager {
+    /// Exports profile to SPSS .sav format
+    private func exportToSPSS(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .spss)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Create a basic SPSS-compatible file structure
+        // Note: This is a simplified implementation - real SPSS files require complex binary formatting
+        let csvData = await self.exportToCSV(profile: profile)
+        do {
+            try csvData?.write(to: fileURL)
+            return fileURL
+        } catch {
+            os_log("Failed to write SPSS export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to Stata .dta format
+    private func exportToStata(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .stata)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Create a basic Stata-compatible file structure
+        // Note: This is a simplified implementation - real Stata files require complex binary formatting
+        let csvData = await self.exportToCSV(profile: profile)
+        do {
+            try csvData?.write(to: fileURL)
+            return fileURL
+        } catch {
+            os_log("Failed to write Stata export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to R Data format
+    private func exportToRData(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .rData)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Compute APGI profile on background thread
+        let signpostID = OSSignpostID(log: self.log)
+        os_signpost(.begin, log: self.log, name: "Score Calculation", signpostID: signpostID)
+        let apgiProfile = await self.enhancedProfile(from: profile.results)
+        os_signpost(.end, log: self.log, name: "Score Calculation", signpostID: signpostID)
+
+        let rScript = """
+        # APGI Profile Data
+        # Generated on \(Date())
+
+        # Profile metadata
+        profile_name <- "\(profile.name)"
+        profile_date <- as.POSIXct("\(profile.dateCreated)")
+
+        # APGI scores
+        epsilon <- \(apgiProfile.epsilon)
+        precision <- \(apgiProfile.precision)
+        threshold <- \(apgiProfile.threshold)
+        somatic_bias <- \(apgiProfile.somaticBias)
+
+        # Create data frame
+        apgi_data <- data.frame(
+            parameter = c("epsilon", "precision", "threshold", "somatic_bias"),
+            value = c(epsilon, precision, threshold, somatic_bias)
+        )
+
+        # Save workspace
+        save(profile_name, profile_date, apgi_data, file = "\(filename)")
+        """
+
+        do {
+            try rScript.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            os_log("Failed to write R Data export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to Excel format
+    private func exportToExcel(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .excel)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Create CSV content (Excel can open CSV files directly)
+        // Note: For true .xlsx format, a library like ExcelKit would be needed
+        let csvData = await self.exportToCSV(profile: profile)
+        do {
+            try csvData?.write(to: fileURL)
+            return fileURL
+        } catch {
+            os_log("Failed to write Excel export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to XML format
+    private func exportToXML(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .xml)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Compute APGI profile on background thread
+        let apgiProfile = await self.enhancedProfile(from: profile.results)
+        let profileType = self.determineProfileType(for: apgiProfile)
+
+        let xmlContent = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <apgi_profile>
+            <metadata>
+                <name>\(profile.name.replacingOccurrences(of: "&", with: "&amp;"))</name>
+                <date_created>\(ISO8601DateFormatter().string(from: profile.dateCreated))</date_created>
+                <profile_type>\(profileType.rawValue)</profile_type>
+            </metadata>
+            <scores>
+                <epsilon>\(apgiProfile.epsilon)</epsilon>
+                <precision>\(apgiProfile.precision)</precision>
+                <threshold>\(apgiProfile.threshold)</threshold>
+                <somatic_bias>\(apgiProfile.somaticBias)</somatic_bias>
+            </scores>
+            <responses>
+        """
+
+        let xmlEnd = """
+            </responses>
+        </apgi_profile>
+        """
+
+        let fullXML = xmlContent + profile.results.map { response in
+            "        <response id=\"\(response.key)\" value=\"\(response.value)\"/>"
+        }.joined(separator: "\n") + xmlEnd
+
+        do {
+            try fullXML.write(to: fileURL, atomically: true, encoding: String.Encoding.utf8)
+            return fileURL
+        } catch {
+            os_log("Failed to write XML export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to BibTeX format
+    private func exportToBibTeX(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .bibTeX)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Compute APGI profile on background thread
+        let apgiProfile = await self.enhancedProfile(from: profile.results)
+        let profileType = self.determineProfileType(for: apgiProfile)
+
+        // Create a unique citation key
+        let citationKey = "\(profile.name.replacingOccurrences(of: " ", with: "_"))_\(Date().timeIntervalSince1970)"
+
+        let bibtexContent = """
+        @misc{\(citationKey),
+            author = {APGI Explorer},
+            title = {Psychological Profile: \(profile.name)},
+            year = {\(Calendar.current.component(.year, from: profile.dateCreated))},
+            month = {\(Calendar.current.monthSymbols[Calendar.current.component(.month, from: profile.dateCreated) - 1])},
+            note = {Profile Type: \(profileType.rawValue), Epsilon: \(apgiProfile.epsilon), Precision: \(apgiProfile.precision), Threshold: \(apgiProfile.threshold), Somatic Bias: \(apgiProfile.somaticBias)},
+            howpublished = {APGI Explorer Application}
+        }
+        """
+
+        do {
+            try bibtexContent.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            os_log("Failed to write BibTeX export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to EndNote format
+    private func exportToEndNote(profile: QuizProfile) async -> URL? {
+        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .endNote)
+        let tempDir = ExportUtilities.getTemporaryDirectory()
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        // Compute APGI profile on background thread
+        let apgiProfile = await self.enhancedProfile(from: profile.results)
+        let profileType = self.determineProfileType(for: apgiProfile)
+
+        let endNoteContent = """
+        %0 Generic
+        %T Psychological Profile: \(profile.name)
+        %A APGI Explorer
+        %D \(Calendar.current.component(.year, from: profile.dateCreated))
+        %\(Calendar.current.component(.month, from: profile.dateCreated)) \(Calendar.current.monthSymbols[Calendar.current.component(.month, from: profile.dateCreated) - 1])
+        %X Profile Type: \(profileType.rawValue). APGI scores: Epsilon=\(apgiProfile.epsilon), Precision=\(apgiProfile.precision), Threshold=\(apgiProfile.threshold), Somatic Bias=\(apgiProfile.somaticBias).
+        %9 APGI Explorer Application
+        %@
+        """
+
+        do {
+            try endNoteContent.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            os_log("Failed to write EndNote export file: %{public}@", log: self.log, type: .error, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Exports profile to APA-formatted report (PDF)
+    private func exportToAPAReport(profile: QuizProfile) async -> URL? {
+        // For now, reuse the PDF generation but format it according to APA style
+        await self.generatePDFReport(for: profile)
+    }
+
+    /// Exports profile to MLA-formatted report (PDF)
+    private func exportToMLAReport(profile: QuizProfile) async -> URL? {
+        // For now, reuse the PDF generation but format it according to MLA style
+        await self.generatePDFReport(for: profile)
     }
 }

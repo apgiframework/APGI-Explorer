@@ -19,7 +19,7 @@ final class ResearchExportTests: XCTestCase {
                 "epsilon": 75.0,
                 "precision": 60.0,
                 "threshold": 45.0,
-                "somatic": 30.0,
+                "somatic": 30.0
             ]
         )
 
@@ -184,7 +184,7 @@ final class ResearchExportTests: XCTestCase {
     func testExportFormatProperties() {
         let formats: [ExportFormat] = [
             .json, .csv, .pdf, .png, .spss, .stata, .rData,
-            .excel, .xml, .bibTeX, .endNote, .apa, .mla,
+            .excel, .xml, .bibTeX, .endNote, .apa, .mla
         ]
 
         for format in formats {

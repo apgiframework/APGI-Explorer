@@ -45,7 +45,7 @@ final class SecurityManagerTests: XCTestCase {
             "theme": "dark",
             "notifications": true,
             "autoBackup": false,
-            "maxProfiles": 10,
+            "maxProfiles": 10
         ]
 
         try securityManager?.storeAppSettings(testSettings)

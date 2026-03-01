@@ -1,0 +1,10 @@
+# LLDB Custom Type Summaries for APGI Explorer
+
+# Summary for QuizProfile
+type summary add -s "QuizProfile: ${var.name} (${var.results.count} results)" QuizProfile
+
+# Summary for APGIProfile
+type summary add -s "APGIProfile: ε=${var.epsilon}, π=${var.precision}, θₜ=${var.threshold}, β=${var.somaticBias}" APGIProfile
+
+# Summary for PsychologicalState
+type summary add -s "PsychologicalState: ${var.name} (${var.id})" PsychologicalState

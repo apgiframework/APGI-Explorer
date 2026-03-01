@@ -87,7 +87,7 @@ class StoreManager: ObservableObject {
                     } else if product1.type != .autoRenewable, product2.type == .autoRenewable {
                         return false
                     } else {
-                        return product1.displayPrice < product2.displayPrice
+                        return product1.price < product2.price
                     }
                 }
                 self.isLoading = false
@@ -232,23 +232,35 @@ class StoreManager: ObservableObject {
     // MARK: - Feature Enablement
 
     private func enablePremiumFeatures() async {
-        UserDefaults.standard.set(true, forKey: "premium_features_enabled")
-        UserDefaults.standard.synchronize()
+        do {
+            try KeychainManager.shared.storeCodable(true, forKey: "premium_features_enabled")
+        } catch {
+            os_log("Failed to store premium features: %@", log: OSLog.default, type: .error, error.localizedDescription)
+        }
     }
 
     private func enableProfessionalFeatures() async {
-        UserDefaults.standard.set(true, forKey: "professional_features_enabled")
-        UserDefaults.standard.synchronize()
+        do {
+            try KeychainManager.shared.storeCodable(true, forKey: "professional_features_enabled")
+        } catch {
+            os_log("Failed to store professional features: %@", log: OSLog.default, type: .error, error.localizedDescription)
+        }
     }
 
     private func enableResearchFeatures() async {
-        UserDefaults.standard.set(true, forKey: "research_features_enabled")
-        UserDefaults.standard.synchronize()
+        do {
+            try KeychainManager.shared.storeCodable(true, forKey: "research_features_enabled")
+        } catch {
+            os_log("Failed to store research features: %@", log: OSLog.default, type: .error, error.localizedDescription)
+        }
     }
 
     private func enableUnlimitedProfiles() async {
-        UserDefaults.standard.set(true, forKey: "unlimited_profiles_enabled")
-        UserDefaults.standard.synchronize()
+        do {
+            try KeychainManager.shared.storeCodable(true, forKey: "unlimited_profiles_enabled")
+        } catch {
+            os_log("Failed to store unlimited profiles: %@", log: OSLog.default, type: .error, error.localizedDescription)
+        }
     }
 
     // MARK: - Feature Access

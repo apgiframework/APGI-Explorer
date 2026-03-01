@@ -1,4 +1,5 @@
 import Intents
+import OSLog
 import SwiftUI
 
 #if canImport(UIKit)
@@ -59,11 +60,12 @@ struct QuizView: View {
             }
     }
 
+    @ViewBuilder
     private var mainContent: some View {
         if self.isPaused {
-            AnyView(self.pausedContent)
+            self.pausedContent
         } else {
-            AnyView(self.quizContent)
+            self.quizContent
         }
     }
 
@@ -216,21 +218,29 @@ struct QuizView: View {
         self.isPaused = false
     }
 
+    private struct SavedQuizState: Codable {
+        let currentQuestionIndex: Int
+        let answers: [Int: Int]
+    }
+
     private func saveQuizState() {
-        let state: [String: Any] = [
-            "currentQuestionIndex": currentQuestionIndex,
-            "answers": quizModel.answers,
-        ]
-        UserDefaults.standard.set(state, forKey: self.savedQuizKey)
+        let state = SavedQuizState(currentQuestionIndex: currentQuestionIndex, answers: quizModel.answers)
+        do {
+            let data = try JSONEncoder().encode(state)
+            UserDefaults.standard.set(data, forKey: self.savedQuizKey)
+        } catch {
+            os_log("Failed to save quiz state: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
+        }
     }
 
     private func loadQuizState() {
-        guard let state = UserDefaults.standard.dictionary(forKey: savedQuizKey) else { return }
-        if let index = state["currentQuestionIndex"] as? Int {
-            self.currentQuestionIndex = index
-        }
-        if let answers = state["answers"] as? [Int: Int] {
-            self.quizModel.restoreAnswers(answers)
+        guard let data = UserDefaults.standard.data(forKey: savedQuizKey) else { return }
+        do {
+            let state = try JSONDecoder().decode(SavedQuizState.self, from: data)
+            self.currentQuestionIndex = state.currentQuestionIndex
+            self.quizModel.restoreAnswers(state.answers)
+        } catch {
+            os_log("Failed to load quiz state: %{public}@", log: OSLog.default, type: .error, error.localizedDescription)
         }
         // Clear after loading to prevent reloading on future appears
         self.clearQuizState()
@@ -304,6 +314,7 @@ private struct QuestionOptionRow: View {
                         .stroke(self.isSelected ? Color.blue : Color.clear, lineWidth: 2)
                 )
             }
+            .focusable()
             .buttonStyle(AppPlainButtonStyle())
 
             if self.tooltipOptionID == self.option.id {

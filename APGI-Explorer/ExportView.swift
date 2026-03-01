@@ -10,6 +10,8 @@ struct ExportView: View {
     @State private var showShareSheet = false
     @State private var exportFileURL: URL?
     @State private var toast: ToastMessage?
+    @State private var profileType: APGIProfileType = .adaptiveBalancer
+    @State private var apgiProfile: APGIProfile = .init(epsilon: 0, precision: 0, threshold: 0, somaticBias: 0, interactionScore: 0, temporalStability: 0, environmentalFit: 0)
 
     private var previewSection: some View {
         Section(header: Text("Preview")) {
@@ -17,29 +19,27 @@ struct ExportView: View {
                 Text("Profile: \(self.profile.name)")
                     .font(.headline)
 
-                let profileType = self.profileManager.determineProfileType(for: self.profile.results)
-                Text("Type: \(profileType.rawValue)")
+                Text("Type: \(self.profileType.rawValue)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
                 Divider()
 
-                Text(profileType.description)
+                Text(self.profileType.description)
                     .font(.body)
                     .padding(.vertical, 4)
 
                 Divider()
 
                 // Show a preview of the scores
-                let apgiProfile = (try? self.profileManager.profile(from: self.profile.results)) ?? APGIProfile(epsilon: 0, precision: 0, threshold: 0, somaticBias: 0, interactionScore: 0, temporalStability: 0, environmentalFit: 0)
                 VStack(alignment: .leading, spacing: 4) {
-                    ScoreRow(parameter: "ε (Epsilon)", value: apgiProfile.epsilon)
-                    ScoreRow(parameter: "π (Precision)", value: apgiProfile.precision)
-                    ScoreRow(parameter: "θₜ (Threshold)", value: apgiProfile.threshold)
-                    ScoreRow(parameter: "β (Somatic Bias)", value: apgiProfile.somaticBias)
-                    ScoreRow(parameter: "ι (Interaction Score)", value: apgiProfile.interactionScore)
-                    ScoreRow(parameter: "τ (Temporal Stability)", value: apgiProfile.temporalStability)
-                    ScoreRow(parameter: "φ (Environmental Fit)", value: apgiProfile.environmentalFit)
+                    ScoreRow(parameter: "ε (Epsilon)", value: self.apgiProfile.epsilon)
+                    ScoreRow(parameter: "π (Precision)", value: self.apgiProfile.precision)
+                    ScoreRow(parameter: "θₜ (Threshold)", value: self.apgiProfile.threshold)
+                    ScoreRow(parameter: "β (Somatic Bias)", value: self.apgiProfile.somaticBias)
+                    ScoreRow(parameter: "ι (Interaction Score)", value: self.apgiProfile.interactionScore)
+                    ScoreRow(parameter: "τ (Temporal Stability)", value: self.apgiProfile.temporalStability)
+                    ScoreRow(parameter: "φ (Environmental Fit)", value: self.apgiProfile.environmentalFit)
                 }
             }
             .padding(.vertical, 8)
@@ -79,6 +79,12 @@ struct ExportView: View {
                     LoadingButton(title: "Export", isLoading: self.isExporting, action: self.exportProfile)
                 }
             }
+            .onAppear {
+                Task {
+                    self.profileType = await self.profileManager.determineProfileType(for: self.profile.results)
+                    self.apgiProfile = (try? self.profileManager.profile(from: self.profile.results)) ?? APGIProfile(epsilon: 0, precision: 0, threshold: 0, somaticBias: 0, interactionScore: 0, temporalStability: 0, environmentalFit: 0)
+                }
+            }
             .sheet(isPresented: self.$showShareSheet) {
                 if let url = exportFileURL {
                     ShareSheet(items: [url])
@@ -114,7 +120,7 @@ struct ExportView: View {
                     try exportData.write(to: url)
                 } else {
                     // Use existing ProfileManager for basic formats
-                    url = self.profileManager.getExportURL(for: self.profile, format: self.exportFormat)
+                    url = await self.profileManager.getExportURL(for: self.profile, format: self.exportFormat)
                 }
 
                 if let exportURL = url {

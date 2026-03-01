@@ -18,7 +18,7 @@ final class APGI_ExplorerTests: XCTestCase {
             16: 3, 17: 4, 18: 2, 19: 3, 20: 4, // somatic
             21: 3, 22: 2, 23: 4, 24: 3, 25: 2, // interactions
             26: 4, 27: 3, 28: 2, 29: 4, 30: 3, // temporal
-            31: 2, 32: 4, 33: 3, 34: 2, 35: 4, // environmental
+            31: 2, 32: 4, 33: 3, 34: 2, 35: 4 // environmental
         ]
 
         let profile = scorer.calculateRobustScore(answers: sampleAnswers)

@@ -5,8 +5,9 @@ import SwiftUI
 struct AppearanceSettingsView: View {
     @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
     @AppStorage("exportQuality") private var exportQuality: ExportQuality = .high
-    @AppStorage("colorScheme") private var colorScheme: String = "system"
     @AppStorage("fontSize") private var fontSize: Double = 16.0
+
+    @EnvironmentObject private var themeManager: ThemeManager
 
     var body: some View {
         ScrollView {
@@ -53,10 +54,10 @@ struct AppearanceSettingsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Picker("Color Scheme", selection: self.$colorScheme) {
-                        Text("System").tag("system")
-                        Text("Light").tag("light")
-                        Text("Dark").tag("dark")
+                    Picker("Color Scheme", selection: self.$themeManager.currentTheme) {
+                        Text("System").tag(AppTheme.system)
+                        Text("Light").tag(AppTheme.light)
+                        Text("Dark").tag(AppTheme.dark)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .help("Choose your preferred color scheme")

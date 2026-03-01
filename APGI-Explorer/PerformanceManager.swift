@@ -108,7 +108,9 @@ class PerformanceManager: ObservableObject {
             for source in sources {
                 if let info = IOPSGetPowerSourceDescription(snapshot, source).takeRetainedValue() as? [String: Any],
                    let type = info[kIOPSTypeKey as String] as? String,
-                   type == kIOPSInternalBatteryType
+                   type == kIOPSInternalBatteryType,
+                   let state = info[kIOPSPowerSourceStateKey as String] as? String,
+                   state == kIOPSBatteryPowerValue
                 {
                     return true
                 }
@@ -215,6 +217,7 @@ private enum CacheInstanceManager {
 
 // MARK: - Lazy Load Cache
 
+@MainActor
 class LazyLoadCache<Key: Hashable, Value> {
     static var shared: LazyLoadCache<Key, Value> {
         CacheInstanceManager.shared()
@@ -293,9 +296,13 @@ class LazyLoadCache<Key: Hashable, Value> {
     }
 
     private func setCachedValue(_ value: Value, for key: NSCacheKey) {
-        self.queue.async(flags: .barrier) {
-            let entry = CacheEntry(value: value, timestamp: Date(), accessCount: 1)
-            self.cache.setObject(entry, forKey: key, cost: self.calculateCost(value))
+        // Calculate cost before entering the barrier queue to avoid MainActor issues
+        let cost = self.calculateCost(value)
+        let entry = CacheEntry(value: value, timestamp: Date(), accessCount: 1)
+
+        // Use sync with barrier to avoid Sendable closure issues
+        self.queue.sync(flags: .barrier) {
+            self.cache.setObject(entry, forKey: key, cost: cost)
         }
     }
 
@@ -310,7 +317,8 @@ class LazyLoadCache<Key: Hashable, Value> {
     }
 
     func clearExpiredItems() {
-        self.queue.async(flags: .barrier) {
+        // Use sync with barrier to avoid Sendable closure issues
+        self.queue.sync(flags: .barrier) {
             self.cache.removeAllObjects()
         }
     }

@@ -1,17 +1,13 @@
 import Combine
 import Foundation
+import SwiftUI
 
 class AppState: ObservableObject {
-    @Published var hasCompletedOnboarding: Bool {
-        didSet {
-            UserDefaults.standard.set(self.hasCompletedOnboarding, forKey: "hasCompletedOnboarding")
-        }
-    }
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
 
     static let shared = AppState()
 
     private init() {
-        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     }
 
     func completeOnboarding() {

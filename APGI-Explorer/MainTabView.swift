@@ -4,14 +4,16 @@ struct MainTabView: View {
     @EnvironmentObject var profileManager: ProfileManager
     @EnvironmentObject var stateModel: StateModel
     @EnvironmentObject var appState: AppState
-    @StateObject private var themeManager = ThemeManager.shared
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
         TabView {
-            ContentView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
+            NavigationStack {
+                ContentView()
+            }
+            .tabItem {
+                Label("Home", systemImage: "house.fill")
+            }
 
             NavigationStack {
                 PsychologicalStatesView()
@@ -20,20 +22,26 @@ struct MainTabView: View {
                 Label("States", systemImage: "brain.head.profile")
             }
 
-            PsychologicalStatesVisualizationView()
-                .tabItem {
-                    Label("Visualization", systemImage: "chart.scatter")
-                }
+            NavigationStack {
+                PsychologicalStatesVisualizationView()
+            }
+            .tabItem {
+                Label("Visualization", systemImage: "chart.scatter")
+            }
 
-            ProfileComparisonView()
-                .tabItem {
-                    Label("Compare", systemImage: "person.2.fill")
-                }
+            NavigationStack {
+                ProfileComparisonView()
+            }
+            .tabItem {
+                Label("Compare", systemImage: "person.2.fill")
+            }
 
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Settings", systemImage: "gearshape.fill")
+            }
         }
         .frame(minWidth: 800, minHeight: 600)
         .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())

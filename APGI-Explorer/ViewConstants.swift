@@ -9,11 +9,23 @@ enum LayoutConstants {
     static let smallSpacing: CGFloat = 10
     static let tinySpacing: CGFloat = 4
 
-    // Padding
-    static let topPadding: CGFloat = 40
-    static let bottomPadding: CGFloat = 50
-    static let titleBottomPadding: CGFloat = 20
-    static let horizontalPadding: CGFloat = 30
+    /// Padding
+    static var topPadding: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 60 : 40
+    }
+
+    static var bottomPadding: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 75 : 50
+    }
+
+    static var titleBottomPadding: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 30 : 20
+    }
+
+    static var horizontalPadding: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 45 : 30
+    }
+
     static let buttonPadding: CGFloat = 16
 
     // Corner Radius
@@ -23,10 +35,18 @@ enum LayoutConstants {
     /// Shadow
     static let buttonShadowRadius: CGFloat = 3
 
-    // Font Sizes
-    static let iconFontSize: CGFloat = 60
-    static let errorIconFontSize: CGFloat = 50
-    static let offlineIconFontSize: CGFloat = 40
+    /// Font Sizes
+    static var iconFontSize: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 90 : 60
+    }
+
+    static var errorIconFontSize: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 75 : 50
+    }
+
+    static var offlineIconFontSize: CGFloat {
+        AccessibilityManager.shared.shouldUseLargeText ? 60 : 40
+    }
 }
 
 // MARK: - Color Constants

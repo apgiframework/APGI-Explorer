@@ -1,6 +1,6 @@
 # SwiftFormat Configuration for APGI Explorer
 --indent 4
---commas always
+--commas inline
 --semicolons never
 --self insert
 --selfrequired remove

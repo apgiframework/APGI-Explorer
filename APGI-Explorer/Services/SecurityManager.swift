@@ -12,19 +12,18 @@ enum SecurityManagerError: Error {
 }
 
 @MainActor class SecurityManager: ObservableObject {
-    static func shared() async -> SecurityManager {
-        let manager = SecurityManager()
-        await manager.configure()
-        return manager
-    }
+    static let shared = SecurityManager()
 
     private let keychain = KeychainManager.shared
     private var persistentContainer: NSPersistentContainer?
+    private var isConfigured = false
 
     private init() {
     }
 
-    func configure() async {
+    func ensureConfigured() async {
+        guard !self.isConfigured else { return }
+
         let pc = NSPersistentContainer(name: "APGISignature")
         await withCheckedContinuation { cont in
             pc.loadPersistentStores { _, error in
@@ -40,6 +39,11 @@ enum SecurityManagerError: Error {
                 }
             }
         }
+        self.isConfigured = true
+    }
+
+    func configure() async {
+        await self.ensureConfigured()
     }
 
     enum SecurityKeys {

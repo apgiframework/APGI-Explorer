@@ -19,6 +19,7 @@ struct APGIExplorerApp: App {
     @StateObject private var stateModel = StateModel()
     @StateObject private var appState = AppState.shared
     @StateObject private var themeManager = ThemeManager.shared
+    @AppStorage("fontSize") private var fontSize: Double = 16.0
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -59,6 +60,7 @@ struct APGIExplorerApp: App {
                     .environmentObject(self.stateModel)
                     .environmentObject(self.appState)
                     .environmentObject(self.themeManager)
+                    .environment(\.font, Font.system(size: self.fontSize))
                     .withGlobalKeyboardShortcuts(profileManager: self.profileManager)
                     .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, self.themeManager.currentTheme)
@@ -70,6 +72,7 @@ struct APGIExplorerApp: App {
                 OnboardingView()
                     .environmentObject(self.appState)
                     .environmentObject(self.themeManager)
+                    .environment(\.font, Font.system(size: self.fontSize))
                 #if os(macOS)
                     .frame(minWidth: 800, minHeight: 600)
                 #endif
@@ -93,6 +96,7 @@ struct APGIExplorerApp: App {
                 PsychologicalStatesView()
                     .environmentObject(self.stateModel)
                     .environmentObject(self.themeManager)
+                    .environment(\.font, Font.system(size: self.fontSize))
                     .environment(\.appDependencies, AppDependencies.shared)
                     .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, self.themeManager.currentTheme)
@@ -103,6 +107,7 @@ struct APGIExplorerApp: App {
                 ProfileComparisonView()
                     .environmentObject(self.profileManager)
                     .environmentObject(self.themeManager)
+                    .environment(\.font, Font.system(size: self.fontSize))
                     .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, self.themeManager.currentTheme)
             }
@@ -112,6 +117,7 @@ struct APGIExplorerApp: App {
                 SettingsView()
                     .environmentObject(AppState.shared)
                     .environmentObject(self.themeManager)
+                    .environment(\.font, Font.system(size: self.fontSize))
                     .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, self.themeManager.currentTheme)
             }

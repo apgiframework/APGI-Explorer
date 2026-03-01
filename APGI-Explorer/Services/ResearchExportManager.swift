@@ -684,7 +684,7 @@ class ResearchExportManager: ObservableObject {
                 throw ExportError.unknown
             }
             var mediaBox = pageRect
-            let context = CGContext(consumer: consumer, mediaBox: &mediaBox, pdfMetaData as CFDictionary)
+            let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)
 
             context?.beginPDFPage(NSDictionary())
             context?.setFillColor(NSColor.black.cgColor)

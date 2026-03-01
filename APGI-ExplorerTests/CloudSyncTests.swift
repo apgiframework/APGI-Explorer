@@ -41,7 +41,7 @@ final class CloudSyncTests: XCTestCase {
             .recordNotFound,
             .invalidData,
             .syncInProgress,
-            .unknown(NSError(domain: "test", code: 1)),
+            .unknown(NSError(domain: "test", code: 1))
         ]
 
         for error in errors {

@@ -9,7 +9,7 @@ A comprehensive psychological assessment application that helps users understand
 ### Application Identity
 
 - **App Name**: APGI-Explorer
-- **Bundle Identifier**: `com.yourcompany.APGI-Explorer` (to be configured)
+- **Bundle Identifier**: `com.lesoto.APGI-Explorer`
 - **Platform**: macOS 12.0+ (with SwiftUI framework)
 - **Architecture**: Universal (arm64 + x86_64)
 - **Version Status**: Production-ready with recent UI/UX improvements

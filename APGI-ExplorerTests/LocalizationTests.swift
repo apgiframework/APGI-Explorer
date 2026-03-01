@@ -20,7 +20,7 @@ final class LocalizationTests: XCTestCase {
 
     func testSupportedLanguages() {
         let languages: [LocalizationManager.SupportedLanguage] = [
-            .english, .spanish, .french, .german, .russian,
+            .english, .spanish, .french, .german, .russian
         ]
 
         for language in languages {

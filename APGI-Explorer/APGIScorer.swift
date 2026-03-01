@@ -99,6 +99,27 @@ class APGIScorer {
             19: 1.2, // "Stress experience" - Very high discrimination
             20: 1.0, // "Abstract concepts embodiment" - Standard
         ],
+        "interaction": [
+            21: 1.0, // Interaction question 1
+            22: 1.0, // Interaction question 2
+            23: 1.0, // Interaction question 3
+            24: 1.0, // Interaction question 4
+            25: 1.0, // Interaction question 5
+        ],
+        "temporal": [
+            26: 1.0, // Temporal question 1
+            27: 1.0, // Temporal question 2
+            28: 1.0, // Temporal question 3
+            29: 1.0, // Temporal question 4
+            30: 1.0, // Temporal question 5
+        ],
+        "environmental": [
+            31: 1.0, // Environmental question 1
+            32: 1.0, // Environmental question 2
+            33: 1.0, // Environmental question 3
+            34: 1.0, // Environmental question 4
+            35: 1.0, // Environmental question 5
+        ],
     ]
 
     // MARK: - Main Scoring Function
@@ -546,50 +567,41 @@ class APGIScorer {
     // MARK: - Interaction and Meta-Scores
 
     private func calculateInteractionScore(answers: [Int: Int]) -> Double {
-        // Calculate based on interaction questions
-        let interactionQuestions = Array(subscoreStartID ..< (subscoreStartID + self.subscoreGroupSize))
-        var totalScore = 0.0
-        var count = 0
-
-        for questionId in interactionQuestions {
+        guard let weights = questionWeights["interaction"] else { return ScoringConstants.defaultScore }
+        var weightedSum = 0.0
+        var totalWeight = 0.0
+        for (questionId, weight) in weights {
             if let answer = answers[questionId] {
-                totalScore += self.normalizeAnswer(answer: answer)
-                count += 1
+                weightedSum += self.normalizeAnswer(answer: answer) * weight
+                totalWeight += weight
             }
         }
-
-        return count > 0 ? totalScore / Double(count) : ScoringConstants.defaultScore
+        return totalWeight > 0 ? weightedSum / totalWeight : ScoringConstants.defaultScore
     }
 
     private func calculateTemporalStability(answers: [Int: Int]) -> Double {
-        // Calculate based on temporal questions
-        let temporalQuestions = Array((subscoreStartID + self.subscoreGroupSize) ..< (self.subscoreStartID + 2 * self.subscoreGroupSize))
-        var totalScore = 0.0
-        var count = 0
-
-        for questionId in temporalQuestions {
+        guard let weights = questionWeights["temporal"] else { return ScoringConstants.defaultScore }
+        var weightedSum = 0.0
+        var totalWeight = 0.0
+        for (questionId, weight) in weights {
             if let answer = answers[questionId] {
-                totalScore += self.normalizeAnswer(answer: answer)
-                count += 1
+                weightedSum += self.normalizeAnswer(answer: answer) * weight
+                totalWeight += weight
             }
         }
-
-        return count > 0 ? totalScore / Double(count) : ScoringConstants.defaultScore
+        return totalWeight > 0 ? weightedSum / totalWeight : ScoringConstants.defaultScore
     }
 
     private func calculateEnvironmentalFit(answers: [Int: Int]) -> Double {
-        // Calculate based on environmental questions
-        let environmentalQuestions = Array((subscoreStartID + 2 * self.subscoreGroupSize) ..< (self.subscoreStartID + 3 * self.subscoreGroupSize))
-        var totalScore = 0.0
-        var count = 0
-
-        for questionId in environmentalQuestions {
+        guard let weights = questionWeights["environmental"] else { return ScoringConstants.defaultScore }
+        var weightedSum = 0.0
+        var totalWeight = 0.0
+        for (questionId, weight) in weights {
             if let answer = answers[questionId] {
-                totalScore += self.normalizeAnswer(answer: answer)
-                count += 1
+                weightedSum += self.normalizeAnswer(answer: answer) * weight
+                totalWeight += weight
             }
         }
-
-        return count > 0 ? totalScore / Double(count) : ScoringConstants.defaultScore
+        return totalWeight > 0 ? weightedSum / totalWeight : ScoringConstants.defaultScore
     }
 }

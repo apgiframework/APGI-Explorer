@@ -55,7 +55,11 @@ class AccessibilityManager: ObservableObject {
             NSWorkspace.shared.notificationCenter
                 .publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)
                 .receive(on: DispatchQueue.main)
-                .sink { [weak self] _ in self?.loadAccessibilitySettings() }
+                .sink { [weak self] _ in
+                    self?.voiceOverEnabled = NSWorkspace.shared.isVoiceOverEnabled
+                    self?.reducedMotionEnabled = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+                    self?.highContrastEnabled = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+                }
                 .store(in: &self.cancellables)
         #endif
     }

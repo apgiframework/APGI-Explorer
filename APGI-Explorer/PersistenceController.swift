@@ -137,7 +137,8 @@ class PersistenceController: ObservableObject {
         sortBy: ProfileSortOption = .dateModified,
         ascending: Bool = false
     ) async throws -> [QuizProfile] {
-        let context = self.container.viewContext
+        let context = self.container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
         return try await context.perform {
             let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()

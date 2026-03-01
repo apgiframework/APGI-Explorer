@@ -17,6 +17,7 @@ class CloudSyncManager: ObservableObject {
     @Published var accountStatus: CKAccountStatus = .couldNotDetermine
 
     private let syncCoordinator = SyncCoordinator()
+    private let log = OSLog(subsystem: "com.lesoto.APGI-Explorer", category: "CloudSync")
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -138,8 +139,13 @@ class CloudSyncManager: ObservableObject {
     }
 
     private func performProfileSync() async throws {
-        let context = PersistenceController.shared.container.viewContext
-        let localProfiles = try context.fetch(ProfileEntity.fetchRequest())
+        let context = PersistenceController.shared.container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
+
+        let localProfiles = try context.performAndWait {
+            try context.fetch(ProfileEntity.fetchRequest())
+        }
 
         let cloudProfiles = try await fetchCloudProfiles()
 
@@ -162,7 +168,7 @@ class CloudSyncManager: ObservableObject {
         try await self.uploadProfiles(profilesToUpload + profilesToUpdate)
 
         for cloudProfile in profilesToDownload {
-            try await self.downloadProfile(cloudProfile)
+            try await self.downloadProfile(cloudProfile, in: context)
         }
     }
 
@@ -183,7 +189,7 @@ class CloudSyncManager: ObservableObject {
                         profiles.append(profile)
                     }
                 case let .failure(error):
-                    os_log("Error fetching record: %@", error.localizedDescription)
+                    os_log("Error fetching record: %@", log: self.log, type: .error, error.localizedDescription)
                 }
             }
 
@@ -251,6 +257,7 @@ class CloudSyncManager: ObservableObject {
                                 try await self.saveRecords(recordsToReSave)
                                 continuation.resume()
                             } catch {
+                                os_log("Transaction verification failed: %@", log: self.log, type: .error, error.localizedDescription)
                                 continuation.resume(throwing: error)
                             }
                         }
@@ -263,9 +270,7 @@ class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func downloadProfile(_ cloudProfile: CloudProfile) async throws {
-        let context = PersistenceController.shared.container.viewContext
-
+    private func downloadProfile(_ cloudProfile: CloudProfile, in context: NSManagedObjectContext) async throws {
         guard let profileDict = cloudProfile.profileData,
               let idStr = profileDict["id"] as? String,
               let id = UUID(uuidString: idStr),
@@ -276,14 +281,23 @@ class CloudSyncManager: ObservableObject {
             return
         }
 
-        let profile = ProfileEntity(context: context)
-        profile.id = id
-        profile.name = name
-        profile.dateCreated = createdAt
-        profile.dateModified = updatedAt
-        // Other properties are set via Codable if needed
+        try context.performAndWait {
+            let profile = ProfileEntity(context: context)
+            profile.id = id
+            profile.name = name
+            profile.dateCreated = createdAt
+            profile.dateModified = updatedAt
+            profile.epsilon = profileDict["epsilon"] as? Double ?? 0.0
+            profile.precision = profileDict["precision"] as? Double ?? 0.0
+            profile.threshold = profileDict["threshold"] as? Double ?? 0.0
+            profile.somaticBias = profileDict["somaticBias"] as? Double ?? 0.0
+            profile.resultsData = profileDict["resultsData"] as? Data
+            profile.profileType = profileDict["profileType"] as? String ?? ""
+            profile.isFavorite = profileDict["isFavorite"] as? Bool ?? false
+            profile.tags = profileDict["tags"] as? String
 
-        try context.save()
+            try context.save()
+        }
     }
 
     private func mapCloudKitError(_ error: Error) -> CloudSyncError {

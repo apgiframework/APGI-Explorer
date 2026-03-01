@@ -99,7 +99,5 @@
 	<string>APGI Explorer needs access to network volumes for data synchronization.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
 	<string>APGI Explorer needs access to removable volumes for data backup and export.</string>
-	<key>SUFeedURL</key>
-	<string>https://example.com/appcast.xml</string>
 </dict>
 </plist>
