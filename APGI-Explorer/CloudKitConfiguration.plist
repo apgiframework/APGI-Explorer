@@ -8,7 +8,7 @@
 			<key>containerIdentifier</key>
 			<string>iCloud.com.lesoto.APGI-Explorer</string>
 			<key>environment</key>
-			<string>development</string>
+			<string>Production</string>
 			<key>apiToken</key>
 			<string></string>
 			<key>keyIdentifier</key>

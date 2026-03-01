@@ -91,7 +91,7 @@ struct ExportView: View {
     private func exportProfile() {
         self.isExporting = true
 
-        Task { @MainActor in
+        Task(priority: .userInitiated) { @MainActor in
             do {
                 let startTime = Date()
                 var url: URL?

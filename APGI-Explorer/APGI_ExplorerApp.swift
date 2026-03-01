@@ -1,6 +1,9 @@
 import AppKit
 import CoreData
+import CoreSpotlight
+import OSLog
 import SwiftUI
+import UserNotifications
 
 // MARK: - Notification Extensions
 
@@ -11,18 +14,33 @@ extension Notification.Name {
 
 @main
 struct APGIExplorerApp: App {
+    private static let logger = Logger()
     @StateObject private var profileManager = ProfileManager()
     @StateObject private var stateModel = StateModel()
     @StateObject private var appState = AppState.shared
     @StateObject private var themeManager = ThemeManager.shared
+
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     let persistenceController = PersistenceController.shared
 
     init() {
         // Check for screenshot mode command line argument
         if CommandLine.arguments.contains("--screenshot-mode") {
-            DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 2.0) {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
                 APGI_Explorer.ScreenshotAutomationRunner.run()
+            }
+        }
+
+        // Request notification permissions
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error {
+                Self.logger.logError("Notification authorization failed: \(error.localizedDescription)")
+            } else if granted {
+                Self.logger.log("Notification permission granted")
+            } else {
+                Self.logger.log("Notification permission denied")
             }
         }
 
@@ -96,6 +114,10 @@ struct APGIExplorerApp: App {
                     .environmentObject(self.themeManager)
                     .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
                     .environment(\.currentTheme, self.themeManager.currentTheme)
+            }
+
+            MenuBarExtra("APGI Explorer", systemImage: "brain.head.profile") {
+                MenuBarView()
             }
         #endif
     }

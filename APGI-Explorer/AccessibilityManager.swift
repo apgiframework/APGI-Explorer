@@ -3,6 +3,10 @@ import SwiftUI
 #if canImport(UIKit)
     import UIKit
 #endif
+#if os(macOS)
+    import AppKit
+    import ApplicationServices
+#endif
 
 // MARK: - Accessibility Manager
 
@@ -47,6 +51,13 @@ class AccessibilityManager: ObservableObject {
                 }
                 .store(in: &self.cancellables)
         #endif
+        #if os(macOS)
+            NSWorkspace.shared.notificationCenter
+                .publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in self?.loadAccessibilitySettings() }
+                .store(in: &self.cancellables)
+        #endif
     }
 
     private func loadAccessibilitySettings() {
@@ -56,13 +67,14 @@ class AccessibilityManager: ObservableObject {
             self.largeTextEnabled = UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory
             self.voiceOverEnabled = UIAccessibility.isVoiceOverRunning
             self.preferredContentSize = UIApplication.shared.preferredContentSizeCategory
-        #else
-            // macOS defaults
-            self.highContrastEnabled = false
-            self.reducedMotionEnabled = false
-            self.largeTextEnabled = false
-            self.voiceOverEnabled = false
+        #endif
+        #if os(macOS)
+            self.reducedMotionEnabled = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            self.highContrastEnabled = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+            let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: false] as CFDictionary
+            self.voiceOverEnabled = AXIsProcessTrustedWithOptions(options)
             self.preferredContentSize = .medium
+            self.largeTextEnabled = false
         #endif
     }
 

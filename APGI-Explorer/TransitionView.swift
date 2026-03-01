@@ -1,7 +1,9 @@
 import SwiftUI
 
+typealias StateTransition = StateTransitionModel.Transition
+
 struct TransitionView: View {
-    let transition: StateTransitionModel.Transition
+    let transition: StateTransition
     let states: [PsychologicalState]
 
     private var fromState: PsychologicalState? {

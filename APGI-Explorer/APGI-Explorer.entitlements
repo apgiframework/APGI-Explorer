@@ -16,43 +16,6 @@
 	<true/>
 	<key>com.apple.security.assets.pictures.read-write</key>
 	<true/>
-	<key>com.apple.security.assets.music.read-write</key>
-	<true/>
-	<key>com.apple.security.assets.movies.read-write</key>
-	<true/>
-	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
-	<array>
-		<string>com.apple.helpd</string>
-		<string>com.apple.spotlight</string>
-	</array>
-	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
-	<array>
-		<string>/Users/$(USER)/Documents/</string>
-		<string>/Users/$(USER)/Desktop/</string>
-		<string>/Users/$(USER)/Downloads/</string>
-	</array>
-	<key>com.apple.security.temporary-exception.universal-access</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.allow-external-class-mapping</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.allow-jit</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.allow-unsigned-executable-memory</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.allow-dyld-environment-variables</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.disable-library-validation</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.disable-executable-page-protection</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.disable-library-validation</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.allow-unsigned-executable-memory</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.allow-jit</key>
-	<false/>
-	<key>com.apple.security.temporary-exception.universal-access</key>
-	<false/>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.lesoto.APGI-Explorer</string>

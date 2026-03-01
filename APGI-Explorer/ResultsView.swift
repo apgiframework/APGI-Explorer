@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 #if canImport(UIKit)
@@ -9,7 +10,7 @@ import SwiftUI
 #endif
 
 struct ResultsView: View {
-    @StateObject private var profileManager = ProfileManager()
+    @EnvironmentObject private var profileManager: ProfileManager
     @ObservedObject var quizModel: QuizModel
     @State private var profileName = ""
     @State private var showSavedAlert = false
@@ -285,6 +286,9 @@ struct ResultsView: View {
                     results: self.quizModel.calculateRawScore()
                 )
                 self.analytics.track(event: .profileCreated(profileType: self.profileType))
+                #if os(iOS)
+                    StoreKit.requestReview()
+                #endif
                 await MainActor.run {
                     self.showSavedAlert = true
                     self.profileName = ""

@@ -19,7 +19,7 @@ class ProfileManager: ObservableObject {
     @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
     @AppStorage("normalizeValues") private var normalizeValues: Bool = true
 
-    private let persistence = PersistenceController.shared
+    let persistence = PersistenceController.shared
     private let userDefaults = UserDefaultsManager.shared
     private let fileStorage = FileStorageManager.shared
     private let scorer = APGIScorer()
@@ -98,6 +98,12 @@ class ProfileManager: ObservableObject {
             self.userDefaults.lastActiveProfileID = profile.id
             self.userDefaults.totalQuizzesCompleted += 1
             self.userDefaults.lastQuizDate = Date()
+
+            Task {
+                let apgiProfile = self.enhancedProfile(from: profile.results)
+                let profileType = self.determineProfileType(for: apgiProfile)
+                await SpotlightManager.shared.indexProfile(profile, apgiProfile: apgiProfile, profileType: profileType)
+            }
 
             return profile
         } catch {
@@ -357,7 +363,7 @@ class ProfileManager: ObservableObject {
     }
 
     /// Enhanced profile calculation using APGIScorer
-    private func enhancedProfile(from results: [String: Int]) -> APGIProfile {
+    func enhancedProfile(from results: [String: Int]) -> APGIProfile {
         // Validate input results
         guard !results.isEmpty else {
             os_log("Empty results dictionary provided to enhancedProfile", type: .error)

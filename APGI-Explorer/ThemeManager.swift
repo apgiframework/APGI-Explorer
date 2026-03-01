@@ -2,6 +2,7 @@ import Combine
 import QuartzCore
 import SwiftUI
 
+@MainActor
 class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
 
@@ -38,7 +39,6 @@ class ThemeManager: ObservableObject {
 
     private func saveTheme() {
         self.userDefaults.set(self.currentTheme.rawValue, forKey: self.themeKey)
-        self.userDefaults.synchronize()
     }
 
     private func applyTheme() {

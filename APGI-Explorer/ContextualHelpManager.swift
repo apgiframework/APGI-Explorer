@@ -8,6 +8,7 @@ import SwiftUI
 
 // MARK: - Contextual Help System
 
+@MainActor
 class ContextualHelpManager: ObservableObject {
     static let shared = ContextualHelpManager()
 

@@ -189,48 +189,20 @@ notarize_app() {
     
     # Upload for notarization
     print_status "Uploading to Apple's notarization service..."
-    NOTARIZATION_RESULT=$(xcrun altool --notarize-app \
-        --primary-bundle-id "com.lesoto.APGI-Explorer" \
-        --username "$APPLE_ID" \
+    NOTARIZATION_RESULT=$(xcrun notarytool submit \
+        --apple-id "$APPLE_ID" \
         --password "$APPLE_ID_PASSWORD" \
-        --asc-provider "$TEAM_ID" \
+        --team-id "$TEAM_ID" \
         --file "$DMG_NAME" \
-        --output-format xml)
+        --wait)
     
-    REQUEST_UUID=$(echo "$NOTARIZATION_RESULT" | grep -o '<key>RequestUUID</key>\s*<string>[^<]*' | sed -E 's/<key>RequestUUID<\/key>\s*<string>([^<]*)/\1/')
-    
-    if [ -z "$REQUEST_UUID" ]; then
-        print_error "Failed to get request UUID from notarization response."
+    if echo "$NOTARIZATION_RESULT" | grep -q "Accepted"; then
+        print_status "Notarization successful!"
+    else
+        print_error "Notarization failed."
         echo "$NOTARIZATION_RESULT"
         exit 1
     fi
-    
-    print_status "Notarization request UUID: $REQUEST_UUID"
-    
-    # Check notarization status
-    print_status "Checking notarization status..."
-    while true; do
-        sleep 30
-        STATUS_RESULT=$(xcrun altool --notarization-info "$REQUEST_UUID" \
-            --username "$APPLE_ID" \
-            --password "$APPLE_ID_PASSWORD" \
-            --output-format xml)
-        
-        STATUS=$(echo "$STATUS_RESULT" | grep -o '<key>Status</key>\s*<string>[^<]*' | sed -E 's/<key>Status<\/key>\s*<string>([^<]*)/\1/')
-        
-        if [ "$STATUS" = "success" ]; then
-            print_status "Notarization successful!"
-            break
-        elif [ "$STATUS" = "invalid" ]; then
-            print_error "Notarization failed."
-            echo "$STATUS_RESULT"
-            exit 1
-        elif [ "$STATUS" = "in progress" ]; then
-            print_status "Notarization in progress..."
-        else
-            print_warning "Unknown status: $STATUS"
-        fi
-    done
     
     # Staple the notarization
     print_status "Stapling notarization to DMG..."

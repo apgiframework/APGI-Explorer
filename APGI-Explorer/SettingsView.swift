@@ -9,22 +9,16 @@ import UniformTypeIdentifiers
 #endif
 
 struct SettingsView: View {
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
         NavigationSplitView {
             // Sidebar
             List(selection: self.$selectedTab) {
-                Label("General", systemImage: "gear")
-                    .tag(0)
-                Label("Appearance", systemImage: "paintbrush")
-                    .tag(1)
-                Label("Charts", systemImage: "chart.bar")
-                    .tag(2)
-                Label("Privacy", systemImage: "lock.shield")
-                    .tag(3)
-                Label("Advanced", systemImage: "wrench.and.screwdriver")
-                    .tag(4)
+                ForEach(SettingsTab.allCases, id: \.self) { tab in
+                    Label(tab.title, systemImage: tab.icon)
+                        .tag(tab)
+                }
             }
             .navigationTitle("Settings")
             .frame(minWidth: 200)
@@ -32,23 +26,47 @@ struct SettingsView: View {
             // Detail view
             Group {
                 switch self.selectedTab {
-                case 0:
+                case .general:
                     GeneralSettingsView()
-                case 1:
+                case .appearance:
                     AppearanceSettingsView()
-                case 2:
+                case .charts:
                     ChartsSettingsView()
-                case 3:
+                case .privacy:
                     DataPrivacySettingsView()
-                case 4:
+                case .advanced:
                     AdvancedSettingsView()
-                default:
-                    GeneralSettingsView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 600, minHeight: 500)
+    }
+}
+
+// MARK: - Settings Tab Enum
+
+enum SettingsTab: CaseIterable {
+    case general, appearance, charts, privacy, advanced
+
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .appearance: "Appearance"
+        case .charts: "Charts"
+        case .privacy: "Privacy"
+        case .advanced: "Advanced"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .general: "gear"
+        case .appearance: "paintbrush"
+        case .charts: "chart.bar"
+        case .privacy: "lock.shield"
+        case .advanced: "wrench.and.screwdriver"
+        }
     }
 }
 

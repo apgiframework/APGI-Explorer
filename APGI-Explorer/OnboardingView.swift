@@ -16,124 +16,124 @@ struct OnboardingStep: Identifiable {
     }
 }
 
-let steps: [OnboardingStep] = [
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_welcome_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_welcome_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_welcome_description", comment: ""),
-        imageName: "brain.head.profile",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_welcome_tip1", comment: ""),
-            NSLocalizedString("onboarding_welcome_tip2", comment: ""),
-            NSLocalizedString("onboarding_welcome_tip3", comment: ""),
-            NSLocalizedString("onboarding_welcome_tip4", comment: ""),
-        ],
-        highlightColor: .blue
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_assessment_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_assessment_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_assessment_description", comment: ""),
-        imageName: "doc.text.magnifyingglass",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_assessment_tip1", comment: ""),
-            NSLocalizedString("onboarding_assessment_tip2", comment: ""),
-            NSLocalizedString("onboarding_assessment_tip3", comment: ""),
-            NSLocalizedString("onboarding_assessment_tip4", comment: ""),
-        ],
-        highlightColor: .teal
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_framework_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_framework_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_framework_description", comment: ""),
-        imageName: "atom",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_framework_tip1", comment: ""),
-            NSLocalizedString("onboarding_framework_tip2", comment: ""),
-            NSLocalizedString("onboarding_framework_tip3", comment: ""),
-            NSLocalizedString("onboarding_framework_tip4", comment: ""),
-        ],
-        highlightColor: .indigo
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_explorer_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_explorer_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_explorer_description", comment: ""),
-        imageName: "square.grid.3x3",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_explorer_tip1", comment: ""),
-            NSLocalizedString("onboarding_explorer_tip2", comment: ""),
-            NSLocalizedString("onboarding_explorer_tip3", comment: ""),
-            NSLocalizedString("onboarding_explorer_tip4", comment: ""),
-        ],
-        highlightColor: .purple
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_insights_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_insights_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_insights_description", comment: ""),
-        imageName: "chart.bar.fill",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_insights_tip1", comment: ""),
-            NSLocalizedString("onboarding_insights_tip2", comment: ""),
-            NSLocalizedString("onboarding_insights_tip3", comment: ""),
-            NSLocalizedString("onboarding_insights_tip4", comment: ""),
-        ],
-        highlightColor: .orange
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_track_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_track_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_track_description", comment: ""),
-        imageName: "chart.line.uptrend.xyaxis",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_track_tip1", comment: ""),
-            NSLocalizedString("onboarding_track_tip2", comment: ""),
-            NSLocalizedString("onboarding_track_tip3", comment: ""),
-            NSLocalizedString("onboarding_track_tip4", comment: ""),
-        ],
-        highlightColor: .green
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_strategies_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_strategies_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_strategies_description", comment: ""),
-        imageName: "sparkles",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_strategies_tip1", comment: ""),
-            NSLocalizedString("onboarding_strategies_tip2", comment: ""),
-            NSLocalizedString("onboarding_strategies_tip3", comment: ""),
-            NSLocalizedString("onboarding_strategies_tip4", comment: ""),
-        ],
-        highlightColor: .pink
-    ),
-    OnboardingStep(
-        title: NSLocalizedString("onboarding_ready_title", comment: ""),
-        subtitle: NSLocalizedString("onboarding_ready_subtitle", comment: ""),
-        description: NSLocalizedString("onboarding_ready_description", comment: ""),
-        imageName: "checkmark.seal.fill",
-        imageType: .system,
-        tips: [
-            NSLocalizedString("onboarding_ready_tip1", comment: ""),
-            NSLocalizedString("onboarding_ready_tip2", comment: ""),
-            NSLocalizedString("onboarding_ready_tip3", comment: ""),
-            NSLocalizedString("onboarding_ready_tip4", comment: ""),
-        ],
-        highlightColor: .blue
-    ),
-]
-
 struct OnboardingView: View {
     @State private var currentStep = 0
     @EnvironmentObject private var appState: AppState
+
+    private static let steps: [OnboardingStep] = [
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_welcome_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_welcome_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_welcome_description", comment: ""),
+            imageName: "brain.head.profile",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_welcome_tip1", comment: ""),
+                NSLocalizedString("onboarding_welcome_tip2", comment: ""),
+                NSLocalizedString("onboarding_welcome_tip3", comment: ""),
+                NSLocalizedString("onboarding_welcome_tip4", comment: ""),
+            ],
+            highlightColor: .blue
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_assessment_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_assessment_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_assessment_description", comment: ""),
+            imageName: "doc.text.magnifyingglass",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_assessment_tip1", comment: ""),
+                NSLocalizedString("onboarding_assessment_tip2", comment: ""),
+                NSLocalizedString("onboarding_assessment_tip3", comment: ""),
+                NSLocalizedString("onboarding_assessment_tip4", comment: ""),
+            ],
+            highlightColor: .teal
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_framework_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_framework_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_framework_description", comment: ""),
+            imageName: "atom",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_framework_tip1", comment: ""),
+                NSLocalizedString("onboarding_framework_tip2", comment: ""),
+                NSLocalizedString("onboarding_framework_tip3", comment: ""),
+                NSLocalizedString("onboarding_framework_tip4", comment: ""),
+            ],
+            highlightColor: .indigo
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_explorer_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_explorer_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_explorer_description", comment: ""),
+            imageName: "square.grid.3x3",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_explorer_tip1", comment: ""),
+                NSLocalizedString("onboarding_explorer_tip2", comment: ""),
+                NSLocalizedString("onboarding_explorer_tip3", comment: ""),
+                NSLocalizedString("onboarding_explorer_tip4", comment: ""),
+            ],
+            highlightColor: .purple
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_insights_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_insights_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_insights_description", comment: ""),
+            imageName: "chart.bar.fill",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_insights_tip1", comment: ""),
+                NSLocalizedString("onboarding_insights_tip2", comment: ""),
+                NSLocalizedString("onboarding_insights_tip3", comment: ""),
+                NSLocalizedString("onboarding_insights_tip4", comment: ""),
+            ],
+            highlightColor: .orange
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_track_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_track_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_track_description", comment: ""),
+            imageName: "chart.line.uptrend.xyaxis",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_track_tip1", comment: ""),
+                NSLocalizedString("onboarding_track_tip2", comment: ""),
+                NSLocalizedString("onboarding_track_tip3", comment: ""),
+                NSLocalizedString("onboarding_track_tip4", comment: ""),
+            ],
+            highlightColor: .green
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_strategies_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_strategies_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_strategies_description", comment: ""),
+            imageName: "sparkles",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_strategies_tip1", comment: ""),
+                NSLocalizedString("onboarding_strategies_tip2", comment: ""),
+                NSLocalizedString("onboarding_strategies_tip3", comment: ""),
+                NSLocalizedString("onboarding_strategies_tip4", comment: ""),
+            ],
+            highlightColor: .pink
+        ),
+        OnboardingStep(
+            title: NSLocalizedString("onboarding_ready_title", comment: ""),
+            subtitle: NSLocalizedString("onboarding_ready_subtitle", comment: ""),
+            description: NSLocalizedString("onboarding_ready_description", comment: ""),
+            imageName: "checkmark.seal.fill",
+            imageType: .system,
+            tips: [
+                NSLocalizedString("onboarding_ready_tip1", comment: ""),
+                NSLocalizedString("onboarding_ready_tip2", comment: ""),
+                NSLocalizedString("onboarding_ready_tip3", comment: ""),
+                NSLocalizedString("onboarding_ready_tip4", comment: ""),
+            ],
+            highlightColor: .blue
+        ),
+    ]
 
     var body: some View {
         VStack {
@@ -146,7 +146,7 @@ struct OnboardingView: View {
 
     private var mainContent: some View {
         ZStack {
-            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+            ForEach(Array(OnboardingView.steps.enumerated()), id: \.offset) { index, step in
                 self.stepView(for: step, at: index)
             }
         }
@@ -154,8 +154,8 @@ struct OnboardingView: View {
     }
 
     private func stepView(for step: OnboardingStep, at index: Int) -> some View {
-        OnboardingStepView(step: step, isLastStep: index == steps.count - 1) {
-            if index == steps.count - 1 {
+        OnboardingStepView(step: step, isLastStep: index == OnboardingView.steps.count - 1) {
+            if index == OnboardingView.steps.count - 1 {
                 self.appState.completeOnboarding()
             } else {
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -171,7 +171,7 @@ struct OnboardingView: View {
 
     private var bottomIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0 ..< steps.count, id: \.self) { index in
+            ForEach(0 ..< OnboardingView.steps.count, id: \.self) { index in
                 self.indicatorCircle(for: index)
             }
         }

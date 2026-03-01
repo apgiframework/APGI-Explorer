@@ -49,6 +49,12 @@ class PersistenceController: ObservableObject {
                 let description = NSPersistentStoreDescription(url: storeURL)
                 description.shouldMigrateStoreAutomatically = true
                 description.shouldInferMappingModelAutomatically = true
+                #if os(iOS)
+                    description.setOption(
+                        FileProtectionType.complete as NSObject,
+                        forKey: NSPersistentStoreFileProtectionKey
+                    )
+                #endif
                 self.container.persistentStoreDescriptions = [description]
             } else {
                 self.lastError = .directoryAccessFailed
@@ -60,6 +66,12 @@ class PersistenceController: ObservableObject {
                 let description = NSPersistentStoreDescription(url: storeURL)
                 description.shouldMigrateStoreAutomatically = true
                 description.shouldInferMappingModelAutomatically = true
+                #if os(iOS)
+                    description.setOption(
+                        FileProtectionType.complete as NSObject,
+                        forKey: NSPersistentStoreFileProtectionKey
+                    )
+                #endif
                 self.container.persistentStoreDescriptions = [description]
             }
         }

@@ -106,35 +106,26 @@ class ResearchExportManager: ObservableObject {
     }
 
     private func exportSPSS(_ profile: ProfileExport) throws -> Data {
-        // WARNING: This is a hardcoded binary format for SPSS .sav files.
-        // It may not be robust and could break with future SPSS format changes.
-        // Consider using a dedicated third-party library for production use.
-        var spssData = Data()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let dateString = dateFormatter.string(from: Date())
+        var portable = "SPSSPORT APGI_Profile \(dateString)\n"
 
-        let header: [UInt8] = [
-            0x24, 0x46, 0x4c, 0x32, 0x02, 0x00, 0x01, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ]
-        spssData.append(contentsOf: header)
-
-        let variableRecords = [
-            ("APGI_Total", 8, 0),
-            ("APGI_Autonomy", 12, 0),
-            ("APGI_Purpose", 14, 0),
-            ("APGI_SelfAcc", 11, 0),
-            ("APGI_Growth", 11, 0),
-            ("Age", 3, 0),
-            ("Export_Date", 11, 0),
+        let variables = [
+            ("APGI_Total", "Total APGI Score"),
+            ("APGI_Autonomy", "Autonomy"),
+            ("APGI_Purposefulness", "Purposefulness"),
+            ("APGI_SelfAcceptance", "Self-Acceptance"),
+            ("APGI_PersonalGrowth", "Personal Growth"),
+            ("Age", "Participant Age"),
+            ("Export_Date", "Export Timestamp"),
         ]
 
-        for (name, length, type) in variableRecords {
-            var record = Data(count: 32)
-            let nameData = name.data(using: .ascii) ?? Data()
-            record.replaceSubrange(0 ..< min(nameData.count, 8), with: nameData)
-            record[8] = UInt8(length)
-            record[9] = UInt8(type)
-            spssData.append(record)
+        for (name, label) in variables {
+            portable += "\(name) 0 8 \"\(label)\"\n"
         }
+
+        portable += "*\n"
 
         let values = [
             profile.apgiScores.overall,
@@ -146,39 +137,40 @@ class ResearchExportManager: ObservableObject {
             profile.timestamp.timeIntervalSince1970,
         ]
 
-        for value in values {
-            var floatValue = Float(value)
-            let data = Data(bytes: &floatValue, count: MemoryLayout<Float>.size)
-            spssData.append(data)
-        }
+        let valueStrings = values.map { String(format: "%.2f", $0) }
+        portable += valueStrings.joined(separator: " ") + "\n"
 
-        return spssData
+        return portable.data(using: .ascii) ?? Data()
     }
 
     private func exportStata(_ profile: ProfileExport) throws -> Data {
-        // WARNING: This is a hardcoded binary format for Stata .dta files.
-        // It may not be robust and could break with future Stata format changes.
-        // Consider using a dedicated third-party library for production use.
-        var stataData = Data()
-
-        let header = Data([
-            0x73, 0x74, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
-        ])
-        stataData.append(header)
-
-        let variableNames = [
-            "apgi_total", "apgi_autonomy", "apgi_purpose",
-            "apgi_selfacc", "apgi_growth", "age", "export_date",
-        ]
-
-        for name in variableNames {
-            var nameData = name.data(using: .ascii) ?? Data()
-            nameData.append(contentsOf: Data(count: 33 - nameData.count))
-            stataData.append(nameData)
+        var data = Data()
+        // Byte order: little endian
+        data.append(0x01)
+        data.append(0x01)
+        // File type: data
+        data.append(0x01)
+        // Unused
+        data.append(0x00)
+        // Number of variables: 7
+        data.append(contentsOf: withUnsafeBytes(of: UInt16(7).littleEndian) { Data($0) })
+        // Number of observations: 1
+        data.append(contentsOf: withUnsafeBytes(of: UInt32(1).littleEndian) { Data($0) })
+        // Data label: empty
+        data.append(0x00)
+        // Time stamp: empty
+        data.append(0x00)
+        // Variable names
+        let names = ["apgi_total", "apgi_autonomy", "apgi_purpose", "apgi_selfacc", "apgi_growth", "age", "export_date"]
+        for name in names {
+            guard let nameData = name.data(using: .ascii) else {
+                throw ExportError.invalidData
+            }
+            data.append(contentsOf: nameData)
+            data.append(0x00)
         }
-
-        let values = [
+        // Data
+        let values: [Double] = [
             profile.apgiScores.overall,
             profile.apgiScores.autonomy,
             profile.apgiScores.purposefulness,
@@ -187,53 +179,278 @@ class ResearchExportManager: ObservableObject {
             Double(profile.profile.age),
             profile.timestamp.timeIntervalSince1970,
         ]
-
         for value in values {
-            var doubleValue = value
-            let data = Data(bytes: &doubleValue, count: MemoryLayout<Double>.size)
-            stataData.append(data)
+            data.append(contentsOf: withUnsafeBytes(of: value.bitPattern.littleEndian) { Data($0) })
         }
-
-        return stataData
+        return data
     }
 
     private func exportRData(_ profile: ProfileExport) throws -> Data {
-        let rScript = """
-        # APGI Profile Data Export
-        # Generated: \(Date())
-        # Version: \(profile.version)
+        // Generate RDS (R Data Serialized) format
+        var data = Data()
 
-        # Create data frame
-        apgi_data <- data.frame(
-            apgi_total = c(\(profile.apgiScores.overall)),
-            apgi_autonomy = c(\(profile.apgiScores.autonomy)),
-            apgi_purposefulness = c(\(profile.apgiScores.purposefulness)),
-            apgi_self_acceptance = c(\(profile.apgiScores.selfAcceptance)),
-            apgi_personal_growth = c(\(profile.apgiScores.personalGrowth)),
-            age = c(\(profile.profile.age)),
-            gender = c("\(profile.profile.gender)"),
-            education = c("\(profile.profile.education)"),
-            occupation = c("\(profile.profile.occupation)"),
-            profile_type = c("\(profile.profileType)"),
-            export_date = c(as.POSIXct("\(profile.timestamp)"))
-        )
+        // RDS magic bytes: "X\n"
+        data.append(0x58) // 'X'
+        data.append(0x0a) // '\n'
 
-        # Variable labels
-        attr(apgi_data$apgi_total, "label") <- "Total APGI Score"
-        attr(apgi_data$apgi_autonomy, "label") <- "Autonomy Subscale"
-        attr(apgi_data$apgi_purposefulness, "label") <- "Purposefulness Subscale"
-        attr(apgi_data$apgi_self_acceptance, "label") <- "Self-Acceptance Subscale"
-        attr(apgi_data$apgi_personal_growth, "label") <- "Personal Growth Subscale"
+        // Format version: 2
+        withUnsafeBytes(of: UInt16(2).bigEndian) { data.append(contentsOf: $0) }
 
-        # Save to RData format
-        save(apgi_data, file = "apgi_profile.RData")
-        """
+        // Writer version: 4
+        withUnsafeBytes(of: UInt32(4).bigEndian) { data.append(contentsOf: $0) }
 
-        return rScript.data(using: String.Encoding.utf8) ?? Data()
+        // Min reader version: 4
+        withUnsafeBytes(of: UInt32(4).bigEndian) { data.append(contentsOf: $0) }
+
+        // Encoding: UTF-8 = 1
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }
+
+        // Create a simple list (VECSEXP) with named elements
+        // This is a simplified RDS structure for a named list
+
+        // SEXPTYPE: 19 (VECSEXP - list/vector)
+        data.append(19)
+
+        // Length of the list: 11 elements
+        withUnsafeBytes(of: UInt32(11).bigEndian) { data.append(contentsOf: $0) }
+
+        // Attributes (NAMED list)
+        // SEXPTYPE: 2 (LISTSXP)
+        data.append(2)
+        // Length: 1 (just the names attribute)
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }
+
+        // Names attribute
+        // SEXPTYPE: 16 (STRSXP - string vector)
+        data.append(16)
+        // Length: 11 (number of names)
+        withUnsafeBytes(of: UInt32(11).bigEndian) { data.append(contentsOf: $0) }
+
+        // String values for names
+        let names = ["apgi_total", "apgi_autonomy", "apgi_purposefulness", "apgi_self_acceptance", "apgi_personal_growth", "age", "gender", "education", "occupation", "profile_type", "export_date"]
+        for name in names {
+            // SEXPTYPE: 9 (CHARSXP - scalar string)
+            data.append(9)
+            // Length of string
+            withUnsafeBytes(of: UInt32(name.count).bigEndian) { data.append(contentsOf: $0) }
+            // String data
+            guard let nameData = name.data(using: .utf8) else {
+                throw ExportError.invalidData
+            }
+            data.append(contentsOf: nameData)
+        }
+
+        // Now the actual data values
+        // 1. apgi_total (REALSXP)
+        data.append(14) // REALSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        withUnsafeBytes(of: profile.apgiScores.overall.bitPattern.bigEndian) { data.append(contentsOf: $0) }
+
+        // 2. apgi_autonomy (REALSXP)
+        data.append(14) // REALSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        withUnsafeBytes(of: profile.apgiScores.autonomy.bitPattern.bigEndian) { data.append(contentsOf: $0) }
+
+        // 3. apgi_purposefulness (REALSXP)
+        data.append(14) // REALSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        withUnsafeBytes(of: profile.apgiScores.purposefulness.bitPattern.bigEndian) { data.append(contentsOf: $0) }
+
+        // 4. apgi_self_acceptance (REALSXP)
+        data.append(14) // REALSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        withUnsafeBytes(of: profile.apgiScores.selfAcceptance.bitPattern.bigEndian) { data.append(contentsOf: $0) }
+
+        // 5. apgi_personal_growth (REALSXP)
+        data.append(14) // REALSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        withUnsafeBytes(of: profile.apgiScores.personalGrowth.bitPattern.bigEndian) { data.append(contentsOf: $0) }
+
+        // 6. age (REALSXP)
+        data.append(14) // REALSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        withUnsafeBytes(of: Double(profile.profile.age).bitPattern.bigEndian) { data.append(contentsOf: $0) }
+
+        // 7. gender (STRSXP)
+        data.append(16) // STRSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        data.append(9) // CHARSXP
+        let gender = profile.profile.gender
+        withUnsafeBytes(of: UInt32(gender.count).bigEndian) { data.append(contentsOf: $0) }
+        guard let genderData = gender.data(using: .utf8) else {
+            throw ExportError.invalidData
+        }
+        data.append(contentsOf: genderData)
+
+        // 8. education (STRSXP)
+        data.append(16) // STRSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        data.append(9) // CHARSXP
+        let education = profile.profile.education
+        withUnsafeBytes(of: UInt32(education.count).bigEndian) { data.append(contentsOf: $0) }
+        guard let educationData = education.data(using: .utf8) else {
+            throw ExportError.invalidData
+        }
+        data.append(contentsOf: educationData)
+
+        // 9. occupation (STRSXP)
+        data.append(16) // STRSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        data.append(9) // CHARSXP
+        let occupation = profile.profile.occupation
+        withUnsafeBytes(of: UInt32(occupation.count).bigEndian) { data.append(contentsOf: $0) }
+        guard let occupationData = occupation.data(using: .utf8) else {
+            throw ExportError.invalidData
+        }
+        data.append(contentsOf: occupationData)
+
+        // 10. profile_type (STRSXP)
+        data.append(16) // STRSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        data.append(9) // CHARSXP
+        let profileType = profile.profileType
+        withUnsafeBytes(of: UInt32(profileType.count).bigEndian) { data.append(contentsOf: $0) }
+        guard let profileTypeData = profileType.data(using: .utf8) else {
+            throw ExportError.invalidData
+        }
+        data.append(contentsOf: profileTypeData)
+
+        // 11. export_date (STRSXP - as ISO string)
+        data.append(16) // STRSXP
+        withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) } // length
+        data.append(9) // CHARSXP
+        let dateFormatter = ISO8601DateFormatter()
+        let dateString = dateFormatter.string(from: profile.timestamp)
+        withUnsafeBytes(of: UInt32(dateString.count).bigEndian) { data.append(contentsOf: $0) }
+        guard let dateData = dateString.data(using: .utf8) else {
+            throw ExportError.invalidData
+        }
+        data.append(contentsOf: dateData)
+
+        return data
     }
 
     private func exportExcel(_ profile: ProfileExport) throws -> Data {
-        try self.exportCSV(profile)
+        // Generate XLSX using OOXML format
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        let xlDir = tempDir.appendingPathComponent("xl")
+        try FileManager.default.createDirectory(at: xlDir, withIntermediateDirectories: true)
+
+        let worksheetsDir = xlDir.appendingPathComponent("worksheets")
+        try FileManager.default.createDirectory(at: worksheetsDir, withIntermediateDirectories: true)
+
+        let relsDir = tempDir.appendingPathComponent("_rels")
+        try FileManager.default.createDirectory(at: relsDir, withIntermediateDirectories: true)
+
+        let xlRelsDir = xlDir.appendingPathComponent("_rels")
+        try FileManager.default.createDirectory(at: xlRelsDir, withIntermediateDirectories: true)
+
+        // [Content_Types].xml
+        let contentTypes = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+        <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+        <Default Extension="xml" ContentType="application/xml"/>
+        <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+        <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+        </Types>
+        """
+        try contentTypes.write(to: tempDir.appendingPathComponent("[Content_Types].xml"), atomically: true, encoding: .utf8)
+
+        // _rels/.rels
+        let rels = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+        </Relationships>
+        """
+        try rels.write(to: relsDir.appendingPathComponent(".rels"), atomically: true, encoding: .utf8)
+
+        // xl/workbook.xml
+        let workbook = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <sheets>
+        <sheet name="Sheet1" sheetId="1" r:id="rId1"/>
+        </sheets>
+        </workbook>
+        """
+        try workbook.write(to: xlDir.appendingPathComponent("workbook.xml"), atomically: true, encoding: .utf8)
+
+        // xl/_rels/workbook.xml.rels
+        let workbookRels = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+        </Relationships>
+        """
+        try workbookRels.write(to: xlRelsDir.appendingPathComponent("workbook.xml.rels"), atomically: true, encoding: .utf8)
+
+        // xl/worksheets/sheet1.xml
+        var sheetXML = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <sheetData>
+        """
+
+        let rows: [[String]] = [
+            ["Metric", "Value", "Category", "Description"],
+            ["APGI_Total", String(profile.apgiScores.overall), "Overall", "Total APGI Score"],
+            ["APGI_Autonomy", String(profile.apgiScores.autonomy), "Autonomy", "Level of autonomous functioning"],
+            ["APGI_Purposefulness", String(profile.apgiScores.purposefulness), "Purposefulness", "Sense of purpose and direction"],
+            ["APGI_SelfAcceptance", String(profile.apgiScores.selfAcceptance), "Self-Acceptance", "Level of self-acceptance"],
+            ["APGI_PersonalGrowth", String(profile.apgiScores.personalGrowth), "Personal Growth", "Orientation toward growth"],
+            ["Profile_Name", profile.profile.name, "Demographic", "Profile identifier"],
+            ["Profile_Age", String(profile.profile.age), "Demographic", "Participant age"],
+            ["Profile_Gender", profile.profile.gender, "Demographic", "Participant gender"],
+            ["Profile_Education", profile.profile.education, "Demographic", "Education level"],
+            ["Profile_Occupation", profile.profile.occupation, "Demographic", "Occupation"],
+            ["Export_Date", ISO8601DateFormatter().string(from: profile.timestamp), "Metadata", "Export timestamp"],
+            ["Export_Version", profile.version, "Metadata", "Export format version"],
+            ["Profile_Type", profile.profileType, "Metadata", "APGI profile classification"],
+        ]
+
+        for (index, row) in rows.enumerated() {
+            let rowNum = index + 1
+            sheetXML += "<row r=\"\(rowNum)\">"
+            for (colIndex, cell) in row.enumerated() {
+                let colLetter = String(UnicodeScalar(65 + colIndex)!)
+                let cellRef = "\(colLetter)\(rowNum)"
+                if Double(cell) != nil {
+                    sheetXML += "<c r=\"\(cellRef)\"><v>\(cell)</v></c>"
+                } else {
+                    sheetXML += "<c r=\"\(cellRef)\" t=\"str\"><v>\(cell.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;"))</v></c>"
+                }
+            }
+            sheetXML += "</row>"
+        }
+
+        sheetXML += """
+        </sheetData>
+        </worksheet>
+        """
+
+        try sheetXML.write(to: worksheetsDir.appendingPathComponent("sheet1.xml"), atomically: true, encoding: .utf8)
+
+        // Create ZIP archive
+        let zipFile = tempDir.appendingPathComponent("temp.xlsx")
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        process.arguments = ["-r", zipFile.path, ".", "-x", "*.DS_Store"]
+        process.currentDirectoryURL = tempDir
+        try process.run()
+        process.waitUntilExit()
+
+        guard process.terminationStatus == 0 else {
+            try? FileManager.default.removeItem(at: tempDir)
+            throw ExportError.unknown
+        }
+
+        let zipData = try Data(contentsOf: zipFile)
+        try FileManager.default.removeItem(at: tempDir)
+        return zipData
     }
 
     private func exportBibTeX(_ profile: ProfileExport) throws -> Data {

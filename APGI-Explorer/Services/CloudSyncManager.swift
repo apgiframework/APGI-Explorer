@@ -72,7 +72,8 @@ class CloudSyncManager: ObservableObject {
             guard !self.isSyncing else { throw CloudSyncError.syncInProgress }
             self.isSyncing = true
             defer { isSyncing = false }
-            try await work()
+            // Use .utility QoS for background sync operations
+            try await Task(priority: .utility) { try await work() }.value
         }
     }
 

@@ -7,10 +7,12 @@ import SwiftUI
     import UIKit
 #elseif os(macOS)
     import AppKit
+    import IOKit.ps
 #endif
 
 // MARK: - Performance Manager
 
+@MainActor
 class PerformanceManager: ObservableObject {
     static let shared = PerformanceManager()
 
@@ -19,6 +21,10 @@ class PerformanceManager: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
     private let memoryMonitor = MemoryMonitor()
+
+    #if os(macOS)
+        private var performanceTimer: Timer?
+    #endif
 
     enum PerformanceMode {
         case power
@@ -76,17 +82,38 @@ class PerformanceManager: ObservableObject {
 
     private func setupPerformanceModeDetection() {
         #if os(macOS)
-            // Check if device is on battery power
-            _ = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
-                self?.updatePerformanceMode()
+            // Check if device is on battery power using a target/selector to avoid capturing self in a @Sendable closure
+            let proxy = PerformanceTimerProxy { [weak self] in
+                guard let self else { return }
+                self.updatePerformanceMode()
             }
+            let timer = Timer(timeInterval: 30.0, target: proxy, selector: #selector(PerformanceTimerProxy.fire), userInfo: nil, repeats: true)
+            self.performanceTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
+            // Fire once immediately to set initial mode
+            proxy.fire()
         #endif
     }
 
     #if os(macOS)
         private func updatePerformanceMode() {
-            let isOnBattery = ProcessInfo.processInfo.isLowPowerModeEnabled
+            precondition(Thread.isMainThread)
+            let isOnBattery = self.isOnBatteryPower()
             self.performanceMode = isOnBattery ? .memory : .power
+        }
+
+        private func isOnBatteryPower() -> Bool {
+            let snapshot = IOPSCopyPowerSourcesInfo().takeRetainedValue()
+            let sources = IOPSCopyPowerSourcesList(snapshot).takeRetainedValue() as Array
+            for source in sources {
+                if let info = IOPSGetPowerSourceDescription(snapshot, source).takeRetainedValue() as? [String: Any],
+                   let type = info[kIOPSTypeKey as String] as? String,
+                   type == kIOPSInternalBatteryType
+                {
+                    return true
+                }
+            }
+            return false
         }
     #endif
 
@@ -101,7 +128,34 @@ class PerformanceManager: ObservableObject {
         // Notify views to optimize
         NotificationCenter.default.post(name: .memoryWarning, object: nil)
     }
+
+    deinit {
+        #if os(macOS)
+            performanceTimer?.invalidate()
+            performanceTimer = nil
+        #endif
+    }
 }
+
+#if os(macOS)
+    fileprivate final class PerformanceTimerProxy: NSObject {
+        private let action: () -> Void
+
+        init(action: @escaping () -> Void) {
+            self.action = action
+            super.init()
+        }
+
+        @objc func fire() {
+            // Ensure main actor; PerformanceManager is @MainActor
+            if Thread.isMainThread {
+                self.action()
+            } else {
+                DispatchQueue.main.async { [action] in action() }
+            }
+        }
+    }
+#endif
 
 // MARK: - Memory Monitor
 

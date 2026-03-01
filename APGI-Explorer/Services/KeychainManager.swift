@@ -34,6 +34,7 @@ class KeychainManager {
             kSecAttrService as String: self.service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
         ]
 
         SecItemDelete(query as CFDictionary)

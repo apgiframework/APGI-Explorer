@@ -11,29 +11,35 @@ enum SecurityManagerError: Error {
     case persistenceLoadFailed(Error)
 }
 
-class SecurityManager: ObservableObject {
-    static let shared = SecurityManager()
+@MainActor class SecurityManager: ObservableObject {
+    static func shared() async -> SecurityManager {
+        let manager = SecurityManager()
+        await manager.configure()
+        return manager
+    }
+
     private let keychain = KeychainManager.shared
-    private var persistentContainer: NSPersistentContainer
+    private var persistentContainer: NSPersistentContainer?
 
     private init() {
-        self.persistentContainer = NSPersistentContainer(name: "APGISignature")
-        let semaphore = DispatchSemaphore(value: 0)
-        self.persistentContainer.loadPersistentStores { _, error in
-            if let error {
-                os_log(OSLogType.fault, "Core Data load failed: %@", error.localizedDescription)
-                self.persistentContainer = NSPersistentContainer(name: "APGISignature")
-                if let storeDescription = self.persistentContainer.persistentStoreDescriptions.first {
-                    storeDescription.type = NSInMemoryStoreType
+    }
+
+    func configure() async {
+        let pc = NSPersistentContainer(name: "APGISignature")
+        await withCheckedContinuation { cont in
+            pc.loadPersistentStores { _, error in
+                if let error {
+                    os_log(OSLogType.fault, "Core Data load failed: %@", error.localizedDescription)
+                    let mem = NSPersistentContainer(name: "APGISignature")
+                    mem.persistentStoreDescriptions.first?.type = NSInMemoryStoreType
+                    mem.loadPersistentStores { _, _ in cont.resume() }
+                    self.persistentContainer = mem
+                } else {
+                    self.persistentContainer = pc
+                    cont.resume()
                 }
-                self.persistentContainer.loadPersistentStores { _, _ in
-                    semaphore.signal()
-                }
-            } else {
-                semaphore.signal()
             }
         }
-        semaphore.wait()
     }
 
     enum SecurityKeys {
@@ -44,71 +50,106 @@ class SecurityManager: ObservableObject {
         static let lastBackupDate = "com.lesoto.APGI-Explorer.lastBackupDate"
     }
 
-    func storeUserProfile(_ profile: ProfileEntity) throws {
-        let profileData = try JSONEncoder().encode(profile)
-        try self.keychain.store(profileData, forKey: SecurityKeys.userProfile)
+    private func storeData(_ data: Data, forKey key: String) throws {
+        try self.keychain.store(data, forKey: key)
     }
 
-    func retrieveUserProfile() throws -> ProfileEntity? {
-        guard self.keychain.contains(forKey: SecurityKeys.userProfile) else {
+    private func retrieveData(forKey key: String) throws -> Data {
+        try self.keychain.retrieve(forKey: key)
+    }
+
+    private func containsKey(_ key: String) throws -> Bool {
+        self.keychain.contains(forKey: key)
+    }
+
+    private func deleteKey(_ key: String) throws {
+        try self.keychain.delete(forKey: key)
+    }
+
+    private func storeString(_ string: String, forKey key: String) throws {
+        try self.keychain.storeString(string, forKey: key)
+    }
+
+    private func retrieveString(forKey key: String) throws -> String {
+        try self.keychain.retrieveString(forKey: key)
+    }
+
+    private func storeCodable(_ value: some Codable, forKey key: String) throws {
+        try self.keychain.storeCodable(value, forKey: key)
+    }
+
+    private func retrieveCodable<T: Codable>(_ type: T.Type, forKey key: String) throws -> T {
+        try self.keychain.retrieveCodable(type, forKey: key)
+    }
+
+    func storeUserProfile(_ profile: ProfileEntity) async throws {
+        let profileData = try JSONEncoder().encode(profile)
+        try self.storeData(profileData, forKey: SecurityKeys.userProfile)
+    }
+
+    func retrieveUserProfile() async throws -> ProfileEntity? {
+        guard try self.containsKey(SecurityKeys.userProfile) else {
             return nil
         }
-        let data = try keychain.retrieve(forKey: SecurityKeys.userProfile)
+        let data = try self.retrieveData(forKey: SecurityKeys.userProfile)
         let decoder = JSONDecoder()
-        if let contextKey = CodingUserInfoKey.managedObjectContext {
-            decoder.userInfo[contextKey] = self.persistentContainer.viewContext
+        if let contextKey = CodingUserInfoKey.managedObjectContext,
+           let context = self.persistentContainer?.viewContext
+        {
+            decoder.userInfo[contextKey] = context
         }
         return try decoder.decode(ProfileEntity.self, from: data)
     }
 
-    func storeAppSettings(_ settings: [String: Any]) throws {
-        let settingsData = try JSONSerialization.data(withJSONObject: settings)
-        try self.keychain.store(settingsData, forKey: SecurityKeys.appSettings)
+    func storeAppSettings(_ settings: [String: Any]) async throws {
+        let jsonData = try JSONSerialization.data(withJSONObject: settings, options: [])
+        try self.storeData(jsonData, forKey: SecurityKeys.appSettings)
     }
 
-    func retrieveAppSettings() throws -> [String: Any]? {
-        guard self.keychain.contains(forKey: SecurityKeys.appSettings) else {
+    func retrieveAppSettings() async throws -> [String: Any]? {
+        guard try self.containsKey(SecurityKeys.appSettings) else {
             return nil
         }
-        let data = try keychain.retrieve(forKey: SecurityKeys.appSettings)
-        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let jsonData = try self.retrieveData(forKey: SecurityKeys.appSettings)
+        return try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any]
     }
 
-    func storeSessionToken(_ token: String) throws {
-        try self.keychain.storeString(token, forKey: SecurityKeys.sessionToken)
+    func storeSessionToken(_ token: String) async throws {
+        try self.storeString(token, forKey: SecurityKeys.sessionToken)
     }
 
-    func retrieveSessionToken() throws -> String? {
-        guard self.keychain.contains(forKey: SecurityKeys.sessionToken) else {
+    func retrieveSessionToken() async throws -> String? {
+        guard try self.containsKey(SecurityKeys.sessionToken) else {
             return nil
         }
-        return try self.keychain.retrieveString(forKey: SecurityKeys.sessionToken)
+        return try self.retrieveString(forKey: SecurityKeys.sessionToken)
     }
 
-    func storeAnalyticsConsent(_ consent: Bool) throws {
-        try self.keychain.storeString(consent ? "true" : "false", forKey: SecurityKeys.analyticsConsent)
+    func storeAnalyticsConsent(_ consent: Bool) async throws {
+        let consentString = consent ? "true" : "false"
+        try self.storeString(consentString, forKey: SecurityKeys.analyticsConsent)
     }
 
-    func retrieveAnalyticsConsent() throws -> Bool? {
-        guard self.keychain.contains(forKey: SecurityKeys.analyticsConsent) else {
+    func retrieveAnalyticsConsent() async throws -> Bool? {
+        guard try self.containsKey(SecurityKeys.analyticsConsent) else {
             return nil
         }
-        let consentString = try keychain.retrieveString(forKey: SecurityKeys.analyticsConsent)
+        let consentString = try self.retrieveString(forKey: SecurityKeys.analyticsConsent)
         return consentString == "true"
     }
 
-    func storeLastBackupDate(_ date: Date) throws {
-        try self.keychain.storeCodable(date, forKey: SecurityKeys.lastBackupDate)
+    func storeLastBackupDate(_ date: Date) async throws {
+        try self.storeCodable(date, forKey: SecurityKeys.lastBackupDate)
     }
 
-    func retrieveLastBackupDate() throws -> Date? {
-        guard self.keychain.contains(forKey: SecurityKeys.lastBackupDate) else {
+    func retrieveLastBackupDate() async throws -> Date? {
+        guard try self.containsKey(SecurityKeys.lastBackupDate) else {
             return nil
         }
-        return try self.keychain.retrieveCodable(Date.self, forKey: SecurityKeys.lastBackupDate)
+        return try self.retrieveCodable(Date.self, forKey: SecurityKeys.lastBackupDate)
     }
 
-    func clearAllSecureData() throws {
+    func clearAllSecureData() async throws {
         let keys = [
             SecurityKeys.userProfile,
             SecurityKeys.appSettings,
@@ -116,26 +157,25 @@ class SecurityManager: ObservableObject {
             SecurityKeys.analyticsConsent,
             SecurityKeys.lastBackupDate,
         ]
-
         for key in keys {
-            try? self.keychain.delete(forKey: key)
+            try self.deleteKey(key)
         }
     }
 
-    func validateDataIntegrity() -> SecurityValidationResult {
+    func validateDataIntegrity() async throws -> SecurityValidationResult {
         var issues: [String] = []
 
         do {
-            if self.keychain.contains(forKey: SecurityKeys.userProfile) {
-                _ = try self.retrieveUserProfile()
+            if try self.containsKey(SecurityKeys.userProfile) {
+                _ = try await self.retrieveUserProfile()
             }
         } catch {
             issues.append("User profile data corrupted")
         }
 
         do {
-            if self.keychain.contains(forKey: SecurityKeys.appSettings) {
-                _ = try self.retrieveAppSettings()
+            if try self.containsKey(SecurityKeys.appSettings) {
+                _ = try await self.retrieveAppSettings()
             }
         } catch {
             issues.append("App settings data corrupted")
@@ -154,48 +194,50 @@ struct SecurityValidationResult {
 }
 
 extension SecurityManager {
-    func exportSecureData() throws -> [String: Any] {
+    func exportSecureData() async throws -> [String: Any] {
         var exportData: [String: Any] = [:]
 
-        if let profile = try? retrieveUserProfile() {
+        if let profile = try await retrieveUserProfile() {
             exportData["userProfile"] = try JSONEncoder().encode(profile)
         }
 
-        if let settings = try? retrieveAppSettings() {
+        if let settings = try await retrieveAppSettings() {
             exportData["appSettings"] = settings
         }
 
-        if let consent = try? retrieveAnalyticsConsent() {
+        if let consent = try await retrieveAnalyticsConsent() {
             exportData["analyticsConsent"] = consent
         }
 
-        if let backupDate = try? retrieveLastBackupDate() {
+        if let backupDate = try await retrieveLastBackupDate() {
             exportData["lastBackupDate"] = backupDate
         }
 
         return exportData
     }
 
-    func importSecureData(_ data: [String: Any]) throws {
+    func importSecureData(_ data: [String: Any]) async throws {
         if let profileData = data["userProfile"] as? Data {
             let decoder = JSONDecoder()
-            if let contextKey = CodingUserInfoKey.managedObjectContext {
-                decoder.userInfo[contextKey] = self.persistentContainer.viewContext
+            if let contextKey = CodingUserInfoKey.managedObjectContext,
+               let context = self.persistentContainer?.viewContext
+            {
+                decoder.userInfo[contextKey] = context
             }
             let profile = try decoder.decode(ProfileEntity.self, from: profileData)
-            try self.storeUserProfile(profile)
+            try await self.storeUserProfile(profile)
         }
 
         if let settings = data["appSettings"] as? [String: Any] {
-            try self.storeAppSettings(settings)
+            try await self.storeAppSettings(settings)
         }
 
         if let consent = data["analyticsConsent"] as? Bool {
-            try self.storeAnalyticsConsent(consent)
+            try await self.storeAnalyticsConsent(consent)
         }
 
         if let backupDate = data["lastBackupDate"] as? Date {
-            try self.storeLastBackupDate(backupDate)
+            try await self.storeLastBackupDate(backupDate)
         }
     }
 }

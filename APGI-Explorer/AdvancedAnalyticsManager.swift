@@ -13,6 +13,7 @@ struct PredictionData {
 // MARK: - Advanced Analytics System
 
 /// Provides trend analysis and predictive insights for APGI profiles
+@MainActor
 class AdvancedAnalyticsManager: ObservableObject {
     @Published var trendData: [TrendDataPoint] = []
     @Published var predictions: [PredictionResult] = []

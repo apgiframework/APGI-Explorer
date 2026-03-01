@@ -2,6 +2,7 @@ import Combine
 import Foundation
 import os.log
 
+@MainActor
 class FileStorageManager: ObservableObject {
     static let shared = FileStorageManager()
 
@@ -157,12 +158,16 @@ class FileStorageManager: ObservableObject {
         let interval = frequency.timeInterval
         guard interval > 0 else { return }
 
-        // Check if backup is needed
-        self.checkAndPerformBackup()
+        // Check if backup is needed on background queue
+        DispatchQueue.global(qos: .background).async {
+            Task { await self.checkAndPerformBackup() }
+        }
 
-        // Schedule recurring backups
+        // Schedule recurring backups on background queue
         self.backupTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            self.checkAndPerformBackup()
+            DispatchQueue.global(qos: .background).async {
+                Task { await self.checkAndPerformBackup() }
+            }
         }
     }
 

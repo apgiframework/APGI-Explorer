@@ -639,24 +639,72 @@ xcrun stapler staple Export/APGI-Explorer.app
 - [ ] GDPR compliance for data protection
 - [ ] Transparent privacy policy and data handling
 
----
+## App Store Connect In-App Purchase Setup Instructions
 
-## 🚀 12. Future Enhancements
+## Products to Register
 
-### Planned Features
+### 1. Premium Monthly Subscription
 
-- **iOS/iPadOS Companion**: Cross-platform assessment continuity
-- **Cloud Sync**: Optional iCloud synchronization for multi-device support
-- **Advanced Analytics**: Enhanced insights and trend analysis
-- **Research Integration**: Export formats for academic research
-- **Multi-language Support**: Localization for international users
+- **Product ID**: `com.lesoto.APGI-Explorer.premium.monthly`
+- **Type**: Auto-Renewable Subscription
+- **Reference Name**: Premium Monthly
+- **Price Tier**: 4 ($4.99/month)
+- **Duration**: 1 Month
 
-### Technical Improvements
+### 2. Premium Yearly Subscription
 
-- **Machine Learning**: Enhanced pattern recognition in assessment data
-- **Real-time Collaboration**: Multi-user assessment sessions
-- **Advanced Visualizations**: 3D state space exploration
-- **API Integration**: Third-party wellness app connectivity  
+- **Product ID**: `com.lesoto.APGI-Explorer.premium.yearly`
+- **Type**: Auto-Renewable Subscription
+- **Reference Name**: Premium Yearly
+- **Price Tier**: 39 ($39.99/year)
+- **Duration**: 1 Year
+
+### 3. Professional Features
+
+- **Product ID**: `com.lesoto.APGI-Explorer.professional`
+- **Type**: Consumable
+- **Reference Name**: Professional Features
+- **Price Tier**: 19 ($3.99)
+
+### 4. Research Pack
+
+- **Product ID**: `com.lesoto.APGI-Explorer.research.pack`
+- **Type**: Consumable
+- **Reference Name**: Research Pack
+- **Price Tier**: 29 ($5.99)
+
+### 5. Unlimited Profiles
+
+- **Product ID**: `com.lesoto.APGI-Explorer.unlimited.profiles`
+- **Type**: Consumable
+- **Reference Name**: Unlimited Profiles
+- **Price Tier**: 9 ($0.99)
+
+## Steps to Register
+
+1. Go to [App Store Connect](https://appstoreconnect.apple.com)
+2. Select your app "APGI Explorer"
+3. Navigate to "Monetization" → "In-App Purchases"
+4. Click "+" to create a new in-app purchase
+5. Select the appropriate type and fill in the details above
+6. Set up pricing and availability
+7. Submit for review
+
+## Testing
+
+After registering the products, test in sandbox environment:
+
+1. Create a sandbox tester account
+2. Use the StoreManager.shared.loadProducts() method
+3. Verify products appear in the UI
+4. Test purchase flow with sandbox account
+
+## Important Notes
+
+- Product IDs must match exactly as defined in StoreManager.swift
+- All products should be available worldwide
+- Subscription products need shared secret for server-side validation
+- Test thoroughly in sandbox before production release
 
 ## 🚀 Getting Started
 

@@ -25,6 +25,8 @@
 	<false/>
 	<key>uploadSymbols</key>
 	<true/>
+	<key>hardened-runtime</key>
+	<true/>
 	<key>thinning</key>
 	<string>&lt;none&gt;</string>
 </dict>

@@ -172,7 +172,6 @@ class UserDefaultsManager {
             return
         }
         self.defaults.removePersistentDomain(forName: domain)
-        self.defaults.synchronize()
     }
 }
 

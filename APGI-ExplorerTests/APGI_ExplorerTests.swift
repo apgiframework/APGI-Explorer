@@ -44,11 +44,11 @@ final class APGI_ExplorerTests: XCTestCase {
         let profile = ProfileEntity(context: PersistenceController.preview.container.viewContext)
         profile.id = UUID()
         profile.name = "Test Profile"
-        profile.createdAt = Date()
+        profile.dateCreated = Date()
 
         XCTAssertEqual(profile.name, "Test Profile")
         XCTAssertNotNil(profile.id)
-        XCTAssertNotNil(profile.createdAt)
+        XCTAssertNotNil(profile.dateCreated)
     }
 
     func testQuizModelInitialization() {

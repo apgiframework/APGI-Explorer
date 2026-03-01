@@ -6,13 +6,15 @@ struct APGI_Explorer_iOSApp: App {
     @StateObject private var cloudSyncManager = CloudSyncManager.shared
     @StateObject private var storeManager = StoreManager.shared
     @StateObject private var localizationManager = LocalizationManager.shared
+    @StateObject private var profileManager = ProfileManager()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            iOSMainTabView()
                 .environmentObject(self.cloudSyncManager)
                 .environmentObject(self.storeManager)
                 .environmentObject(self.localizationManager)
+                .environmentObject(self.profileManager)
                 .onAppear {
                     self.setupApp()
                 }
@@ -24,6 +26,7 @@ struct APGI_Explorer_iOSApp: App {
         Task {
             await self.storeManager.loadProducts()
             await self.cloudSyncManager.checkAccountStatus()
+            await SecurityManager.shared.configure()
         }
 
         // Configure appearance
@@ -468,7 +471,7 @@ struct ExportButton: View {
     var body: some View {
         Button(action: {
             self.exportProfile()
-        }) {
+        }, label: {
             VStack(spacing: 8) {
                 Image(systemName: self.icon)
                     .font(.title2)
@@ -482,7 +485,7 @@ struct ExportButton: View {
             .padding()
             .background(Color(.systemGray6))
             .cornerRadius(8)
-        }
+        })
         .buttonStyle(PlainButtonStyle())
     }
 

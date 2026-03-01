@@ -3,6 +3,7 @@
     import Combine
     import SwiftUI
 
+    @MainActor
     class WindowManager: ObservableObject {
         static let shared = WindowManager()
 

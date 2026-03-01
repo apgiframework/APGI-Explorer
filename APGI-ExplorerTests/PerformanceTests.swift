@@ -4,12 +4,12 @@ import XCTest
 final class PerformanceTests: XCTestCase {
     func testAPGIScorerPerformance() {
         let scorer = APGIScorer()
-        let testAnswers: [String: Int] = [
-            "question1": 1,
-            "question2": 2,
-            "question3": 3,
-            "question4": 1,
-            "question5": 2,
+        let testAnswers: [Int: Int] = [
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 1,
+            5: 2,
         ]
 
         measure {
