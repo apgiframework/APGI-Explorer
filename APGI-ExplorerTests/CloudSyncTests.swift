@@ -1,74 +1,75 @@
-@testable import APGI_Explorer
 import CloudKit
 import XCTest
 
+@testable import APGI_Explorer
+
 final class CloudSyncTests: XCTestCase {
-    var cloudSyncManager: CloudSyncManager?
+  var cloudSyncManager: CloudSyncManager?
 
-    override func setUpWithError() throws {
-        continueAfterFailure = false
-        self.cloudSyncManager = CloudSyncManager.shared
+  override func setUpWithError() throws {
+    continueAfterFailure = false
+    self.cloudSyncManager = CloudSyncManager.shared
+  }
+
+  override func tearDownWithError() throws {
+    self.cloudSyncManager = nil
+  }
+
+  func testCloudSyncManagerInitialization() throws {
+    XCTAssertNotNil(try XCTUnwrap(self.cloudSyncManager))
+    XCTAssertFalse(try XCTUnwrap(self.cloudSyncManager?.isSyncing))
+    XCTAssertEqual(self.cloudSyncManager?.accountStatus, .couldNotDetermine)
+  }
+
+  func testAccountStatusCheck() {
+    // Note: In a real test environment, we might not have iCloud access
+    // so we just verify the method doesn't crash
+    self.cloudSyncManager?.checkAccountStatus()
+  }
+
+  func testDiscoverabilityPermissionRequest() {
+    // Verify the method doesn't crash
+    self.cloudSyncManager?.requestDiscoverabilityPermission()
+  }
+
+  func testCloudSyncErrorDescriptions() {
+    let errors: [CloudSyncManager.CloudSyncError] = [
+      .accountNotAvailable,
+      .accountRestricted,
+      .networkUnavailable,
+      .quotaExceeded,
+      .zoneNotFound,
+      .recordNotFound,
+      .invalidData,
+      .syncInProgress,
+      .unknown(NSError(domain: "test", code: 1)),
+    ]
+
+    for error in errors {
+      XCTAssertNotNil(error.localizedDescription)
+      XCTAssertFalse(error.localizedDescription.isEmpty)
     }
+  }
 
-    override func tearDownWithError() throws {
-        self.cloudSyncManager = nil
-    }
+  func testCloudProfileInitialization() {
+    let record = CKRecord(recordType: "Profile")
+    record["id"] = "test-id"
+    record["name"] = "Test Profile"
+    record["createdAt"] = Date()
+    record["updatedAt"] = Date()
 
-    func testCloudSyncManagerInitialization() throws {
-        XCTAssertNotNil(try XCTUnwrap(self.cloudSyncManager))
-        XCTAssertFalse(try XCTUnwrap(self.cloudSyncManager?.isSyncing))
-        XCTAssertEqual(self.cloudSyncManager?.accountStatus, .couldNotDetermine)
-    }
+    let cloudProfile = CloudProfile(from: record)
 
-    func testAccountStatusCheck() {
-        // Note: In a real test environment, we might not have iCloud access
-        // so we just verify the method doesn't crash
-        self.cloudSyncManager?.checkAccountStatus()
-    }
+    XCTAssertNotNil(cloudProfile)
+    XCTAssertEqual(cloudProfile?.id, "test-id")
+    XCTAssertEqual(cloudProfile?.name, "Test Profile")
+  }
 
-    func testDiscoverabilityPermissionRequest() {
-        // Verify the method doesn't crash
-        self.cloudSyncManager?.requestDiscoverabilityPermission()
-    }
+  func testCloudProfileInvalidInitialization() {
+    let record = CKRecord(recordType: "Profile")
+    // Missing required fields
 
-    func testCloudSyncErrorDescriptions() {
-        let errors: [CloudSyncManager.CloudSyncError] = [
-            .accountNotAvailable,
-            .accountRestricted,
-            .networkUnavailable,
-            .quotaExceeded,
-            .zoneNotFound,
-            .recordNotFound,
-            .invalidData,
-            .syncInProgress,
-            .unknown(NSError(domain: "test", code: 1))
-        ]
-
-        for error in errors {
-            XCTAssertNotNil(error.localizedDescription)
-            XCTAssertFalse(error.localizedDescription.isEmpty)
-        }
-    }
-
-    func testCloudProfileInitialization() {
-        let record = CKRecord(recordType: "Profile")
-        record["id"] = "test-id"
-        record["name"] = "Test Profile"
-        record["createdAt"] = Date()
-        record["updatedAt"] = Date()
-
-        let cloudProfile = CloudProfile(from: record)
-
-        XCTAssertNotNil(cloudProfile)
-        XCTAssertEqual(cloudProfile?.id, "test-id")
-        XCTAssertEqual(cloudProfile?.name, "Test Profile")
-    }
-
-    func testCloudProfileInvalidInitialization() {
-        let record = CKRecord(recordType: "Profile")
-        // Missing required fields
-
-        let cloudProfile = CloudProfile(from: record)
-        XCTAssertNil(cloudProfile)
-    }
+    let cloudProfile = CloudProfile(from: record)
+    XCTAssertNil(cloudProfile)
+  }
 }

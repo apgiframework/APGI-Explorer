@@ -3,14 +3,14 @@ import Foundation
 import SwiftUI
 
 class AppState: ObservableObject {
-    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+  @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
 
-    static let shared = AppState()
+  static let shared = AppState()
 
-    private init() {
-    }
+  private init() {
+  }
 
-    func completeOnboarding() {
-        self.hasCompletedOnboarding = true
-    }
+  func completeOnboarding() {
+    self.hasCompletedOnboarding = true
+  }
 }

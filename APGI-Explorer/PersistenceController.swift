@@ -3,230 +3,251 @@ import Combine
 import CoreData
 
 enum PersistenceControllerError: Error {
-    case directoryAccessFailed
-    case storeLoadFailed(Error)
+  case directoryAccessFailed
+  case storeLoadFailed(Error)
 }
 
 class PersistenceController: ObservableObject {
-    static let shared = PersistenceController()
+  static let shared = PersistenceController()
 
-    let container: NSPersistentContainer
+  let container: NSPersistentContainer
 
-    @Published var lastError: PersistenceControllerError?
+  @Published var lastError: PersistenceControllerError?
 
-    static var preview: PersistenceController = {
-        let controller = PersistenceController(inMemory: true)
-        let viewContext = controller.container.viewContext
+  static var preview: PersistenceController = {
+    let controller = PersistenceController(inMemory: true)
+    let viewContext = controller.container.viewContext
 
-        for index in 0 ..< DataConstants.previewProfileCount {
-            let profile = ProfileEntity(context: viewContext)
-            profile.id = UUID()
-            profile.name = "Sample Profile \(index)"
-            profile.dateCreated = Date()
-            profile.dateModified = Date()
-            profile.epsilon = Double.random(in: ColorConstants.minPositiveValue ... 80)
-            profile.precision = Double.random(in: ColorConstants.minPositiveValue ... 80)
-            profile.threshold = Double.random(in: ColorConstants.minPositiveValue ... 80)
-            profile.somaticBias = Double.random(in: ColorConstants.minPositiveValue ... 80)
-            profile.isFavorite = index == 0
-        }
-
-        try? viewContext.save()
-        return controller
-    }()
-
-    init(inMemory: Bool = false) {
-        self.container = NSPersistentCloudKitContainer(name: "APGIExplorer")
-
-        if inMemory {
-            self.container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
-        } else {
-            if let appSupportURL = FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first {
-                let storeURL = appSupportURL.appendingPathComponent("APGIExplorer.sqlite")
-                let description = NSPersistentStoreDescription(url: storeURL)
-                description.shouldMigrateStoreAutomatically = true
-                description.shouldInferMappingModelAutomatically = true
-                #if os(iOS)
-                    description.setOption(
-                        FileProtectionType.complete as NSObject,
-                        forKey: NSPersistentStoreFileProtectionKey
-                    )
-                #endif
-                self.container.persistentStoreDescriptions = [description]
-            } else {
-                self.lastError = .directoryAccessFailed
-                guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-                    self.lastError = .directoryAccessFailed
-                    return
-                }
-                let storeURL = documentsURL.appendingPathComponent("APGIExplorer.sqlite")
-                let description = NSPersistentStoreDescription(url: storeURL)
-                description.shouldMigrateStoreAutomatically = true
-                description.shouldInferMappingModelAutomatically = true
-                #if os(iOS)
-                    description.setOption(
-                        FileProtectionType.complete as NSObject,
-                        forKey: NSPersistentStoreFileProtectionKey
-                    )
-                #endif
-                self.container.persistentStoreDescriptions = [description]
-            }
-        }
-
-        self.container.loadPersistentStores { _, error in
-            if let error {
-                self.lastError = .storeLoadFailed(error)
-            }
-        }
-
-        self.container.viewContext.automaticallyMergesChangesFromParent = true
-        self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-
-        self.container.viewContext.name = "viewContext"
-        self.container.viewContext.transactionAuthor = "app"
+    for index in 0..<DataConstants.previewProfileCount {
+      let profile = ProfileEntity(context: viewContext)
+      profile.id = UUID()
+      profile.name = "Sample Profile \(index)"
+      profile.dateCreated = Date()
+      profile.dateModified = Date()
+      profile.epsilon = Double.random(in: ColorConstants.minPositiveValue...80)
+      profile.precision = Double.random(in: ColorConstants.minPositiveValue...80)
+      profile.threshold = Double.random(in: ColorConstants.minPositiveValue...80)
+      profile.somaticBias = Double.random(in: ColorConstants.minPositiveValue...80)
+      profile.isFavorite = index == 0
     }
 
-    // MARK: - Save Operations
+    try? viewContext.save()
+    return controller
+  }()
 
-    func saveProfile(_ profile: QuizProfile) async throws {
-        let context = self.container.viewContext
+  init(inMemory: Bool = false) {
+    self.container = NSPersistentCloudKitContainer(name: "APGIExplorer")
 
-        try await context.perform {
-            let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
-
-            let entity: ProfileEntity = if let existing = try? context.fetch(fetchRequest).first {
-                existing
-            } else {
-                ProfileEntity(context: context)
-            }
-
-            try entity.update(from: profile)
-
-            if context.hasChanges {
-                try context.save()
-            }
+    if inMemory {
+      self.container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+    } else {
+      if let appSupportURL = FileManager.default.urls(
+        for: .applicationSupportDirectory,
+        in: .userDomainMask
+      ).first {
+        let storeURL = appSupportURL.appendingPathComponent("APGIExplorer.sqlite")
+        let description = NSPersistentStoreDescription(url: storeURL)
+        description.shouldMigrateStoreAutomatically = true
+        description.shouldInferMappingModelAutomatically = true
+        #if os(iOS)
+          description.setOption(
+            FileProtectionType.complete as NSObject,
+            forKey: NSPersistentStoreFileProtectionKey
+          )
+        #endif
+        self.container.persistentStoreDescriptions = [description]
+      } else {
+        self.lastError = .directoryAccessFailed
+        guard
+          let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first
+        else {
+          self.lastError = .directoryAccessFailed
+          return
         }
+        let storeURL = documentsURL.appendingPathComponent("APGIExplorer.sqlite")
+        let description = NSPersistentStoreDescription(url: storeURL)
+        description.shouldMigrateStoreAutomatically = true
+        description.shouldInferMappingModelAutomatically = true
+        #if os(iOS)
+          description.setOption(
+            FileProtectionType.complete as NSObject,
+            forKey: NSPersistentStoreFileProtectionKey
+          )
+        #endif
+        self.container.persistentStoreDescriptions = [description]
+      }
     }
 
-    func saveProfileSync(_ profile: QuizProfile) throws {
-        let context = self.container.viewContext
+    self.container.loadPersistentStores { _, error in
+      if let error {
+        self.lastError = .storeLoadFailed(error)
+      }
+    }
 
+    self.container.viewContext.automaticallyMergesChangesFromParent = true
+    self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+    self.container.viewContext.name = "viewContext"
+    self.container.viewContext.transactionAuthor = "app"
+  }
+
+  // MARK: - Save Operations
+
+  func saveProfile(_ profile: QuizProfile) async throws {
+    let context = self.container.viewContext
+
+    try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
         let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
 
-        let entity: ProfileEntity = if let existing = try? context.fetch(fetchRequest).first {
+        let entity: ProfileEntity =
+          if let existing = try? context.fetch(fetchRequest).first {
             existing
-        } else {
+          } else {
             ProfileEntity(context: context)
-        }
+          }
 
         try entity.update(from: profile)
 
         if context.hasChanges {
-            try context.save()
+          try context.save()
         }
+      }
+    }.value
+  }
+
+  func saveProfileSync(_ profile: QuizProfile) throws {
+    let context = self.container.viewContext
+
+    let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
+    fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
+
+    let entity: ProfileEntity =
+      if let existing = try? context.fetch(fetchRequest).first {
+        existing
+      } else {
+        ProfileEntity(context: context)
+      }
+
+    try entity.update(from: profile)
+
+    if context.hasChanges {
+      try context.save()
     }
+  }
 
-    // MARK: - Fetch Operations
+  // MARK: - Fetch Operations
 
-    func fetchProfiles(
-        sortBy: ProfileSortOption = .dateModified,
-        ascending: Bool = false
-    ) async throws -> [QuizProfile] {
-        let context = self.container.newBackgroundContext()
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+  func fetchProfiles(
+    sortBy: ProfileSortOption = .dateModified,
+    ascending: Bool = false
+  ) async throws -> [QuizProfile] {
+    let context = self.container.newBackgroundContext()
+    context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        return try await context.perform {
-            let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
-            fetchRequest.sortDescriptors = [NSSortDescriptor(key: sortBy.rawValue, ascending: ascending)]
+    return try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
+        let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
+        fetchRequest.sortDescriptors = [
+          NSSortDescriptor(key: sortBy.rawValue, ascending: ascending)
+        ]
 
-            let entities = try context.fetch(fetchRequest)
-            return try entities.map { try $0.toQuizProfile() }
+        let entities = try context.fetch(fetchRequest)
+        return try entities.map { try $0.toQuizProfile() }
+      }
+    }.value
+  }
+
+  func fetchProfile(id: UUID) async throws -> QuizProfile? {
+    let context = self.container.viewContext
+
+    return try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
+        let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        fetchRequest.fetchLimit = DataConstants.fetchLimit
+
+        guard let entity = try context.fetch(fetchRequest).first else {
+          return nil
         }
-    }
 
-    func fetchProfile(id: UUID) async throws -> QuizProfile? {
-        let context = self.container.viewContext
+        return try entity.toQuizProfile()
+      }
+    }.value
+  }
 
-        return try await context.perform {
-            let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-            fetchRequest.fetchLimit = DataConstants.fetchLimit
+  func searchProfiles(query: String) async throws -> [QuizProfile] {
+    let context = self.container.viewContext
 
-            guard let entity = try context.fetch(fetchRequest).first else {
-                return nil
-            }
+    return try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
+        let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", query)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dateModified", ascending: false)]
 
-            return try entity.toQuizProfile()
+        let entities = try context.fetch(fetchRequest)
+        return try entities.map { try $0.toQuizProfile() }
+      }
+    }.value
+  }
+
+  // MARK: - Delete Operations
+
+  func deleteProfile(_ profile: QuizProfile) async throws {
+    let context = self.container.viewContext
+
+    try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
+        let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
+
+        if let entity = try context.fetch(fetchRequest).first {
+          context.delete(entity)
+          try context.save()
         }
-    }
+      }
+    }.value
+  }
 
-    func searchProfiles(query: String) async throws -> [QuizProfile] {
-        let context = self.container.viewContext
+  func deleteAllProfiles() async throws {
+    let context = self.container.viewContext
 
-        return try await context.perform {
-            let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", query)
-            fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dateModified", ascending: false)]
+    try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = ProfileEntity.fetchRequest()
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
 
-            let entities = try context.fetch(fetchRequest)
-            return try entities.map { try $0.toQuizProfile() }
+        try context.execute(deleteRequest)
+        try context.save()
+      }
+    }.value
+  }
+
+  // MARK: - Favorite Management
+
+  func toggleFavorite(_ profile: QuizProfile) async throws {
+    let context = self.container.viewContext
+
+    try await Task.detached(priority: .userInitiated) {
+      try await context.perform {
+        let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
+
+        if let entity = try context.fetch(fetchRequest).first {
+          entity.isFavorite.toggle()
+          try context.save()
         }
-    }
-
-    // MARK: - Delete Operations
-
-    func deleteProfile(_ profile: QuizProfile) async throws {
-        let context = self.container.viewContext
-
-        try await context.perform {
-            let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
-
-            if let entity = try context.fetch(fetchRequest).first {
-                context.delete(entity)
-                try context.save()
-            }
-        }
-    }
-
-    func deleteAllProfiles() async throws {
-        let context = self.container.viewContext
-
-        try await context.perform {
-            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = ProfileEntity.fetchRequest()
-            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-
-            try context.execute(deleteRequest)
-            try context.save()
-        }
-    }
-
-    // MARK: - Favorite Management
-
-    func toggleFavorite(_ profile: QuizProfile) async throws {
-        let context = self.container.viewContext
-
-        try await context.perform {
-            let fetchRequest: NSFetchRequest<ProfileEntity> = ProfileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", profile.id as CVarArg)
-
-            if let entity = try context.fetch(fetchRequest).first {
-                entity.isFavorite.toggle()
-                try context.save()
-            }
-        }
-    }
+      }
+    }.value
+  }
 }
 
 enum ProfileSortOption: String, CaseIterable {
-    case name
-    case dateCreated
-    case dateModified
-    case epsilon
-    case precision
+  case name
+  case dateCreated
+  case dateModified
+  case epsilon
+  case precision
 }

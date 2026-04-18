@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 100;
 	objects = {
 
 /* Begin PBXFileReference section */
@@ -21,10 +21,8 @@
 /* Begin PBXFrameworksBuildPhase section */
 		E98601D02EF9044F001602F7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -58,14 +56,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				E98601D52EF9044F001602F7 /* APGI-Explorer */,
 			);
 			name = "APGI-Explorer";
-			packageProductDependencies = (
-			);
 			productName = "APGI-Explorer";
 			productReference = E98601D32EF9044F001602F7 /* APGI-Explorer.app */;
 			productType = "com.apple.product-type.application";
@@ -78,7 +72,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					E98601D22EF9044F001602F7 = {
 						CreatedOnToolsVersion = 26.2;
@@ -91,10 +85,14 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
+				de,
+				ru,
+				fr,
 			);
 			mainGroup = E98601CA2EF9044F001602F7;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 100;
 			productRefGroup = E98601D42EF9044F001602F7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -107,29 +105,26 @@
 /* Begin PBXResourcesBuildPhase section */
 		E98601D12EF9044F001602F7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E98601CF2EF9044F001602F7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		E98601DC2EF90450001602F7 /* Debug */ = {
+		E98601DC2EF90450001602F7 /* Debug configuration for PBXProject "APGI-Explorer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -159,6 +154,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 939E3R72F7;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -184,16 +180,18 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		E98601DD2EF90450001602F7 /* Release */ = {
+		E98601DD2EF90450001602F7 /* Release configuration for PBXProject "APGI-Explorer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -223,6 +221,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 939E3R72F7;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -241,11 +240,12 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
 		};
-		E98601DF2EF90450001602F7 /* Debug */ = {
+		E98601DF2EF90450001602F7 /* Debug configuration for PBXNativeTarget "APGI-Explorer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -253,18 +253,20 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 939E3R72F7;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.lesoto.APGI-Explorer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -278,7 +280,7 @@
 			};
 			name = Debug;
 		};
-		E98601E02EF90450001602F7 /* Release */ = {
+		E98601E02EF90450001602F7 /* Release configuration for PBXNativeTarget "APGI-Explorer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -286,18 +288,20 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 939E3R72F7;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.lesoto.APGI-Explorer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -317,19 +321,17 @@
 		E98601CE2EF9044F001602F7 /* Build configuration list for PBXProject "APGI-Explorer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				E98601DC2EF90450001602F7 /* Debug */,
-				E98601DD2EF90450001602F7 /* Release */,
+				E98601DC2EF90450001602F7 /* Debug configuration for PBXProject "APGI-Explorer" */,
+				E98601DD2EF90450001602F7 /* Release configuration for PBXProject "APGI-Explorer" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		E98601DE2EF90450001602F7 /* Build configuration list for PBXNativeTarget "APGI-Explorer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				E98601DF2EF90450001602F7 /* Debug */,
-				E98601E02EF90450001602F7 /* Release */,
+				E98601DF2EF90450001602F7 /* Debug configuration for PBXNativeTarget "APGI-Explorer" */,
+				E98601E02EF90450001602F7 /* Release configuration for PBXNativeTarget "APGI-Explorer" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */

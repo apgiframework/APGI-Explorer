@@ -1,123 +1,125 @@
-@testable import APGI_Explorer
 import XCTest
 
+@testable import APGI_Explorer
+
 final class LocalizationTests: XCTestCase {
-    var localizationManager: LocalizationManager?
+  var localizationManager: LocalizationManager?
 
-    override func setUpWithError() throws {
-        continueAfterFailure = false
-        self.localizationManager = LocalizationManager.shared
+  override func setUpWithError() throws {
+    continueAfterFailure = false
+    self.localizationManager = LocalizationManager.shared
+  }
+
+  override func tearDownWithError() throws {
+    self.localizationManager = nil
+  }
+
+  func testLocalizationManagerInitialization() throws {
+    XCTAssertNotNil(try XCTUnwrap(self.localizationManager))
+    XCTAssertEqual(self.localizationManager?.currentLanguage, .english)
+  }
+
+  func testSupportedLanguages() {
+    let languages: [LocalizationManager.SupportedLanguage] = [
+      .english, .spanish, .french, .german, .russian,
+    ]
+
+    for language in languages {
+      XCTAssertFalse(language.displayName.isEmpty)
+      XCTAssertFalse(language.nativeName.isEmpty)
+      XCTAssertFalse(language.localeIdentifier.isEmpty)
     }
+  }
 
-    override func tearDownWithError() throws {
-        self.localizationManager = nil
-    }
+  func testLanguageProperties() {
+    // Test English
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.english.rawValue, "en")
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.english.localeIdentifier, "en_US")
 
-    func testLocalizationManagerInitialization() throws {
-        XCTAssertNotNil(try XCTUnwrap(self.localizationManager))
-        XCTAssertEqual(self.localizationManager?.currentLanguage, .english)
-    }
+    // Test Spanish
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.spanish.rawValue, "es")
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.spanish.localeIdentifier, "es_ES")
 
-    func testSupportedLanguages() {
-        let languages: [LocalizationManager.SupportedLanguage] = [
-            .english, .spanish, .french, .german, .russian
-        ]
+    // Test French
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.french.rawValue, "fr")
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.french.localeIdentifier, "fr_FR")
 
-        for language in languages {
-            XCTAssertFalse(language.displayName.isEmpty)
-            XCTAssertFalse(language.nativeName.isEmpty)
-            XCTAssertFalse(language.localeIdentifier.isEmpty)
-        }
-    }
+    // Test German
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.german.rawValue, "de")
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.german.localeIdentifier, "de_DE")
 
-    func testLanguageProperties() {
-        // Test English
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.english.rawValue, "en")
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.english.localeIdentifier, "en_US")
+    // Test Chinese Simplified
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.russian.rawValue, "zh-Hans")
+    XCTAssertEqual(LocalizationManager.SupportedLanguage.russian.localeIdentifier, "zh_Hans_CN")
+  }
 
-        // Test Spanish
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.spanish.rawValue, "es")
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.spanish.localeIdentifier, "es_ES")
+  func testLanguageSwitching() throws {
+    let originalLanguage = try XCTUnwrap(self.localizationManager?.currentLanguage)
 
-        // Test French
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.french.rawValue, "fr")
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.french.localeIdentifier, "fr_FR")
+    // Switch to Spanish
+    self.localizationManager?.setLanguage(.spanish)
+    XCTAssertEqual(self.localizationManager?.currentLanguage, .spanish)
 
-        // Test German
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.german.rawValue, "de")
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.german.localeIdentifier, "de_DE")
+    // Switch to French
+    self.localizationManager?.setLanguage(.french)
+    XCTAssertEqual(self.localizationManager?.currentLanguage, .french)
 
-        // Test Chinese Simplified
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.russian.rawValue, "zh-Hans")
-        XCTAssertEqual(LocalizationManager.SupportedLanguage.russian.localeIdentifier, "zh_Hans_CN")
-    }
+    // Restore original
+    self.localizationManager?.setLanguage(originalLanguage)
+    XCTAssertEqual(self.localizationManager?.currentLanguage, originalLanguage)
+  }
 
-    func testLanguageSwitching() throws {
-        let originalLanguage = try XCTUnwrap(self.localizationManager?.currentLanguage)
+  func testLocalizedStringFallback() throws {
+    let testKey = "nonexistent_key_12345"
+    let localizedString = try XCTUnwrap(self.localizationManager?.localizedString(for: testKey))
 
-        // Switch to Spanish
-        self.localizationManager?.setLanguage(.spanish)
-        XCTAssertEqual(self.localizationManager?.currentLanguage, .spanish)
+    // Should return the key if not found in localization
+    XCTAssertEqual(localizedString, testKey)
+  }
 
-        // Switch to French
-        self.localizationManager?.setLanguage(.french)
-        XCTAssertEqual(self.localizationManager?.currentLanguage, .french)
+  func testLocalizedStringWithArguments() throws {
+    let testKey = "test_key_with_arg"
+    let testArg = "argument"
+    let localizedString = try XCTUnwrap(
+      self.localizationManager?.localizedString(for: testKey, arguments: testArg))
 
-        // Restore original
-        self.localizationManager?.setLanguage(originalLanguage)
-        XCTAssertEqual(self.localizationManager?.currentLanguage, originalLanguage)
-    }
+    // Should return the key if not found in localization
+    XCTAssertTrue(localizedString.contains(testKey))
+  }
 
-    func testLocalizedStringFallback() throws {
-        let testKey = "nonexistent_key_12345"
-        let localizedString = try XCTUnwrap(self.localizationManager?.localizedString(for: testKey))
+  func testStringExtensionLocalized() {
+    let testKey = "test_string"
+    let localizedString = testKey.localized
 
-        // Should return the key if not found in localization
-        XCTAssertEqual(localizedString, testKey)
-    }
+    XCTAssertEqual(localizedString, testKey)
+  }
 
-    func testLocalizedStringWithArguments() throws {
-        let testKey = "test_key_with_arg"
-        let testArg = "argument"
-        let localizedString = try XCTUnwrap(self.localizationManager?.localizedString(for: testKey, arguments: testArg))
+  func testTextExtensionLocalized() {
+    let testKey = "test_text"
+    let text = Text(localized: testKey)
 
-        // Should return the key if not found in localization
-        XCTAssertTrue(localizedString.contains(testKey))
-    }
+    // Just verify it doesn't crash
+    XCTAssertNotNil(text)
+  }
 
-    func testStringExtensionLocalized() {
-        let testKey = "test_string"
-        let localizedString = testKey.localized
+  func testLocalizationUtils() {
+    let testDate = Date()
+    let relativeTime = LocalizationUtils.formatRelativeTime(from: testDate)
+    XCTAssertNotNil(relativeTime)
+    XCTAssertFalse(relativeTime.isEmpty)
 
-        XCTAssertEqual(localizedString, testKey)
-    }
+    let formattedDate = LocalizationUtils.formatDate(testDate)
+    XCTAssertNotNil(formattedDate)
+    XCTAssertFalse(formattedDate.isEmpty)
 
-    func testTextExtensionLocalized() {
-        let testKey = "test_text"
-        let text = Text(localized: testKey)
+    let testNumber = 1234.56
+    let formattedNumber = LocalizationUtils.formatNumber(testNumber)
+    XCTAssertNotNil(formattedNumber)
+    XCTAssertFalse(formattedNumber.isEmpty)
 
-        // Just verify it doesn't crash
-        XCTAssertNotNil(text)
-    }
-
-    func testLocalizationUtils() {
-        let testDate = Date()
-        let relativeTime = LocalizationUtils.formatRelativeTime(from: testDate)
-        XCTAssertNotNil(relativeTime)
-        XCTAssertFalse(relativeTime.isEmpty)
-
-        let formattedDate = LocalizationUtils.formatDate(testDate)
-        XCTAssertNotNil(formattedDate)
-        XCTAssertFalse(formattedDate.isEmpty)
-
-        let testNumber = 1234.56
-        let formattedNumber = LocalizationUtils.formatNumber(testNumber)
-        XCTAssertNotNil(formattedNumber)
-        XCTAssertFalse(formattedNumber.isEmpty)
-
-        let testPercentage = 75.5
-        let formattedPercentage = LocalizationUtils.formatPercentage(testPercentage)
-        XCTAssertNotNil(formattedPercentage)
-        XCTAssertFalse(formattedPercentage.isEmpty)
-    }
+    let testPercentage = 75.5
+    let formattedPercentage = LocalizationUtils.formatPercentage(testPercentage)
+    XCTAssertNotNil(formattedPercentage)
+    XCTAssertFalse(formattedPercentage.isEmpty)
+  }
 }
