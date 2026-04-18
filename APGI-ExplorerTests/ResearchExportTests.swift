@@ -3,8 +3,8 @@ import XCTest
 @testable import APGI_Explorer
 
 final class ResearchExportTests: XCTestCase {
-  var researchExportManager: ResearchExportManager?
-  var testProfile: ProfileExport?
+  var researchExportManager: ResearchExportManager!
+  var testProfile: ProfileExport!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -17,19 +17,21 @@ final class ResearchExportTests: XCTestCase {
       dateCreated: Date(),
       dateModified: Date(),
       results: [
-        "epsilon": 75.0,
-        "precision": 60.0,
-        "threshold": 45.0,
-        "somatic": 30.0,
+        "epsilon": 75,
+        "precision": 60,
+        "threshold": 45,
+        "somatic": 30,
       ]
     )
 
     let apgiScores = APGIProfile(
-      overall: 75.0,
-      autonomy: 80.0,
-      purposefulness: 70.0,
-      selfAcceptance: 75.0,
-      personalGrowth: 76.0
+      epsilon: 75.0,
+      precision: 60.0,
+      threshold: 45.0,
+      somaticBias: 30.0,
+      interactionScore: 70.0,
+      temporalStability: 80.0,
+      environmentalFit: 75.0
     )
 
     self.testProfile = ProfileExport(
@@ -50,8 +52,7 @@ final class ResearchExportTests: XCTestCase {
   }
 
   func testJSONExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .json) ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .json)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -67,8 +68,7 @@ final class ResearchExportTests: XCTestCase {
   }
 
   func testCSVExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .csv) ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .csv)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -76,15 +76,14 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(csvString)
 
     // Verify CSV headers
-    XCTAssertTrue(try XCTUnwrap(csvString?.contains("Metric,Value,Category,Description")))
-    XCTAssertTrue(try XCTUnwrap(csvString?.contains("APGI_Total")))
-    XCTAssertTrue(try XCTUnwrap(csvString?.contains("APGI_Autonomy")))
-    XCTAssertTrue(try XCTUnwrap(csvString?.contains("Profile_Name")))
+    XCTAssertTrue(csvString!.contains("Metric,Value,Category,Description"))
+    XCTAssertTrue(csvString!.contains("APGI_Total"))
+    XCTAssertTrue(csvString!.contains("APGI_Autonomy"))
+    XCTAssertTrue(csvString!.contains("Profile_Name"))
   }
 
   func testXMLExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .xml) ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .xml)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -92,33 +91,28 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(xmlString)
 
     // Verify XML structure
-    XCTAssertTrue(try XCTUnwrap(xmlString?.contains("<?xml version=\"1.0\"")))
-    XCTAssertTrue(try XCTUnwrap(xmlString?.contains("<APGIProfileExport>")))
-    XCTAssertTrue(try XCTUnwrap(xmlString?.contains("<Metadata>")))
-    XCTAssertTrue(try XCTUnwrap(xmlString?.contains("<APGIScores>")))
+    XCTAssertTrue(xmlString!.contains("<?xml version=\"1.0\""))
+    XCTAssertTrue(xmlString!.contains("<APGIProfileExport>"))
+    XCTAssertTrue(xmlString!.contains("<Metadata>"))
+    XCTAssertTrue(xmlString!.contains("<APGIScores>"))
   }
 
   func testSPSSExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .spss) ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .spss)
 
     XCTAssertFalse(exportData.isEmpty)
     XCTAssertGreaterThanOrEqual(exportData.count, 100)  // SPSS files have binary headers
   }
 
   func testStataExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .stata)
-      ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .stata)
 
     XCTAssertFalse(exportData.isEmpty)
     XCTAssertGreaterThanOrEqual(exportData.count, 100)  // Stata files have binary headers
   }
 
   func testRDataExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .rData)
-      ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .rData)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -126,28 +120,24 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(rScript)
 
     // Verify R script content
-    XCTAssertTrue(try XCTUnwrap(rScript?.contains("# APGI Profile Data Export")))
-    XCTAssertTrue(try XCTUnwrap(rScript?.contains("apgi_data <- data.frame(")))
-    XCTAssertTrue(try XCTUnwrap(rScript?.contains("save(apgi_data")))
+    XCTAssertTrue(rScript!.contains("# APGI Profile Data Export"))
+    XCTAssertTrue(rScript!.contains("apgi_data <- data.frame("))
+    XCTAssertTrue(rScript!.contains("save(apgi_data"))
   }
 
   func testExcelExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .excel)
-      ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .excel)
 
     XCTAssertFalse(exportData.isEmpty)
 
     // Excel export currently uses CSV format internally
     let csvString = String(data: exportData, encoding: .utf8)
     XCTAssertNotNil(csvString)
-    XCTAssertTrue(try XCTUnwrap(csvString?.contains("Metric,Value,Category,Description")))
+    XCTAssertTrue(csvString!.contains("Metric,Value,Category,Description"))
   }
 
   func testBibTeXExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .bibTeX)
-      ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .bibTeX)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -155,16 +145,15 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(bibtexString)
 
     // Verify BibTeX structure
-    XCTAssertTrue(try XCTUnwrap(bibtexString?.contains("@misc{")))
-    XCTAssertTrue(try XCTUnwrap(bibtexString?.contains("title = {")))
-    XCTAssertTrue(try XCTUnwrap(bibtexString?.contains("author = {")))
-    XCTAssertTrue(try XCTUnwrap(bibtexString?.contains("year = {")))
+    XCTAssertTrue(bibtexString!.contains("@misc{"))
+    XCTAssertTrue(bibtexString!.contains("title = {"))
+    XCTAssertTrue(bibtexString!.contains("author = {"))
+    XCTAssertTrue(bibtexString!.contains("year = {"))
   }
 
   func testEndNoteExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .endNote)
-      ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(
+      self.testProfile, format: .endNote)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -172,15 +161,14 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(endNoteString)
 
     // Verify EndNote structure
-    XCTAssertTrue(try XCTUnwrap(endNoteString?.contains("%0 Generic")))
-    XCTAssertTrue(try XCTUnwrap(endNoteString?.contains("%T")))
-    XCTAssertTrue(try XCTUnwrap(endNoteString?.contains("%A")))
-    XCTAssertTrue(try XCTUnwrap(endNoteString?.contains("%D")))
+    XCTAssertTrue(endNoteString!.contains("%0 Generic"))
+    XCTAssertTrue(endNoteString!.contains("%T"))
+    XCTAssertTrue(endNoteString!.contains("%A"))
+    XCTAssertTrue(endNoteString!.contains("%D"))
   }
 
   func testAPAReportExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .apa) ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .apa)
 
     XCTAssertFalse(exportData.isEmpty)
 
@@ -189,8 +177,7 @@ final class ResearchExportTests: XCTestCase {
   }
 
   func testMLAReportExport() throws {
-    let exportData =
-      try researchExportManager?.exportProfile(XCTUnwrap(self.testProfile), format: .mla) ?? Data()
+    let exportData = try self.researchExportManager.exportProfile(self.testProfile, format: .mla)
 
     XCTAssertFalse(exportData.isEmpty)
 

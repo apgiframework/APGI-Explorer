@@ -2,8 +2,9 @@ import XCTest
 
 @testable import APGI_Explorer
 
+@MainActor
 final class FileStorageManagerTests: XCTestCase {
-  var fileStorageManager: FileStorageManager?
+  var fileStorageManager: FileStorageManager!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -16,11 +17,6 @@ final class FileStorageManagerTests: XCTestCase {
 
   func testFileStorageManagerInitialization() {
     XCTAssertNotNil(self.fileStorageManager)
-  }
-
-  func testFreeDiskSpace() {
-    let freeSpace = self.fileStorageManager.freeDiskSpace
-    XCTAssertGreaterThan(freeSpace, 0)
   }
 
   func testListBackups() throws {

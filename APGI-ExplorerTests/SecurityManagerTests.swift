@@ -2,46 +2,53 @@ import XCTest
 
 @testable import APGI_Explorer
 
+@MainActor
 final class SecurityManagerTests: XCTestCase {
-  private var securityManager: SecurityManager?
+  private var securityManager: SecurityManager!
 
   override func setUpWithError() throws {
     self.securityManager = SecurityManager.shared
-    try self.securityManager?.clearAllSecureData()
+    // Clear data in background without awaiting
+    Task {
+      try? await self.securityManager.clearAllSecureData()
+    }
   }
 
   override func tearDownWithError() throws {
-    try self.securityManager?.clearAllSecureData()
+    // Clear data in background without awaiting
+    Task {
+      try? await self.securityManager.clearAllSecureData()
+    }
   }
 
-  func testStoreAndRetrieveSessionToken() throws {
+  func testStoreAndRetrieveSessionToken() async throws {
     let testToken = "test_session_token_123"
 
-    try securityManager?.storeSessionToken(testToken)
-    let retrievedToken = try securityManager?.retrieveSessionToken()
+    try await securityManager.storeSessionToken(testToken)
+    let retrievedToken = try await securityManager.retrieveSessionToken()
 
     XCTAssertEqual(retrievedToken, testToken)
   }
 
-  func testStoreAndRetrieveAnalyticsConsent() throws {
+  func testStoreAndRetrieveAnalyticsConsent() async throws {
     let consent = true
 
-    try securityManager?.storeAnalyticsConsent(consent)
-    let retrievedConsent = try securityManager?.retrieveAnalyticsConsent()
+    try await securityManager.storeAnalyticsConsent(consent)
+    let retrievedConsent = try await securityManager.retrieveAnalyticsConsent()
 
     XCTAssertEqual(retrievedConsent, consent)
   }
 
-  func testStoreAndRetrieveLastBackupDate() throws {
+  func testStoreAndRetrieveLastBackupDate() async throws {
     let testDate = Date()
 
-    try securityManager?.storeLastBackupDate(testDate)
-    let retrievedDate = try securityManager?.retrieveLastBackupDate()
+    try await securityManager.storeLastBackupDate(testDate)
+    let retrievedDate = try await securityManager.retrieveLastBackupDate()
 
     XCTAssertEqual(retrievedDate, testDate)
   }
 
-  func testStoreAndRetrieveAppSettings() throws {
+  func testStoreAndRetrieveAppSettings() async throws {
     let testSettings: [String: Any] = [
       "theme": "dark",
       "notifications": true,
@@ -49,82 +56,89 @@ final class SecurityManagerTests: XCTestCase {
       "maxProfiles": 10,
     ]
 
-    try securityManager?.storeAppSettings(testSettings)
-    let retrievedSettings = try securityManager?.retrieveAppSettings()
+    try await securityManager.storeAppSettings(testSettings)
+    let retrievedSettings = try await securityManager.retrieveAppSettings()
 
     XCTAssertNotNil(retrievedSettings)
-    XCTAssertEqual(retrievedSettings?["theme"] as? String, "dark")
-    XCTAssertEqual(retrievedSettings?["notifications"] as? Bool, true)
-    XCTAssertEqual(retrievedSettings?["autoBackup"] as? Bool, false)
-    XCTAssertEqual(retrievedSettings?["maxProfiles"] as? Int, 10)
+    XCTAssertEqual(retrievedSettings!["theme"] as? String, "dark")
+    XCTAssertEqual(retrievedSettings!["notifications"] as? Bool, true)
+    XCTAssertEqual(retrievedSettings!["autoBackup"] as? Bool, false)
+    XCTAssertEqual(retrievedSettings!["maxProfiles"] as? Int, 10)
   }
 
-  func testDataIntegrityValidation() throws {
-    let result = self.securityManager?.validateDataIntegrity()
-    XCTAssertTrue(result?.isValid ?? false)
-    XCTAssertTrue(result?.issues.isEmpty ?? true)
+  func testDataIntegrityValidation() async throws {
+    let result = try await self.securityManager.validateDataIntegrity()
+    XCTAssertTrue(result.isValid)
+    XCTAssertTrue(result.issues.isEmpty)
 
-    try self.securityManager?.storeSessionToken("test_token")
-    let resultWithData = self.securityManager?.validateDataIntegrity()
-    XCTAssertTrue(resultWithData?.isValid ?? false)
+    try await self.securityManager.storeSessionToken("test_token")
+    let resultWithData = try await self.securityManager.validateDataIntegrity()
+    XCTAssertTrue(resultWithData.isValid)
   }
 
-  func testExportAndImportSecureData() throws {
+  func testExportAndImportSecureData() async throws {
     let testToken = "export_test_token"
     let consent = true
     let testDate = Date()
     let testSettings: [String: Any] = ["theme": "light"]
 
-    try securityManager?.storeSessionToken(testToken)
-    try self.securityManager?.storeAnalyticsConsent(consent)
-    try self.securityManager?.storeLastBackupDate(testDate)
-    try self.securityManager?.storeAppSettings(testSettings)
+    try await securityManager.storeSessionToken(testToken)
+    try await self.securityManager.storeAnalyticsConsent(consent)
+    try await self.securityManager.storeLastBackupDate(testDate)
+    try await self.securityManager.storeAppSettings(testSettings)
 
-    let exportedData = try securityManager?.exportSecureData()
+    let exportedData = try await securityManager.exportSecureData()
     XCTAssertNotNil(exportedData["sessionToken"])
     XCTAssertNotNil(exportedData["analyticsConsent"])
     XCTAssertNotNil(exportedData["lastBackupDate"])
     XCTAssertNotNil(exportedData["appSettings"])
 
-    try self.securityManager?.clearAllSecureData()
+    try await self.securityManager.clearAllSecureData()
 
-    try self.securityManager?.importSecureData(exportedData ?? [:])
+    try await self.securityManager.importSecureData(exportedData)
 
-    let retrievedToken = try securityManager?.retrieveSessionToken()
-    let retrievedConsent = try securityManager?.retrieveAnalyticsConsent()
-    let retrievedDate = try securityManager?.retrieveLastBackupDate()
-    let retrievedSettings = try securityManager?.retrieveAppSettings()
+    let retrievedToken = try await securityManager.retrieveSessionToken()
+    let retrievedConsent = try await securityManager.retrieveAnalyticsConsent()
+    let retrievedDate = try await securityManager.retrieveLastBackupDate()
+    let retrievedSettings = try await securityManager.retrieveAppSettings()
 
     XCTAssertEqual(retrievedToken, testToken)
     XCTAssertEqual(retrievedConsent, consent)
     XCTAssertEqual(retrievedDate, testDate)
-    XCTAssertEqual(retrievedSettings?["theme"] as? String, "light")
+    XCTAssertEqual(retrievedSettings!["theme"] as? String, "light")
   }
 
-  func testClearAllSecureData() throws {
-    try self.securityManager?.storeSessionToken("test_token")
-    try self.securityManager?.storeAnalyticsConsent(true)
-    try self.securityManager?.storeLastBackupDate(Date())
-    try self.securityManager?.storeAppSettings(["test": "value"])
+  func testClearAllSecureData() async throws {
+    try await self.securityManager.storeSessionToken("test_token")
+    try await self.securityManager.storeAnalyticsConsent(true)
+    try await self.securityManager.storeLastBackupDate(Date())
+    try await self.securityManager.storeAppSettings(["test": "value"])
 
-    try self.securityManager?.clearAllSecureData()
+    try await self.securityManager.clearAllSecureData()
 
-    XCTAssertNil(try? self.securityManager?.retrieveSessionToken())
-    XCTAssertNil(try? self.securityManager?.retrieveAnalyticsConsent())
-    XCTAssertNil(try? self.securityManager?.retrieveLastBackupDate())
-    XCTAssertNil(try? self.securityManager?.retrieveAppSettings())
+    let retrievedToken = try? await self.securityManager.retrieveSessionToken()
+    let retrievedConsent = try? await self.securityManager.retrieveAnalyticsConsent()
+    let retrievedDate = try? await self.securityManager.retrieveLastBackupDate()
+    let retrievedSettings = try? await self.securityManager.retrieveAppSettings()
+
+    XCTAssertNil(retrievedToken)
+    XCTAssertNil(retrievedConsent)
+    XCTAssertNil(retrievedDate)
+    XCTAssertNil(retrievedSettings)
   }
 
   func testPerformanceOfSecurityOperations() {
     measure {
-      do {
-        for i in 0..<50 {
-          try self.securityManager?.storeSessionToken("token_\(i)")
-          _ = try self.securityManager?.retrieveSessionToken()
+      Task {
+        do {
+          for i in 0..<50 {
+            try await self.securityManager.storeSessionToken("token_\(i)")
+            _ = try await self.securityManager.retrieveSessionToken()
+          }
+          try await self.securityManager.clearAllSecureData()
+        } catch {
+          XCTFail("Performance test failed: \(error)")
         }
-        try self.securityManager?.clearAllSecureData()
-      } catch {
-        XCTFail("Performance test failed: \(error)")
       }
     }
   }

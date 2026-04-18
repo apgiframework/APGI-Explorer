@@ -24,7 +24,6 @@ struct ProfileComparisonView: View {
   @EnvironmentObject private var profileManager: ProfileManager
   @Environment(\.appDependencies) private var dependencies: AppDependencies
   @StateObject private var performanceManager = PerformanceManager.shared
-  @StateObject private var performanceTracker = PerformanceTracker()
 
   @State private var selectedProfile1: QuizProfile?
   @State private var selectedProfile2: QuizProfile?

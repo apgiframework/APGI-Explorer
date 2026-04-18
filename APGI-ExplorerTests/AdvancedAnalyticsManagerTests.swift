@@ -2,16 +2,15 @@ import XCTest
 
 @testable import APGI_Explorer
 
+@MainActor
 final class AdvancedAnalyticsManagerTests: XCTestCase {
-  var analyticsManager: AdvancedAnalyticsManager?
-  var mockDataStore: MockDataStore?
+  var analyticsManager: AdvancedAnalyticsManager!
+  var mockDataStore: MockDataStore!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
     self.mockDataStore = MockDataStore()
-    if let mockDataStore = self.mockDataStore {
-      self.analyticsManager = AdvancedAnalyticsManager(dataStore: mockDataStore)
-    }
+    self.analyticsManager = AdvancedAnalyticsManager(dataStore: mockDataStore)
   }
 
   override func tearDownWithError() throws {
@@ -20,30 +19,22 @@ final class AdvancedAnalyticsManagerTests: XCTestCase {
   }
 
   func testAdvancedAnalyticsManagerInitialization() {
-    guard let analyticsManager = self.analyticsManager else {
-      XCTFail("Analytics manager not initialized")
-      return
-    }
-    XCTAssertNotNil(analyticsManager)
-    XCTAssertTrue(analyticsManager.trendData.isEmpty)
-    XCTAssertTrue(analyticsManager.predictions.isEmpty)
-    XCTAssertTrue(analyticsManager.insights.isEmpty)
-    XCTAssertFalse(analyticsManager.isLoading)
-    XCTAssertNil(analyticsManager.error)
+    XCTAssertNotNil(self.analyticsManager)
+    XCTAssertTrue(self.analyticsManager.trendData.isEmpty)
+    XCTAssertTrue(self.analyticsManager.predictions.isEmpty)
+    XCTAssertTrue(self.analyticsManager.insights.isEmpty)
+    XCTAssertFalse(self.analyticsManager.isLoading)
+    XCTAssertNil(self.analyticsManager.error)
   }
 
   func testAnalyzeTrendsWithEmptyProfiles() async {
-    guard let analyticsManager = self.analyticsManager else {
-      XCTFail("Analytics manager not initialized")
-      return
-    }
-    await analyticsManager.analyzeTrends(for: [])
+    await self.analyticsManager.analyzeTrends(for: [])
 
-    XCTAssertTrue(analyticsManager.trendData.isEmpty)
-    XCTAssertTrue(analyticsManager.predictions.isEmpty)
-    XCTAssertTrue(analyticsManager.insights.isEmpty)
-    XCTAssertFalse(analyticsManager.isLoading)
-    XCTAssertNil(analyticsManager.error)
+    XCTAssertTrue(self.analyticsManager.trendData.isEmpty)
+    XCTAssertTrue(self.analyticsManager.predictions.isEmpty)
+    XCTAssertTrue(self.analyticsManager.insights.isEmpty)
+    XCTAssertFalse(self.analyticsManager.isLoading)
+    XCTAssertNil(self.analyticsManager.error)
   }
 
   func testTrendDirectionDisplayNames() {
@@ -66,28 +57,25 @@ final class AdvancedAnalyticsManagerTests: XCTestCase {
 }
 
 /// Mock DataStore for testing
+@MainActor
 class MockDataStore: DataStore {
-  func saveProfile(_: QuizProfile) async throws {
+  func save(_ value: some Codable, forKey key: String) async throws {
     // Mock implementation
   }
 
-  func fetchProfiles(sortBy _: ProfileSortOption, ascending _: Bool) async throws -> [QuizProfile] {
-    []
-  }
-
-  func fetchProfile(id _: UUID) async throws -> QuizProfile? {
+  func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T? {
     nil
   }
 
-  func searchProfiles(query _: String) async throws -> [QuizProfile] {
-    []
-  }
-
-  func deleteProfile(_: QuizProfile) async throws {
+  func delete(forKey key: String) async throws {
     // Mock implementation
   }
 
-  func deleteAllProfiles() async throws {
+  func clearAll() async throws {
     // Mock implementation
+  }
+
+  func getStorageInfo() async -> StorageInfo {
+    StorageInfo(totalSpace: 1_000_000, availableSpace: 500000, usedSpace: 500000)
   }
 }

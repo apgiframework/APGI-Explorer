@@ -7,6 +7,14 @@ class KeychainManager {
   }
 
   private let service = "com.lesoto.APGI-Explorer"
+  private let useUserDefaultsFallback: Bool = {
+    #if targetEnvironment(simulator)
+      return true
+    #else
+      return false
+    #endif
+  }()
+  private let userDefaultsKeyPrefix = "keychain_fallback_"
 
   enum KeychainError: Error, LocalizedError {
     case itemNotFound
@@ -29,6 +37,11 @@ class KeychainManager {
   }
 
   func store(_ data: Data, forKey key: String) throws {
+    if useUserDefaultsFallback {
+      UserDefaults.standard.set(data, forKey: userDefaultsKeyPrefix + key)
+      return
+    }
+
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
@@ -46,6 +59,13 @@ class KeychainManager {
   }
 
   func retrieve(forKey key: String) throws -> Data {
+    if useUserDefaultsFallback {
+      guard let data = UserDefaults.standard.data(forKey: userDefaultsKeyPrefix + key) else {
+        throw KeychainError.itemNotFound
+      }
+      return data
+    }
+
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
@@ -69,6 +89,11 @@ class KeychainManager {
   }
 
   func delete(forKey key: String) throws {
+    if useUserDefaultsFallback {
+      UserDefaults.standard.removeObject(forKey: userDefaultsKeyPrefix + key)
+      return
+    }
+
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
@@ -82,6 +107,11 @@ class KeychainManager {
   }
 
   func update(_ data: Data, forKey key: String) throws {
+    if useUserDefaultsFallback {
+      UserDefaults.standard.set(data, forKey: userDefaultsKeyPrefix + key)
+      return
+    }
+
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
@@ -99,6 +129,10 @@ class KeychainManager {
   }
 
   func contains(forKey key: String) -> Bool {
+    if useUserDefaultsFallback {
+      return UserDefaults.standard.data(forKey: userDefaultsKeyPrefix + key) != nil
+    }
+
     do {
       _ = try self.retrieve(forKey: key)
       return true

@@ -101,26 +101,41 @@ class AdvancedAnalyticsManager: ObservableObject {
     }
     let allData = profileValues + historicalValues
 
+    // Handle empty data case
+    guard !allData.isEmpty else {
+      return TrendDataPoint(
+        parameter: String(describing: parameter).split(separator: ".").last?.description
+          ?? "Unknown",
+        currentValue: 0,
+        mean: 0,
+        standardDeviation: 0,
+        trendDirection: .stable,
+        trendStrength: 0,
+        dataPoints: []
+      )
+    }
+
     let sortedData = allData.sorted()
     let mean = sortedData.reduce(0, +) / Double(sortedData.count)
-    let variance = sortedData.map { pow($0 - mean, 2) }.reduce(0, +) / Double(sortedData.count)
+    let variance =
+      sortedData.map { pow($0 - mean, 2) }.reduce(0, +) / Double(max(1, sortedData.count))
     let standardDeviation = sqrt(variance)
 
     // Calculate trend direction
     let recentData = Array(allData.suffix(min(10, allData.count)))
     let olderData = Array(allData.prefix(min(10, allData.count)))
-    let recentMean = recentData.reduce(0.0, +) / Double(recentData.count)
-    let olderMean = olderData.reduce(0.0, +) / Double(olderData.count)
+    let recentMean = recentData.reduce(0.0, +) / Double(max(1, recentData.count))
+    let olderMean = olderData.reduce(0.0, +) / Double(max(1, olderData.count))
 
     let trendDirection: TrendDirection
     let trendStrength: Double
 
     if recentMean > olderMean {
       trendDirection = .increasing
-      trendStrength = abs(recentMean - olderMean) / olderMean
+      trendStrength = olderMean != 0 ? abs(recentMean - olderMean) / olderMean : 0
     } else if recentMean < olderMean {
       trendDirection = .decreasing
-      trendStrength = abs(recentMean - olderMean) / olderMean
+      trendStrength = olderMean != 0 ? abs(recentMean - olderMean) / olderMean : 0
     } else {
       trendDirection = .stable
       trendStrength = 0

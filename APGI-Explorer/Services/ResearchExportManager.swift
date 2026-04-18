@@ -194,164 +194,43 @@ class ResearchExportManager: ObservableObject {
   }
 
   private func exportRData(_ profile: ProfileExport) throws -> Data {
-    // Generate RDS (R Data Serialized) format
-    var data = Data()
-
-    // RDS magic bytes: "X\n"
-    data.append(0x58)  // 'X'
-    data.append(0x0a)  // '\n'
-
-    // Format version: 2
-    withUnsafeBytes(of: UInt16(2).bigEndian) { data.append(contentsOf: $0) }
-
-    // Writer version: 4
-    withUnsafeBytes(of: UInt32(4).bigEndian) { data.append(contentsOf: $0) }
-
-    // Min reader version: 4
-    withUnsafeBytes(of: UInt32(4).bigEndian) { data.append(contentsOf: $0) }
-
-    // Encoding: UTF-8 = 1
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }
-
-    // Create a simple list (VECSEXP) with named elements
-    // This is a simplified RDS structure for a named list
-
-    // SEXPTYPE: 19 (VECSEXP - list/vector)
-    data.append(19)
-
-    // Length of the list: 11 elements
-    withUnsafeBytes(of: UInt32(11).bigEndian) { data.append(contentsOf: $0) }
-
-    // Attributes (NAMED list)
-    // SEXPTYPE: 2 (LISTSXP)
-    data.append(2)
-    // Length: 1 (just the names attribute)
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }
-
-    // Names attribute
-    // SEXPTYPE: 16 (STRSXP - string vector)
-    data.append(16)
-    // Length: 11 (number of names)
-    withUnsafeBytes(of: UInt32(11).bigEndian) { data.append(contentsOf: $0) }
-
-    // String values for names
-    let names = [
-      "apgi_total", "apgi_autonomy", "apgi_purposefulness", "apgi_self_acceptance",
-      "apgi_personal_growth", "age", "gender", "education", "occupation", "profile_type",
-      "export_date",
-    ]
-    for name in names {
-      // SEXPTYPE: 9 (CHARSXP - scalar string)
-      data.append(9)
-      // Length of string
-      withUnsafeBytes(of: UInt32(name.count).bigEndian) { data.append(contentsOf: $0) }
-      // String data
-      guard let nameData = name.data(using: .utf8) else {
-        throw ExportError.invalidData
-      }
-      data.append(contentsOf: nameData)
-    }
-
-    // Now the actual data values
-    // 1. apgi_total (REALSXP)
-    data.append(14)  // REALSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    withUnsafeBytes(of: profile.apgiScores.overall.bitPattern.bigEndian) {
-      data.append(contentsOf: $0)
-    }
-
-    // 2. apgi_autonomy (REALSXP)
-    data.append(14)  // REALSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    withUnsafeBytes(of: profile.apgiScores.autonomy.bitPattern.bigEndian) {
-      data.append(contentsOf: $0)
-    }
-
-    // 3. apgi_purposefulness (REALSXP)
-    data.append(14)  // REALSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    withUnsafeBytes(of: profile.apgiScores.purposefulness.bitPattern.bigEndian) {
-      data.append(contentsOf: $0)
-    }
-
-    // 4. apgi_self_acceptance (REALSXP)
-    data.append(14)  // REALSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    withUnsafeBytes(of: profile.apgiScores.selfAcceptance.bitPattern.bigEndian) {
-      data.append(contentsOf: $0)
-    }
-
-    // 5. apgi_personal_growth (REALSXP)
-    data.append(14)  // REALSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    withUnsafeBytes(of: profile.apgiScores.personalGrowth.bitPattern.bigEndian) {
-      data.append(contentsOf: $0)
-    }
-
-    // 6. age (REALSXP)
-    data.append(14)  // REALSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    withUnsafeBytes(of: Double(profile.profile.age).bitPattern.bigEndian) {
-      data.append(contentsOf: $0)
-    }
-
-    // 7. gender (STRSXP)
-    data.append(16)  // STRSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    data.append(9)  // CHARSXP
-    let gender = profile.profile.gender
-    withUnsafeBytes(of: UInt32(gender.count).bigEndian) { data.append(contentsOf: $0) }
-    guard let genderData = gender.data(using: .utf8) else {
-      throw ExportError.invalidData
-    }
-    data.append(contentsOf: genderData)
-
-    // 8. education (STRSXP)
-    data.append(16)  // STRSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    data.append(9)  // CHARSXP
-    let education = profile.profile.education
-    withUnsafeBytes(of: UInt32(education.count).bigEndian) { data.append(contentsOf: $0) }
-    guard let educationData = education.data(using: .utf8) else {
-      throw ExportError.invalidData
-    }
-    data.append(contentsOf: educationData)
-
-    // 9. occupation (STRSXP)
-    data.append(16)  // STRSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    data.append(9)  // CHARSXP
-    let occupation = profile.profile.occupation
-    withUnsafeBytes(of: UInt32(occupation.count).bigEndian) { data.append(contentsOf: $0) }
-    guard let occupationData = occupation.data(using: .utf8) else {
-      throw ExportError.invalidData
-    }
-    data.append(contentsOf: occupationData)
-
-    // 10. profile_type (STRSXP)
-    data.append(16)  // STRSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    data.append(9)  // CHARSXP
-    let profileType = profile.profileType
-    withUnsafeBytes(of: UInt32(profileType.count).bigEndian) { data.append(contentsOf: $0) }
-    guard let profileTypeData = profileType.data(using: .utf8) else {
-      throw ExportError.invalidData
-    }
-    data.append(contentsOf: profileTypeData)
-
-    // 11. export_date (STRSXP - as ISO string)
-    data.append(16)  // STRSXP
-    withUnsafeBytes(of: UInt32(1).bigEndian) { data.append(contentsOf: $0) }  // length
-    data.append(9)  // CHARSXP
+    // Generate R script that creates and saves the data
     let dateFormatter = ISO8601DateFormatter()
     let dateString = dateFormatter.string(from: profile.timestamp)
-    withUnsafeBytes(of: UInt32(dateString.count).bigEndian) { data.append(contentsOf: $0) }
-    guard let dateData = dateString.data(using: .utf8) else {
-      throw ExportError.invalidData
-    }
-    data.append(contentsOf: dateData)
 
-    return data
+    let rScript = """
+      # APGI Profile Data Export
+      # Generated by APGI Explorer
+      # Export Date: \(dateString)
+
+      # Create data frame with APGI profile data
+      apgi_data <- data.frame(
+        apgi_total = \(profile.apgiScores.overall),
+        apgi_autonomy = \(profile.apgiScores.autonomy),
+        apgi_purposefulness = \(profile.apgiScores.purposefulness),
+        apgi_self_acceptance = \(profile.apgiScores.selfAcceptance),
+        apgi_personal_growth = \(profile.apgiScores.personalGrowth),
+        age = \(profile.profile.age),
+        gender = "\(profile.profile.gender)",
+        education = "\(profile.profile.education)",
+        occupation = "\(profile.profile.occupation)",
+        profile_type = "\(profile.profileType)",
+        export_date = "\(dateString)",
+        stringsAsFactors = FALSE
+      )
+
+      # Save to RDS file
+      saveRDS(apgi_data, file = "apgi_profile.rds")
+
+      # Also save as RData workspace
+      save(apgi_data, file = "apgi_profile.RData")
+
+      # Print summary
+      print("APGI Profile Data Summary:")
+      print(apgi_data)
+      """
+
+    return rScript.data(using: .utf8) ?? Data()
   }
 
   private func exportExcel(_ profile: ProfileExport) throws -> Data {

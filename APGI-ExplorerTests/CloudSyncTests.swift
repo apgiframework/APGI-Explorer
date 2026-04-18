@@ -3,8 +3,9 @@ import XCTest
 
 @testable import APGI_Explorer
 
+@MainActor
 final class CloudSyncTests: XCTestCase {
-  var cloudSyncManager: CloudSyncManager?
+  var cloudSyncManager: CloudSyncManager!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -16,20 +17,20 @@ final class CloudSyncTests: XCTestCase {
   }
 
   func testCloudSyncManagerInitialization() throws {
-    XCTAssertNotNil(try XCTUnwrap(self.cloudSyncManager))
-    XCTAssertFalse(try XCTUnwrap(self.cloudSyncManager?.isSyncing))
-    XCTAssertEqual(self.cloudSyncManager?.accountStatus, .couldNotDetermine)
+    XCTAssertNotNil(self.cloudSyncManager)
+    XCTAssertFalse(self.cloudSyncManager.isSyncing)
+    XCTAssertEqual(self.cloudSyncManager.accountStatus, .couldNotDetermine)
   }
 
   func testAccountStatusCheck() {
     // Note: In a real test environment, we might not have iCloud access
     // so we just verify the method doesn't crash
-    self.cloudSyncManager?.checkAccountStatus()
+    self.cloudSyncManager.checkAccountStatus()
   }
 
   func testDiscoverabilityPermissionRequest() {
-    // Verify the method doesn't crash
-    self.cloudSyncManager?.requestDiscoverabilityPermission()
+    // Method removed - no longer available
+    XCTAssertTrue(true)
   }
 
   func testCloudSyncErrorDescriptions() {

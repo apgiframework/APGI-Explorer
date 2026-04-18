@@ -5,7 +5,7 @@ import SwiftUI
 class LocalizationManager: ObservableObject {
   static let shared = LocalizationManager()
 
-  @Published var currentLanguage: SupportedLanguage = .russian
+  @Published var currentLanguage: SupportedLanguage = .english
 
   private init() {
     self.loadSavedLanguage()
