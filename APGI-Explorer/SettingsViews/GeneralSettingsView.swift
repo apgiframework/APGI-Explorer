@@ -7,7 +7,7 @@ struct GeneralSettingsView: View {
   @AppStorage("showTooltips") private var showTooltips: Bool = true
   @AppStorage("animationSpeed") private var animationSpeed: Double = 1.0
   @AppStorage("dataRetentionDays") private var dataRetentionDays: Int = 365
-  @AppStorage("enableAnalytics") private var enableAnalytics: Bool = false
+  @AppStorage("analyticsEnabled") private var enableAnalytics: Bool = false
   @AppStorage("betaUpdates") private var betaUpdates: Bool = false
 
   var body: some View {

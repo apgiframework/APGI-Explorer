@@ -287,7 +287,7 @@ struct MenuCommands: Commands {
     CommandGroup(replacing: .help) {
       Button("APGI Explorer Help") {
         #if os(macOS)
-          if let helpURL = URL(string: "https://apgi-explorer.com/help") {
+          if let helpURL = URL(string: "https://lesoto.github.io/APGI-Explorer") {
             NSWorkspace.shared.open(helpURL)
           }
         #endif
@@ -302,7 +302,7 @@ struct MenuCommands: Commands {
 
       Button("Report a Bug") {
         #if os(macOS)
-          if let bugReportURL = URL(string: "https://github.com/yourrepo/issues") {
+          if let bugReportURL = URL(string: "https://github.com/lesoto/APGI-Explorer/issues") {
             NSWorkspace.shared.open(bugReportURL)
           }
         #endif
@@ -310,7 +310,7 @@ struct MenuCommands: Commands {
 
       Button("Contact Support") {
         #if os(macOS)
-          if let supportURL = URL(string: "mailto:support@apgi-explorer.com") {
+          if let supportURL = URL(string: "https://github.com/lesoto/APGI-Explorer/issues") {
             NSWorkspace.shared.open(supportURL)
           }
         #endif

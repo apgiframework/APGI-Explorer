@@ -114,6 +114,20 @@ enum Resolution: String, CaseIterable, Codable {
     case .custom: "Custom"
     }
   }
+
+  /// Returns the CGSize for window resizing based on resolution
+  var cgSize: CGSize {
+    switch self {
+    case .default:
+      return CGSize(width: 1200, height: 800)
+    case .large:
+      return CGSize(width: 1920, height: 1080)
+    case .small:
+      return CGSize(width: 1024, height: 768)
+    case .custom:
+      return CGSize(width: 1200, height: 800)
+    }
+  }
 }
 
 // MARK: - Custom Screen Path

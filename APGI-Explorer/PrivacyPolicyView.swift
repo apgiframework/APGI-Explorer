@@ -9,6 +9,8 @@ struct PrivacyPolicyView: View {
   @AppStorage("analyticsConsent") private var analyticsConsent = false
   @AppStorage("crashReportingConsent") private var crashReportingConsent = false
 
+  var onAccept: (() -> Void)?
+
   var body: some View {
     NavigationStack {
       ScrollView {
@@ -174,6 +176,7 @@ struct PrivacyPolicyView: View {
         action: {
           self.saveConsentPreferences()
           self.privacyPolicyAccepted = true
+          onAccept?()
           HapticFeedback.shared.lightImpact()
           self.dismiss()
         },
@@ -291,6 +294,96 @@ struct ToggleRow: View {
         .fixedSize(horizontal: false, vertical: true)
     }
     .padding(.vertical, 4)
+  }
+}
+
+// MARK: - Consent Review Sheet
+
+struct ConsentReviewSheet: View {
+  @Environment(\.dismiss) private var dismiss
+  let isAccepted: Bool
+  let onWithdraw: () -> Void
+
+  var body: some View {
+    NavigationStack {
+      ScrollView {
+        VStack(spacing: 24) {
+          // Status Icon
+          Image(systemName: isAccepted ? "checkmark.shield.fill" : "exclamationmark.shield")
+            .font(.system(size: 60))
+            .foregroundColor(isAccepted ? .green : .orange)
+
+          // Status Title
+          Text("Privacy Policy Consent")
+            .font(.title)
+            .fontWeight(.bold)
+
+          // Status Description
+          VStack(spacing: 16) {
+            HStack {
+              Image(systemName: isAccepted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundColor(isAccepted ? .green : .red)
+              Text("Status: \(isAccepted ? "Accepted" : "Not Accepted")")
+                .font(.headline)
+              Spacer()
+            }
+
+            if isAccepted {
+              Text(
+                "You have previously accepted the Privacy Policy. Your consent allows us to provide analytics and crash reporting features."
+              )
+              .font(.body)
+              .foregroundColor(.secondary)
+              .multilineTextAlignment(.center)
+            } else {
+              Text(
+                "You have not yet accepted the Privacy Policy. Please review and accept to enable all features."
+              )
+              .font(.body)
+              .foregroundColor(.secondary)
+              .multilineTextAlignment(.center)
+            }
+          }
+          .padding()
+          .background(Color.secondary.opacity(0.1))
+          .cornerRadius(12)
+
+          // Actions
+          VStack(spacing: 12) {
+            if isAccepted {
+              Button("View Privacy Policy") {
+                dismiss()
+              }
+              .buttonStyle(.bordered)
+
+              Button("Withdraw Consent") {
+                onWithdraw()
+                dismiss()
+              }
+              .buttonStyle(.borderedProminent)
+              .tint(.red)
+            } else {
+              Button("Review and Accept") {
+                dismiss()
+              }
+              .buttonStyle(.borderedProminent)
+            }
+          }
+
+          Spacer()
+        }
+        .padding()
+      }
+      .navigationTitle("Consent Status")
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Close") {
+            dismiss()
+          }
+        }
+      }
+    }
+    .frame(minWidth: 500, minHeight: 400)
   }
 }
 

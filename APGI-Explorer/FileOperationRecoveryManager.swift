@@ -97,8 +97,8 @@ class FileOperationRecoveryManager: ObservableObject {
         actions.append(.chooseDifferentLocation)
 
       case NSFileWriteNoPermissionError:
-        actions.append(.changePermissions)
         actions.append(.chooseDifferentLocation)
+        actions.append(.contactSupport)
 
       case NSFileWriteOutOfSpaceError:
         actions.append(.freeSpace)
@@ -112,8 +112,8 @@ class FileOperationRecoveryManager: ObservableObject {
       switch appError {
       case .exportFailed:
         actions.append(.retry)
-        actions.append(.chooseDifferentFormat)
         actions.append(.freeSpace)
+        actions.append(.contactSupport)
 
       case .storageUnavailable:
         actions.append(.retry)
@@ -152,27 +152,31 @@ class FileOperationRecoveryManager: ObservableObject {
       }
 
     case .chooseDifferentLocation:
-      // This would need to be implemented with a file picker
-      throw FileOperationError.notImplemented
+      // Try to use a fallback location (Documents directory)
+      try await self.retryWithFallbackLocation(operation: operation)
 
     case .changePermissions:
-      // This would need to be implemented with permission handling
-      throw FileOperationError.notImplemented
+      // Permission changes require system-level access
+      // Provide helpful error message directing user to system settings
+      throw FileOperationError.permissionDenied(
+        path: (operation as? FileExportOperation)?.destination.path ?? "unknown"
+      )
 
     case .freeSpace:
       try await self.freeDiskSpace()
       try await operation.execute()
 
     case .chooseDifferentFormat:
-      // This would need to be implemented with format selection
-      throw FileOperationError.notImplemented
+      // Default to JSON format as fallback
+      try await self.retryWithDefaultFormat(operation: operation)
 
     case .useBackup:
       try await self.restoreFromBackup()
 
     case .restartApp:
-      // This would need to be implemented with app restart
-      throw FileOperationError.notImplemented
+      // App restart not implementable in-app
+      // Instead, advise user to manually restart
+      throw FileOperationError.restartRequired
 
     case .contactSupport:
       throw FileOperationError.contactSupport
@@ -185,13 +189,82 @@ class FileOperationRecoveryManager: ObservableObject {
   }
 
   private func freeDiskSpace() async throws {
-    // Implementation would clear cache and temporary files
-    try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+    // Clear temporary files and caches
+    let fileManager = FileManager.default
+    let tempDir = fileManager.temporaryDirectory
+
+    do {
+      let contents = try fileManager.contentsOfDirectory(
+        at: tempDir, includingPropertiesForKeys: nil)
+      for file in contents {
+        try? fileManager.removeItem(at: file)
+      }
+    } catch {
+      throw FileOperationError.cleanupFailed(underlying: error)
+    }
+
+    // Also try to clear NSCachesDirectory
+    if let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first {
+      do {
+        let contents = try fileManager.contentsOfDirectory(
+          at: cacheDir, includingPropertiesForKeys: nil)
+        for file in contents {
+          try? fileManager.removeItem(at: file)
+        }
+      } catch {
+        // Non-fatal - we tried
+      }
+    }
   }
 
   private func restoreFromBackup() async throws {
-    // Implementation would restore from latest backup
-    try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+    do {
+      let backups = try FileStorageManager.shared.listBackups()
+      guard let latestBackup = backups.first else {
+        throw FileOperationError.noBackupAvailable
+      }
+      try await FileStorageManager.shared.restoreBackup(from: latestBackup)
+    } catch {
+      throw FileOperationError.restoreFailed(underlying: error)
+    }
+  }
+
+  private func retryWithFallbackLocation(operation: FileOperation) async throws {
+    // For export operations, try Documents directory as fallback
+    if let exportOp = operation as? FileExportOperation {
+      let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        .first
+      guard let fallbackURL = documentsDir?.appendingPathComponent(exportOp.suggestedName) else {
+        throw FileOperationError.noFallbackLocation
+      }
+
+      var fallbackOp = FileExportOperation(
+        profile: exportOp.profile,
+        destination: fallbackURL,
+        format: exportOp.format,
+        overwrite: exportOp.overwrite,
+        customName: exportOp.customName
+      )
+      try await fallbackOp.execute()
+    } else {
+      throw FileOperationError.notImplemented
+    }
+  }
+
+  private func retryWithDefaultFormat(operation: FileOperation) async throws {
+    // Retry with JSON format as reliable fallback
+    if let exportOp = operation as? FileExportOperation {
+      let fallbackOp = FileExportOperation(
+        profile: exportOp.profile,
+        destination: exportOp.destination.deletingPathExtension().appendingPathExtension("json"),
+        format: .json,
+        overwrite: exportOp.overwrite,
+        customName: exportOp.customName
+      )
+      try await fallbackOp.execute()
+    } else {
+      throw FileOperationError.notImplemented
+    }
   }
 }
 
@@ -331,15 +404,48 @@ enum FileOperationError: LocalizedError {
   case maxRetriesExceeded
   case notImplemented
   case contactSupport
+  case permissionDenied(path: String)
+  case cleanupFailed(underlying: Error)
+  case noBackupAvailable
+  case restoreFailed(underlying: Error)
+  case noFallbackLocation
+  case restartRequired
 
   var errorDescription: String? {
     switch self {
     case .maxRetriesExceeded:
-      "Maximum retry attempts exceeded"
+      return "Maximum retry attempts exceeded"
     case .notImplemented:
-      "This recovery option is not yet available"
+      return "This recovery option is not yet available"
     case .contactSupport:
-      "Please contact support for assistance"
+      return "Please contact support for assistance"
+    case .permissionDenied(let path):
+      return "Permission denied for path: \(path)"
+    case .cleanupFailed:
+      return "Failed to free up disk space"
+    case .noBackupAvailable:
+      return "No backup available to restore from"
+    case .restoreFailed:
+      return "Failed to restore from backup"
+    case .noFallbackLocation:
+      return "Could not find a fallback save location"
+    case .restartRequired:
+      return "Please restart the app to complete recovery"
+    }
+  }
+
+  var recoverySuggestion: String? {
+    switch self {
+    case .permissionDenied:
+      return "Check file permissions in System Settings > Privacy & Security > Files and Folders."
+    case .cleanupFailed:
+      return "Try manually freeing up disk space and try again."
+    case .noBackupAvailable:
+      return "Create a backup first using Settings > Export & Backup."
+    case .restartRequired:
+      return "Quit and reopen the app, then retry the operation."
+    default:
+      return nil
     }
   }
 }

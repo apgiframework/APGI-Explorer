@@ -12,6 +12,13 @@ struct AdvancedSettingsView: View {
   @State private var showingResetAlert = false
   @State private var showingClearDataAlert = false
 
+  // Clear data operation states
+  @State private var showingClearDataResult = false
+  @State private var showingClearDataError = false
+  @State private var isClearingData = false
+  @State private var deletedEntityCounts: [String: Int] = [:]
+  @State private var errorMessage: String = ""
+
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
@@ -83,47 +90,185 @@ struct AdvancedSettingsView: View {
       Text("This will reset all settings to their default values. This action cannot be undone.")
     }
     .alert("Clear All Data", isPresented: self.$showingClearDataAlert) {
-      Button("Cancel", role: .cancel) {
-      }
+      Button("Cancel", role: .cancel) {}
       Button("Clear", role: .destructive) {
-        self.clearAllData()
+        self.clearAllDataWithReporting()
       }
     } message: {
       Text("This will permanently delete all profiles and data. This action cannot be undone.")
     }
+    .alert("Data Cleared", isPresented: $showingClearDataResult) {
+      Button("OK") {}
+    } message: {
+      Text(clearDataResultMessage())
+    }
+    .alert("Clear Data Failed", isPresented: $showingClearDataError) {
+      Button("OK") {}
+    } message: {
+      Text(errorMessage.isEmpty ? "Failed to clear some data. Please try again." : errorMessage)
+    }
+    .overlay {
+      if isClearingData {
+        ProgressView("Clearing data...")
+          .scaleEffect(1.2)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(Color.black.opacity(0.2))
+          .ignoresSafeArea()
+      }
+    }
   }
 
   private func resetAllSettings() {
-    // Reset all UserDefaults to default values
-    if let bundleId = Bundle.main.bundleIdentifier {
-      UserDefaults.standard.removePersistentDomain(forName: bundleId)
-    }
-    UserDefaults.standard.synchronize()
-  }
+    // Reset all UserDefaults to default values (except critical consent keys)
+    let keysToPreserve = [
+      "hasCompletedOnboarding",
+      "crashReportingConsent",
+      "analyticsConsent",
+      "privacyPolicyAccepted",
+    ]
 
-  private func clearAllData() {
-    // Clear all Core Data
-    let persistenceController = PersistenceController.shared
-    let context = persistenceController.container.viewContext
+    let defaults = UserDefaults.standard
+    let allKeys = defaults.dictionaryRepresentation().keys
 
-    let entities = persistenceController.container.managedObjectModel.entities
-    for entity in entities {
-      if let entityName = entity.name {
-        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-
-        do {
-          try context.execute(deleteRequest)
-        } catch {
-          os_log("Error deleting %@: %@", entityName, error.localizedDescription)
-        }
+    for key in allKeys {
+      if !keysToPreserve.contains(key) {
+        defaults.removeObject(forKey: key)
       }
     }
 
+    defaults.synchronize()
+    os_log("Settings reset completed (preserved critical keys)", log: OSLog.default, type: .info)
+  }
+
+  private func clearAllDataWithReporting() {
+    isClearingData = true
+
+    Task {
+      do {
+        let counts = try await performClearAllData()
+        await MainActor.run {
+          deletedEntityCounts = counts
+          isClearingData = false
+          showingClearDataResult = true
+        }
+      } catch {
+        await MainActor.run {
+          errorMessage = error.localizedDescription
+          isClearingData = false
+          showingClearDataError = true
+        }
+      }
+    }
+  }
+
+  private func performClearAllData() async throws -> [String: Int] {
+    let persistenceController = PersistenceController.shared
+    let context = persistenceController.container.viewContext
+
+    var deletedCounts: [String: Int] = [:]
+    var hasErrors = false
+
+    // Get all entities from the managed object model
+    let entities = persistenceController.container.managedObjectModel.entities
+
+    for entity in entities {
+      guard let entityName = entity.name else { continue }
+
+      let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+      let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+      deleteRequest.resultType = .resultTypeCount
+
+      do {
+        let result = try context.execute(deleteRequest) as? NSBatchDeleteResult
+        let count = result?.result as? Int ?? 0
+        deletedCounts[entityName] = count
+        os_log("Deleted %d %@ entities", log: OSLog.default, type: .info, count, entityName)
+      } catch {
+        os_log(
+          "Error deleting %@: %{public}@", log: OSLog.default, type: .error, entityName,
+          error.localizedDescription)
+        deletedCounts[entityName] = -1  // Indicate error
+        hasErrors = true
+      }
+    }
+
+    // Save context
     do {
       try context.save()
     } catch {
-      os_log("Error saving context after clearing data: %@", error.localizedDescription)
+      os_log(
+        "Error saving context after clearing data: %{public}@", log: OSLog.default, type: .error,
+        error.localizedDescription)
+      throw error
+    }
+
+    // Reset UserDefaults (except critical keys)
+    resetUserDefaultsAfterClear()
+
+    if hasErrors {
+      throw AdvancedSettingsError.partialDeletion
+    }
+
+    return deletedCounts
+  }
+
+  private func resetUserDefaultsAfterClear() {
+    let defaults = UserDefaults.standard
+    let keysToPreserve = [
+      "hasCompletedOnboarding",
+      "crashReportingConsent",
+      "analyticsConsent",
+      "privacyPolicyAccepted",
+    ]
+
+    let allKeys = defaults.dictionaryRepresentation().keys
+
+    for key in allKeys {
+      if !keysToPreserve.contains(key) {
+        defaults.removeObject(forKey: key)
+      }
+    }
+
+    defaults.synchronize()
+    os_log("UserDefaults cleared (preserved critical keys)", log: OSLog.default, type: .info)
+  }
+
+  private func clearDataResultMessage() -> String {
+    var components: [String] = []
+    var totalDeleted = 0
+    var errorCount = 0
+
+    for (entity, count) in deletedEntityCounts.sorted(by: { $0.key < $1.key }) {
+      if count > 0 {
+        components.append("• \(entity): \(count) deleted")
+        totalDeleted += count
+      } else if count == -1 {
+        components.append("• \(entity): error")
+        errorCount += 1
+      }
+    }
+
+    if components.isEmpty {
+      return "No data was found to delete."
+    }
+
+    var message = "Deleted \(totalDeleted) total records:\n\n" + components.joined(separator: "\n")
+
+    if errorCount > 0 {
+      message += "\n\nNote: \(errorCount) entity type(s) encountered errors during deletion."
+    }
+
+    return message
+  }
+}
+
+enum AdvancedSettingsError: LocalizedError {
+  case partialDeletion
+
+  var errorDescription: String? {
+    switch self {
+    case .partialDeletion:
+      return "Some data could not be deleted due to errors."
     }
   }
 }

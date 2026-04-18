@@ -12,7 +12,7 @@ A comprehensive psychological assessment application that helps users understand
 - **Bundle Identifier**: `com.lesoto.APGI-Explorer`
 - **Platform**: macOS 12.0+ (with SwiftUI framework)
 - **Architecture**: Universal (arm64 + x86_64)
-- **Version Status**: Production-ready with recent UI/UX improvements
+- **Version Status**: Actively developed with ongoing improvements
 
 ### Core Purpose
 
@@ -226,7 +226,7 @@ The app includes 9 detailed settings categories:
 
 ### Quality Metrics
 
-- **Code Coverage**: 95%+ for critical components
+- **Code Coverage**: Targeting 80%+ for critical components (measured with Xcode Code Coverage)
 - **Performance**: <100ms response time for core operations
 - **Accessibility**: WCAG 2.1 AA compliance
 - **Security**: Zero known vulnerabilities in dependencies
@@ -417,7 +417,7 @@ let data = try exportManager.exportProfile(profile, format: .spss)
 ### Development Guidelines
 
 - **Code Style**: SwiftFormat and SwiftLint enforced
-- **Testing**: 95%+ coverage required for new features
+- **Testing**: Comprehensive test coverage required for new features
 - **Documentation**: All public APIs documented
 - **Accessibility**: WCAG 2.1 AA compliance required
 - **Performance**: <100ms response time for UI operations
