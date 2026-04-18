@@ -60,15 +60,18 @@ venv.bak/
 .kiro/steering/byterover-rules.md
 .qoder/rules/byterover-rules.md
 .augment/rules/byterover-rules.md
-*.xcodeproj/
+# Xcode - Keep project.pbxproj, ignore user data
 *.xcworkspace/
+*.xcuserdata/
 DerivedData/
 build/
 *.xcuserstate
-*.xcuserdatad/
 .Package.resolved
-*.xcodeproj/project.xcworkspace/xcuserdata/
-*.xcodeproj/xcuserdata/
+
+# But track the main project file
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+!*.xcodeproj/project.xcworkspace/xcshareddata/
 Pods/
 Podfile.lock
 Carthage/
