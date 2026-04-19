@@ -4,6 +4,7 @@ import os.log
 
 @MainActor
 class FileStorageManager: ObservableObject {
+<<<<<<< HEAD
   static let shared: FileStorageManager = {
     do {
       return try FileStorageManager()
@@ -17,36 +18,48 @@ class FileStorageManager: ObservableObject {
       return try! FileStorageManager(placeholder: true)
     }
   }()
+=======
+  static let shared = FileStorageManager()
+>>>>>>> 0bbe55ad2364195bb5df5702beb6cebda577af67
 
   private let fileManager = FileManager.default
   private var backupTimer: Timer?
-  private let isPlaceholder: Bool
 
-  private var documentsDirectory: URL {
-    if isPlaceholder {
-      // Return a dummy URL that will fail gracefully
-      return URL(fileURLWithPath: "/dev/null")
+  private lazy var documentsDirectory: URL = {
+    if let url = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+      return url
     }
-    guard let url = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-      // This should not happen in normal circumstances, but handle gracefully
+
+    // Fallback to Application Support instead of crashing.
+    let appSupport =
+      (try? fileManager.url(
+        for: .applicationSupportDirectory,
+        in: .userDomainMask,
+        appropriateFor: nil,
+        create: true
+      ))
+      ?? fileManager.temporaryDirectory
+
+    let fallback = appSupport.appendingPathComponent("APGI-Explorer", isDirectory: true)
+    do {
+      try fileManager.createDirectory(at: fallback, withIntermediateDirectories: true)
       os_log(
-        "Critical: Unable to access Documents directory at runtime",
-        log: OSLog.default, type: .fault)
-      return URL(fileURLWithPath: "/dev/null")
+        "Using fallback storage directory at %{public}@",
+        log: OSLog.default,
+        type: .error,
+        fallback.path
+      )
+      return fallback
+    } catch {
+      os_log(
+        "Failed to create fallback storage directory (%{public}@). Using temporary directory.",
+        log: OSLog.default,
+        type: .fault,
+        error.localizedDescription
+      )
+      return fileManager.temporaryDirectory
     }
-    return url
-  }
-
-  private init(placeholder: Bool = false) throws {
-    self.isPlaceholder = placeholder
-    if placeholder {
-      throw FileStorageError.documentsDirectoryUnavailable
-    }
-    // Verify documents directory is accessible
-    guard fileManager.urls(for: .documentDirectory, in: .userDomainMask).first != nil else {
-      throw FileStorageError.documentsDirectoryUnavailable
-    }
-  }
+  }()
 
   private lazy var profilesDirectory: URL = {
     let url = self.documentsDirectory.appendingPathComponent("Profiles", isDirectory: true)
@@ -79,10 +92,6 @@ class FileStorageManager: ObservableObject {
   // MARK: - Profile Export/Import
 
   func exportProfile(_ profile: QuizProfile, to url: URL? = nil) throws -> URL {
-    // Check if in placeholder mode
-    if isPlaceholder {
-      throw FileStorageError.storageUnavailable
-    }
     // CRIT-003 Fix: Check available disk space before export
     let requiredSpace: UInt64 = 1024 * 1024  // 1MB minimum estimate
     let availableSpace = self.freeDiskSpace
@@ -117,9 +126,6 @@ class FileStorageManager: ObservableObject {
   }
 
   func importProfile(from url: URL) throws -> QuizProfile {
-    if isPlaceholder {
-      throw FileStorageError.storageUnavailable
-    }
     let data = try Data(contentsOf: url)
 
     let decoder = JSONDecoder()
@@ -131,9 +137,6 @@ class FileStorageManager: ObservableObject {
   // MARK: - Backup/Restore
 
   func createBackup() async throws -> URL {
-    if isPlaceholder {
-      throw FileStorageError.storageUnavailable
-    }
     let timestamp = ISO8601DateFormatter().string(from: Date())
     let backupURL = self.backupsDirectory.appendingPathComponent("backup_\(timestamp).json")
 
@@ -157,9 +160,6 @@ class FileStorageManager: ObservableObject {
   }
 
   func restoreBackup(from url: URL) async throws {
-    if isPlaceholder {
-      throw FileStorageError.storageUnavailable
-    }
     let data = try Data(contentsOf: url)
 
     let decoder = JSONDecoder()
@@ -177,9 +177,6 @@ class FileStorageManager: ObservableObject {
   }
 
   func listBackups() throws -> [URL] {
-    if isPlaceholder {
-      throw FileStorageError.storageUnavailable
-    }
     let contents = try fileManager.contentsOfDirectory(
       at: self.backupsDirectory,
       includingPropertiesForKeys: [.creationDateKey],
@@ -199,19 +196,12 @@ class FileStorageManager: ObservableObject {
   }
 
   func deleteBackup(at url: URL) throws {
-    if isPlaceholder {
-      throw FileStorageError.storageUnavailable
-    }
     try self.fileManager.removeItem(at: url)
   }
 
   // MARK: - Automatic Backup Scheduling
 
   func scheduleAutomaticBackups() {
-    if isPlaceholder {
-      os_log("Cannot schedule backups: storage unavailable", log: OSLog.default, type: .error)
-      return
-    }
     // Stop existing timer
     self.backupTimer?.invalidate()
 
@@ -379,31 +369,6 @@ struct AnyCodable: Codable {
       try container.encode(string)
     default:
       try container.encodeNil()
-    }
-  }
-}
-
-// MARK: - File Storage Error
-
-enum FileStorageError: LocalizedError {
-  case documentsDirectoryUnavailable
-  case storageUnavailable
-
-  var errorDescription: String? {
-    switch self {
-    case .documentsDirectoryUnavailable:
-      return "Unable to access the Documents directory. Please check your system permissions."
-    case .storageUnavailable:
-      return "Storage is currently unavailable. Please restart the app and try again."
-    }
-  }
-
-  var recoverySuggestion: String? {
-    switch self {
-    case .documentsDirectoryUnavailable:
-      return "Ensure the app has permission to access your Documents folder in System Settings."
-    case .storageUnavailable:
-      return "If the problem persists, please contact support."
     }
   }
 }

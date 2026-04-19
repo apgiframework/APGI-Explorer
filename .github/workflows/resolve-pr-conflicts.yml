@@ -1,0 +1,40 @@
+name: Resolve PR Conflicts
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: "Base branch to merge from"
+        required: true
+        default: "main"
+      head_branch:
+        description: "Head branch to update"
+        required: true
+        default: "work"
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout head branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.head_branch }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve recurring conflicts
+        run: |
+          chmod +x scripts/resolve_pr_conflicts.sh
+          ./scripts/resolve_pr_conflicts.sh origin/${{ inputs.base_branch }}
+
+      - name: Push branch updates
+        run: |
+          git push origin HEAD:${{ inputs.head_branch }}

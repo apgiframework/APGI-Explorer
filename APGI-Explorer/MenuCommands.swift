@@ -295,7 +295,11 @@ struct MenuCommands: Commands {
       .keyboardShortcut("?", modifiers: .command)
 
       Button("What's New") {
-        // Show what's new
+        #if os(macOS)
+          if let whatsNewURL = URL(string: "https://lesoto.github.io/APGI-Explorer") {
+            NSWorkspace.shared.open(whatsNewURL)
+          }
+        #endif
       }
 
       Divider()

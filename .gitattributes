@@ -1,0 +1,12 @@
+# Prefer this branch's resolved versions for repeatedly conflicting files during merges.
+APGI-Explorer/AppDelegate.swift merge=ours
+APGI-Explorer/CrashReportingManager.swift merge=ours
+APGI-Explorer/FileOperationRecoveryManager.swift merge=ours
+APGI-Explorer/FileStorageManager.swift merge=ours
+APGI-Explorer/MenuBarView.swift merge=ours
+APGI-Explorer/ScreenshotAutomationEngine.swift merge=ours
+APGI-Explorer/SettingsView.swift merge=ours
+APGI-Explorer/SettingsViews/CloudSyncSettingsView.swift merge=ours
+APGI-Explorer/SettingsViews/DataPrivacySettingsView.swift merge=ours
+AUDIT_FINDINGS_2026-04-18.md merge=ours
+README.md merge=ours

@@ -190,15 +190,9 @@ struct ExportBackupSettingsView: View {
   @AppStorage("defaultExportFormat") private var defaultFormat = "json"
   @AppStorage("backupFrequency") private var backupFrequency = "weekly"
   @AppStorage("autoBackupEnabled") private var autoBackup = true
-
-  @State private var showingBackupSuccess = false
-  @State private var showingBackupError = false
-  @State private var showingExportSuccess = false
-  @State private var showingExportError = false
-  @State private var showingImportPanel = false
-  @State private var lastBackupURL: URL?
-  @State private var lastExportURL: URL?
-  @State private var errorMessage: String = ""
+  @State private var operationMessage = ""
+  @State private var showOperationAlert = false
+  @State private var isWorking = false
 
   var body: some View {
     ScrollView {
@@ -234,20 +228,23 @@ struct ExportBackupSettingsView: View {
             }
 
             Button("Backup Now") {
-              performManualBackup()
+              self.createBackupNow()
             }
+            .disabled(self.isWorking)
             .help("Create a backup immediately")
           }
 
           Section(header: Text("Data Management")) {
             Button("Export All Profiles") {
-              performExportAllProfiles()
+              self.exportAllProfiles()
             }
+            .disabled(self.isWorking)
             .help("Export all profile data")
 
             Button("Import Profiles") {
-              showingImportPanel = true
+              self.importProfiles()
             }
+            .disabled(self.isWorking)
             .help("Import profile data from file")
           }
         }
@@ -255,185 +252,76 @@ struct ExportBackupSettingsView: View {
       .padding()
     }
     .navigationTitle("Export & Backup")
-    .alert("Backup Successful", isPresented: $showingBackupSuccess) {
-      Button("OK") {}
-      Button("Show in Finder") {
-        if let url = lastBackupURL {
-          NSWorkspace.shared.activateFileViewerSelecting([url])
-        }
+    .onChange(of: self.backupFrequency) { _, newValue in
+      if let frequency = BackupFrequency(rawValue: newValue) {
+        UserDefaultsManager.shared.backupFrequency = frequency
       }
-    } message: {
-      Text("Your backup has been created successfully.")
     }
-    .alert("Backup Failed", isPresented: $showingBackupError) {
-      Button("OK") {}
+    .alert("Export & Backup", isPresented: self.$showOperationAlert) {
+      Button("OK", role: .cancel) {}
     } message: {
-      Text(errorMessage.isEmpty ? "Failed to create backup. Please try again." : errorMessage)
-    }
-    .alert("Export Successful", isPresented: $showingExportSuccess) {
-      Button("OK") {}
-      Button("Show in Finder") {
-        if let url = lastExportURL {
-          NSWorkspace.shared.activateFileViewerSelecting([url])
-        }
-      }
-    } message: {
-      Text("All profiles have been exported successfully.")
-    }
-    .alert("Export Failed", isPresented: $showingExportError) {
-      Button("OK") {}
-    } message: {
-      Text(errorMessage.isEmpty ? "Failed to export profiles. Please try again." : errorMessage)
-    }
-    .sheet(isPresented: $showingImportPanel) {
-      ImportProfileSheet()
+      Text(self.operationMessage)
     }
   }
 
-  private func performManualBackup() {
+  private func createBackupNow() {
+    self.isWorking = true
     Task {
       do {
-        let backupURL = try await FileStorageManager.shared.createBackup()
+        let url = try await FileStorageManager.shared.createBackup()
         await MainActor.run {
-          lastBackupURL = backupURL
-          showingBackupSuccess = true
+          self.operationMessage = "Backup created successfully at:\n\(url.path)"
+          self.showOperationAlert = true
+          self.isWorking = false
         }
       } catch {
         await MainActor.run {
-          errorMessage = error.localizedDescription
-          showingBackupError = true
+          self.operationMessage = "Failed to create backup: \(error.localizedDescription)"
+          self.showOperationAlert = true
+          self.isWorking = false
         }
       }
     }
   }
 
-  private func performExportAllProfiles() {
-    Task {
-      do {
-        let exportURL = try await FileStorageManager.shared.createBackup()
-        await MainActor.run {
-          lastExportURL = exportURL
-          showingExportSuccess = true
-        }
-      } catch {
-        await MainActor.run {
-          errorMessage = error.localizedDescription
-          showingExportError = true
-        }
-      }
-    }
-  }
-}
-
-// MARK: - Import Profile Sheet
-
-struct ImportProfileSheet: View {
-  @Environment(\.dismiss) private var dismiss
-  @State private var importURL: URL?
-  @State private var showingFilePicker = false
-  @State private var importSuccess = false
-  @State private var importError = false
-  @State private var errorMessage = ""
-
-  var body: some View {
-    NavigationView {
-      VStack(spacing: 20) {
-        Image(systemName: "arrow.down.doc")
-          .font(.system(size: 60))
-          .foregroundColor(.accentColor)
-
-        Text("Import Profile")
-          .font(.title)
-          .fontWeight(.bold)
-
-        Text("Select a JSON backup file to import profiles into APGI Explorer.")
-          .multilineTextAlignment(.center)
-          .foregroundColor(.secondary)
-          .padding(.horizontal)
-
-        if let url = importURL {
-          VStack(alignment: .leading, spacing: 8) {
-            Text("Selected file:")
-              .font(.caption)
-              .foregroundColor(.secondary)
-            Text(url.lastPathComponent)
-              .font(.subheadline)
-              .fontWeight(.medium)
-          }
-          .padding()
-          .background(Color.secondary.opacity(0.1))
-          .cornerRadius(8)
-        }
-
-        Button(importURL == nil ? "Choose File..." : "Import") {
-          if importURL == nil {
-            showingFilePicker = true
-          } else {
-            performImport()
-          }
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(importURL == nil)
-
-        Spacer()
-      }
-      .padding()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-        }
-      }
-    }
-    .frame(minWidth: 400, minHeight: 300)
-    .fileImporter(
-      isPresented: $showingFilePicker,
-      allowedContentTypes: [.json],
-      allowsMultipleSelection: false
-    ) { result in
-      switch result {
-      case .success(let urls):
-        if let url = urls.first {
-          importURL = url
-        }
-      case .failure(let error):
-        errorMessage = error.localizedDescription
-        importError = true
-      }
-    }
-    .alert("Import Successful", isPresented: $importSuccess) {
-      Button("OK") {
-        dismiss()
-      }
-    } message: {
-      Text("Profile(s) imported successfully.")
-    }
-    .alert("Import Failed", isPresented: $importError) {
-      Button("OK") {}
-    } message: {
-      Text(
-        errorMessage.isEmpty
-          ? "Failed to import profile. Please check the file and try again." : errorMessage)
-    }
+  private func exportAllProfiles() {
+    self.createBackupNow()
   }
 
-  private func performImport() {
-    guard let url = importURL else { return }
+  private func importProfiles() {
+    #if os(macOS)
+      let panel = NSOpenPanel()
+      panel.allowedContentTypes = [.json]
+      panel.canChooseFiles = true
+      panel.canChooseDirectories = false
+      panel.allowsMultipleSelection = false
+      panel.title = "Import Backup"
+      panel.message = "Select a backup JSON file to restore."
 
-    Task {
-      do {
-        try await FileStorageManager.shared.restoreBackup(from: url)
-        await MainActor.run {
-          importSuccess = true
-        }
-      } catch {
-        await MainActor.run {
-          errorMessage = error.localizedDescription
-          importError = true
+      panel.begin { response in
+        guard response == .OK, let url = panel.url else { return }
+        self.isWorking = true
+        Task {
+          do {
+            try await FileStorageManager.shared.restoreBackup(from: url)
+            await MainActor.run {
+              self.operationMessage = "Backup restored successfully."
+              self.showOperationAlert = true
+              self.isWorking = false
+            }
+          } catch {
+            await MainActor.run {
+              self.operationMessage = "Failed to import backup: \(error.localizedDescription)"
+              self.showOperationAlert = true
+              self.isWorking = false
+            }
+          }
         }
       }
-    }
+    #else
+      self.operationMessage = "Import is currently available on macOS only."
+      self.showOperationAlert = true
+    #endif
   }
 }
 
