@@ -61,7 +61,11 @@ class CrashReportingManager: ObservableObject {
     ]
 
     for (name, result) in results {
-      if result == SIG_ERR {
+      // Check if signal handler installation failed
+      // SIG_ERR is (void (*)(int))(-1), we compare the raw pointer value
+      let resultPtr = unsafeBitCast(result, to: UnsafeRawPointer.self)
+      let sigErrPtr = unsafeBitCast(SIG_ERR, to: UnsafeRawPointer.self)
+      if resultPtr == sigErrPtr {
         os_log(
           "Failed to install signal handler for %{public}@", log: OSLog.default, type: .error,
           name)

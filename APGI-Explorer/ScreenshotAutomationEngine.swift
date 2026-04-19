@@ -285,34 +285,56 @@ class ScreenshotAutomationEngine {
   }
 
   private func captureScreenImage() -> NSImage? {
-    // Use CoreGraphics to capture the main window content
+    // Capture the main window content using NSWindow's cacheDisplay method
+    // This avoids deprecated CGWindowListCreateImage which is unavailable in macOS 15.0+
     guard
       let mainWindow = NSApplication.shared.windows.first(where: {
         $0.identifier?.rawValue == "main"
-      }),
-      let windowID = mainWindow.windowNumber as? CGWindowID
+      })
     else {
       self.logger.logError("❌ Could not find main window for capture")
       return nil
     }
 
-    // Capture the specific window using CoreGraphics
-    let windowIDCF = CGWindowID(windowID)
-    let imageRef = CGWindowListCreateImage(
-      .null,
-      .optionIncludingWindow,
-      windowIDCF,
-      [.boundsIgnoreFraming, .nominalResolution]
-    )
-
-    guard let cgImage = imageRef else {
-      self.logger.logError("❌ Failed to capture window image")
+    // Get the window's content view for capture
+    guard let contentView = mainWindow.contentView else {
+      self.logger.logError("❌ Could not get window content view")
       return nil
     }
 
-    let image = NSImage(
-      cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-    self.logger.log("✅ Captured window image: \(cgImage.width)x\(cgImage.height)")
+    let windowFrame = contentView.bounds
+    guard windowFrame.width > 0, windowFrame.height > 0 else {
+      self.logger.logError("❌ Invalid window frame for capture")
+      return nil
+    }
+
+    // Create a bitmap representation of the window content
+    let bitmapRep = NSBitmapImageRep(
+      bitmapDataPlanes: nil,
+      pixelsWide: Int(windowFrame.width),
+      pixelsHigh: Int(windowFrame.height),
+      bitsPerSample: 8,
+      samplesPerPixel: 4,
+      hasAlpha: true,
+      isPlanar: false,
+      colorSpaceName: .deviceRGB,
+      bytesPerRow: 0,
+      bitsPerPixel: 0
+    )
+
+    guard let bitmap = bitmapRep else {
+      self.logger.logError("❌ Failed to create bitmap representation")
+      return nil
+    }
+
+    // Draw the window content into the bitmap
+    contentView.cacheDisplay(in: windowFrame, to: bitmap)
+
+    // Convert to NSImage
+    let image = NSImage(size: windowFrame.size)
+    image.addRepresentation(bitmap)
+
+    self.logger.log("✅ Captured window image: \(Int(windowFrame.width))x\(Int(windowFrame.height))")
     return image
   }
 

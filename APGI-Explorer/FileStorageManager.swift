@@ -13,7 +13,8 @@ class FileStorageManager: ObservableObject {
         "Critical: Unable to initialize FileStorageManager: %{public}@",
         log: OSLog.default, type: .fault, error.localizedDescription)
       // Return a placeholder instance that will fail gracefully on operations
-      return FileStorageManager(placeholder: true)
+      // Using try! because placeholder mode is designed to never throw
+      return try! FileStorageManager(placeholder: true)
     }
   }()
 

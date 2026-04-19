@@ -238,7 +238,7 @@ class FileOperationRecoveryManager: ObservableObject {
         throw FileOperationError.noFallbackLocation
       }
 
-      var fallbackOp = FileExportOperation(
+      let fallbackOp = FileExportOperation(
         profile: exportOp.profile,
         destination: fallbackURL,
         format: exportOp.format,

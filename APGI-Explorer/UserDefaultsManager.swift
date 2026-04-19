@@ -246,4 +246,15 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
     case .line: "chart.line.uptrend.xyaxis"
     }
   }
+
+  // Custom init to handle invalid/empty raw values from UserDefaults
+  init?(rawValue: String) {
+    switch rawValue {
+    case "Radar": self = .radar
+    case "Bar": self = .bar
+    case "Table": self = .table
+    case "Line": self = .line
+    default: return nil
+    }
+  }
 }

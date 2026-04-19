@@ -27,8 +27,14 @@ struct ProfileComparisonView: View {
 
   @State private var selectedProfile1: QuizProfile?
   @State private var selectedProfile2: QuizProfile?
-  @AppStorage("defaultComparisonMode") private var comparisonMode: ComparisonMode = .radar
+  @AppStorage("defaultComparisonMode") private var comparisonModeRaw: String = ComparisonMode.radar
+    .rawValue
   @State private var isLoading = false
+
+  private var comparisonMode: ComparisonMode {
+    get { ComparisonMode(rawValue: comparisonModeRaw) ?? .radar }
+    nonmutating set { comparisonModeRaw = newValue.rawValue }
+  }
   @State private var error: Error?
   @State private var showExportSheet = false
   @State private var exportData: Data?
@@ -78,7 +84,18 @@ struct ProfileComparisonView: View {
             .font(.headline)
             .padding(.horizontal)
 
-          Picker("Comparison Mode", selection: self.$comparisonMode) {
+          Picker(
+            "Comparison Mode",
+            selection: Binding(
+              get: {
+                // Defensive: ensure we never return an invalid mode
+                let validValue =
+                  comparisonModeRaw.isEmpty ? ComparisonMode.radar.rawValue : comparisonModeRaw
+                return ComparisonMode(rawValue: validValue) ?? .radar
+              },
+              set: { comparisonModeRaw = $0.rawValue }
+            )
+          ) {
             ForEach(ComparisonMode.allCases) { mode in
               Label {
                 Text(mode.rawValue)
@@ -114,6 +131,10 @@ struct ProfileComparisonView: View {
     }
     .background(Color.gray.opacity(0.1).edgesIgnoringSafeArea(.all))
     .onAppear {
+      // Fix invalid UserDefaults values that cause Picker crashes
+      if comparisonModeRaw.isEmpty || ComparisonMode(rawValue: comparisonModeRaw) == nil {
+        comparisonModeRaw = ComparisonMode.radar.rawValue
+      }
       // Trigger comparison if both profiles are already selected
       if self.selectedProfile1 != nil, self.selectedProfile2 != nil {
         self.performComparison()

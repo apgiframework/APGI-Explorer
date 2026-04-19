@@ -26,7 +26,7 @@ struct MainTabView: View {
         PsychologicalStatesVisualizationView()
       }
       .tabItem {
-        Label("Visualization", systemImage: "chart.scatter")
+        Label("Visualization", systemImage: "chart.dots.scatter")
       }
 
       NavigationStack {
