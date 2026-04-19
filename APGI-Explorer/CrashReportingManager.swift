@@ -23,7 +23,6 @@ class CrashReportingManager: ObservableObject {
     // Set up crash reporting
     NSSetUncaughtExceptionHandler(handleUncaughtException)
 
-<<<<<<< HEAD
     // Set up BSD signal handlers for common crash signals using proper C library signal()
     // These are C-level signal handlers that will catch hard crashes (segfaults, illegal instructions, etc.)
     // Note: signal() is from Darwin/Glibc C library, not our local stub
@@ -55,15 +54,6 @@ class CrashReportingManager: ObservableObject {
           name)
       }
     }
-=======
-    // Set up signal handlers for common crash signals
-    Darwin.signal(SIGABRT, handleSignal)
-    Darwin.signal(SIGILL, handleSignal)
-    Darwin.signal(SIGSEGV, handleSignal)
-    Darwin.signal(SIGFPE, handleSignal)
-    Darwin.signal(SIGBUS, handleSignal)
-    Darwin.signal(SIGPIPE, handleSignal)
->>>>>>> 0bbe55ad2364195bb5df5702beb6cebda577af67
   }
 
   private func loadSettings() {

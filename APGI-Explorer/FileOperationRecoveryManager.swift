@@ -174,7 +174,6 @@ class FileOperationRecoveryManager: ObservableObject {
   }
 
   private func restoreFromBackup() async throws {
-<<<<<<< HEAD
     do {
       let backups = try FileStorageManager.shared.listBackups()
       guard let latestBackup = backups.first else {
@@ -222,10 +221,6 @@ class FileOperationRecoveryManager: ObservableObject {
     } else {
       throw FileOperationError.notImplemented
     }
-=======
-    // Implementation would restore from latest backup
-    try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
->>>>>>> 0bbe55ad2364195bb5df5702beb6cebda577af67
   }
 }
 
@@ -348,6 +343,10 @@ enum RecoverySeverity {
 enum FileOperationError: LocalizedError {
   case maxRetriesExceeded
   case contactSupport
+  case notImplemented
+  case noBackupAvailable
+  case restoreFailed(underlying: Error)
+  case noFallbackLocation
 
   var errorDescription: String? {
     switch self {
@@ -355,6 +354,14 @@ enum FileOperationError: LocalizedError {
       "Maximum retry attempts exceeded"
     case .contactSupport:
       "Please contact support for assistance"
+    case .notImplemented:
+      "This recovery action is not yet implemented"
+    case .noBackupAvailable:
+      "No backup available for restoration"
+    case .restoreFailed(let error):
+      "Failed to restore from backup: \(error.localizedDescription)"
+    case .noFallbackLocation:
+      "No fallback location available"
     }
   }
 }

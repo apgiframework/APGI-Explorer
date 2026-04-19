@@ -3,7 +3,6 @@ import SwiftUI
 struct ContentView: View {
   var body: some View {
     ZStack {
-      // Background gradient
       LinearGradient(
         gradient: Gradient(colors: [
           Color.accentColor.opacity(ColorConstants.backgroundOpacity),

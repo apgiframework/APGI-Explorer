@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 #if os(macOS)
   import AppKit
 #endif
@@ -187,7 +188,7 @@ struct DataPrivacySettingsView: View {
           try await PersistenceController.shared.deleteProfile(profile)
         }
 
-        await SecurityManager.shared.clearAllSecureData()
+        try await SecurityManager.shared.clearAllSecureData()
         CrashReportingManager.shared.clearCrashReports()
 
         await MainActor.run {

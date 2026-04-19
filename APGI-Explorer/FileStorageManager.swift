@@ -4,23 +4,7 @@ import os.log
 
 @MainActor
 class FileStorageManager: ObservableObject {
-<<<<<<< HEAD
-  static let shared: FileStorageManager = {
-    do {
-      return try FileStorageManager()
-    } catch {
-      // Log the critical error and return a fallback that will show error UI
-      os_log(
-        "Critical: Unable to initialize FileStorageManager: %{public}@",
-        log: OSLog.default, type: .fault, error.localizedDescription)
-      // Return a placeholder instance that will fail gracefully on operations
-      // Using try! because placeholder mode is designed to never throw
-      return try! FileStorageManager(placeholder: true)
-    }
-  }()
-=======
   static let shared = FileStorageManager()
->>>>>>> 0bbe55ad2364195bb5df5702beb6cebda577af67
 
   private let fileManager = FileManager.default
   private var backupTimer: Timer?

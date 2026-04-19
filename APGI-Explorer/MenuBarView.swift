@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import os.log
 
 struct MenuBarView: View {
   @Environment(\.openWindow) var openWindow
@@ -33,10 +34,11 @@ struct MenuBarView: View {
       }
     }
     Divider()
-    Button("Take Screenshots") {
-      runScreenshotAutomation()
-    }
-    Divider()
+    // TODO: Screenshot automation temporarily disabled - needs runScreenshotAutomation implementation
+    // Button("Take Screenshots") {
+    //   runScreenshotAutomation()
+    // }
+    // Divider()
     Button("Quit") {
       NSApplication.shared.terminate(nil)
     }
