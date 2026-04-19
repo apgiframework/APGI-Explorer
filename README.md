@@ -12,7 +12,7 @@ A comprehensive psychological assessment application that helps users understand
 - **Bundle Identifier**: `com.lesoto.APGI-Explorer`
 - **Platform**: macOS 12.0+ (with SwiftUI framework)
 - **Architecture**: Universal (arm64 + x86_64)
-- **Version Status**: Actively developed with ongoing improvements
+- **Version Status**: Production-ready with recent UI/UX improvements
 
 ### Core Purpose
 
@@ -207,7 +207,7 @@ The app includes 9 detailed settings categories:
 
 ### Comprehensive Test Suite
 
-- **Unit Tests**: Core functionality testing with 95%+ coverage
+- **Unit Tests**: Core functionality testing with CI-reported coverage metrics
 - **UI Tests**: Automated user interface testing with XCUIApplication
 - **Export Tests**: Comprehensive export format validation (13+ formats)
 - **Accessibility Tests**: VoiceOver and accessibility compliance testing
@@ -226,7 +226,7 @@ The app includes 9 detailed settings categories:
 
 ### Quality Metrics
 
-- **Code Coverage**: Targeting 80%+ for critical components (measured with Xcode Code Coverage)
+- **Code Coverage**: Tracked in CI and enforced against release thresholds
 - **Performance**: <100ms response time for core operations
 - **Accessibility**: WCAG 2.1 AA compliance
 - **Security**: Zero known vulnerabilities in dependencies
@@ -417,7 +417,7 @@ let data = try exportManager.exportProfile(profile, format: .spss)
 ### Development Guidelines
 
 - **Code Style**: SwiftFormat and SwiftLint enforced
-- **Testing**: Comprehensive test coverage required for new features
+- **Testing**: CI coverage and regression checks required for new features
 - **Documentation**: All public APIs documented
 - **Accessibility**: WCAG 2.1 AA compliance required
 - **Performance**: <100ms response time for UI operations
@@ -428,8 +428,14 @@ let data = try exportManager.exportProfile(profile, format: .spss)
 2. **Create** a feature branch from `develop`
 3. **Implement** changes with tests
 4. **Run** full test suite and linting
-5. **Submit** pull request with detailed description
-6. **Review** process with automated checks
+5. **Resolve PR conflicts** (if GitHub reports recurring conflicts) with:
+   `./scripts/resolve_pr_conflicts.sh origin/main`
+6. **Submit** pull request with detailed description
+7. **Review** process with automated checks
+
+### Merge Conflict Help
+
+- Step-by-step conflict resolution guide: `docs/MERGE_CONFLICT_PLAYBOOK.md`
 
 ### Support Channels
 

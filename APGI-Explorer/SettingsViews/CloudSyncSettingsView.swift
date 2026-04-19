@@ -3,23 +3,10 @@ import SwiftUI
 
 struct CloudSyncSettingsView: View {
   @StateObject private var cloudSyncManager = CloudSyncManager.shared
-  @AppStorage("cloudSyncAutoEnabled") private var autoSyncEnabled = true
-  @AppStorage("cloudSyncOverCellular") private var syncOverCellular = false
   @State private var showingErrorAlert = false
   @State private var showingResetConfirmation = false
-
-  /// Detects the current build environment
-  private var currentEnvironment: String {
-    #if DEBUG
-      return "Debug"
-    #elseif STAGING
-      return "Staging"
-    #elseif RELEASE
-      return "Production"
-    #else
-      return "Release"
-    #endif
-  }
+  @AppStorage("cloudAutoSyncEnabled") private var cloudAutoSyncEnabled = true
+  @AppStorage("cloudSyncOverCellular") private var cloudSyncOverCellular = false
 
   var body: some View {
     Form {
@@ -67,11 +54,9 @@ struct CloudSyncSettingsView: View {
 
       if self.cloudSyncManager.accountStatus == .available {
         Section("Sync Options") {
-          Toggle("Auto-sync", isOn: $autoSyncEnabled)
-            .help("Automatically sync data when changes occur")
+          Toggle("Auto-sync", isOn: self.$cloudAutoSyncEnabled)
 
-          Toggle("Sync over cellular data", isOn: $syncOverCellular)
-            .help("Allow syncing when connected to cellular networks (may incur data charges)")
+          Toggle("Sync over cellular data", isOn: self.$cloudSyncOverCellular)
         }
       }
 
@@ -92,9 +77,11 @@ struct CloudSyncSettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
           CloudSyncInfoRow(title: "Status", value: self.accountStatusText)
           CloudSyncInfoRow(title: "Container", value: "iCloud.com.lesoto.APGI-Explorer")
-          CloudSyncInfoRow(title: "Environment", value: currentEnvironment)
-          CloudSyncInfoRow(title: "Auto-sync", value: autoSyncEnabled ? "Enabled" : "Disabled")
-          CloudSyncInfoRow(title: "Cellular Sync", value: syncOverCellular ? "Enabled" : "Disabled")
+          CloudSyncInfoRow(
+            title: "Environment",
+            value: (Bundle.main.object(forInfoDictionaryKey: "APS-Environment") as? String)?
+              .capitalized ?? "Unknown"
+          )
         }
       }
     }

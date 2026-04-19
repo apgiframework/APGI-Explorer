@@ -14,6 +14,7 @@ class ScreenshotAutomationEngine {
   private let logger: Logger
   private let navigator: ScreenNavigator
   private var screenshotCaptureOverride: ((String) -> Bool)?
+  private var activeResolutionScale: CGFloat = 1.0
 
   init(config: ScreenshotConfig, logger: Logger, navigator: ScreenNavigator) {
     self.config = config
@@ -199,26 +200,7 @@ class ScreenshotAutomationEngine {
 
   private func setResolution(_ resolution: Resolution) {
     self.logger.log("📱 Setting resolution: \(resolution.displayName)")
-
-    // For macOS, we set the main window size to simulate device resolution
-    DispatchQueue.main.async {
-      if let mainWindow = NSApplication.shared.windows.first(where: {
-        $0.identifier?.rawValue == "main"
-      }) {
-        let size = resolution.cgSize
-        let currentFrame = mainWindow.frame
-        let newFrame = NSRect(
-          x: currentFrame.origin.x,
-          y: currentFrame.origin.y + (currentFrame.height - size.height),
-          width: size.width,
-          height: size.height
-        )
-        mainWindow.setFrame(newFrame, display: true, animate: false)
-        self.logger.log("✅ Window resized to \(Int(size.width))x\(Int(size.height))")
-      } else {
-        self.logger.log("⚠️ Could not find main window to resize")
-      }
-    }
+    self.activeResolutionScale = max(0.25, min(3.0, resolution.scaleFactor))
   }
 
   private func generateScreenshotName(
@@ -285,35 +267,36 @@ class ScreenshotAutomationEngine {
   }
 
   private func captureScreenImage() -> NSImage? {
-    // Use CoreGraphics to capture the main window content
+    let displayID = CGMainDisplayID()
+    let displayBounds = CGDisplayBounds(displayID)
+
     guard
-      let mainWindow = NSApplication.shared.windows.first(where: {
-        $0.identifier?.rawValue == "main"
-      }),
-      let windowID = mainWindow.windowNumber as? CGWindowID
+      let cgImage = CGWindowListCreateImage(
+        displayBounds,
+        .optionOnScreenOnly,
+        kCGNullWindowID,
+        [.bestResolution, .boundsIgnoreFraming]
+      )
     else {
-      self.logger.logError("❌ Could not find main window for capture")
       return nil
     }
 
-    // Capture the specific window using CoreGraphics
-    let windowIDCF = CGWindowID(windowID)
-    let imageRef = CGWindowListCreateImage(
-      .null,
-      .optionIncludingWindow,
-      windowIDCF,
-      [.boundsIgnoreFraming, .nominalResolution]
+    let baseImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+
+    guard self.activeResolutionScale != 1.0 else {
+      return baseImage
+    }
+
+    let targetSize = NSSize(
+      width: max(1, floor(baseImage.size.width * self.activeResolutionScale)),
+      height: max(1, floor(baseImage.size.height * self.activeResolutionScale))
     )
 
-    guard let cgImage = imageRef else {
-      self.logger.logError("❌ Failed to capture window image")
-      return nil
-    }
-
-    let image = NSImage(
-      cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-    self.logger.log("✅ Captured window image: \(cgImage.width)x\(cgImage.height)")
-    return image
+    let resized = NSImage(size: targetSize)
+    resized.lockFocus()
+    baseImage.draw(in: NSRect(origin: .zero, size: targetSize))
+    resized.unlockFocus()
+    return resized
   }
 
   private func saveScreenshot(_ image: NSImage, to url: URL) -> Bool {
