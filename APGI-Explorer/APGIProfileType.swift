@@ -37,49 +37,49 @@ enum APGIProfileType: String, CaseIterable {
       [
         "Detects subtle patterns earlier than most",
         "Embodied emotional richness that fuels empathy",
-        "Learns quickly from embodied feedback",
+        "Learns quickly from embodied feedback"
       ]
     case .analyticalGuard:
       [
         "Creates airtight mental models",
         "Anticipates risks with precise vigilance",
-        "Keeps others grounded through structure",
+        "Keeps others grounded through structure"
       ]
     case .adaptiveBalancer:
       [
         "Pivot between data and feeling with ease",
         "Recovers quickly when expectations shift",
-        "Acts as a translator between extremes",
+        "Acts as a translator between extremes"
       ]
     case .openExplorer:
       [
         "Scans vast possibility space without fear",
         "Generates novel hypotheses on a whim",
-        "Perceives the unknown as invitation",
+        "Perceives the unknown as invitation"
       ]
     case .contemplativeAnchor:
       [
         "Carries steadiness into chaos",
         "Models futures patiently and deeply",
-        "Keeps emotional rhythms slow and intentional",
+        "Keeps emotional rhythms slow and intentional"
       ]
     case .somaticNavigator:
       [
         "Knows what the body is trying to tell the mind",
         "Embodies safety even when predictions waver",
-        "Calms others through resonant presence",
+        "Calms others through resonant presence"
       ]
     case .cognitiveArchitect:
       [
         "Designs intricate systems and plans",
         "Maintains razor-sharp focus, even under pressure",
-        "Triangulates information across domains",
+        "Triangulates information across domains"
       ]
     case .dynamicResponder:
       [
         "Responds to social-emotional cues in real time",
         "Rebalances quickly after surprises",
-        "Infuses transition moments with energy",
+        "Infuses transition moments with energy"
       ]
     }
   }
@@ -90,49 +90,49 @@ enum APGIProfileType: String, CaseIterable {
       [
         "Easily overwhelmed in high-stimulation situations",
         "Anxiety flares when predictions pile up",
-        "Needs frequent recovery space to avoid emotional flooding",
+        "Needs frequent recovery space to avoid emotional flooding"
       ]
     case .analyticalGuard:
       [
         "Rigidity when models encounter ambiguity",
         "Disconnect from the body's wisdom",
-        "Difficulty letting others in emotionally",
+        "Difficulty letting others in emotionally"
       ]
     case .adaptiveBalancer:
       [
         "Can drift into indecision when extremes collide",
         "Tends to self-critique instead of trusting adaptability",
-        "Requires more energy to champion a single path",
+        "Requires more energy to champion a single path"
       ]
     case .openExplorer:
       [
         "Scattered focus and unfinished experiments",
         "Burnout from too many surprises at once",
-        "Struggle to honor structure or routine",
+        "Struggle to honor structure or routine"
       ]
     case .contemplativeAnchor:
       [
         "Might stagnate when novelty is missing",
         "Resists change even when it is needed",
-        "Suppresses drive in favor of calm",
+        "Suppresses drive in favor of calm"
       ]
     case .somaticNavigator:
       [
         "Somatic alarms can feel overwhelming",
         "May cling to physical intuition even when data shifts",
-        "Struggles when forced to ignore bodily cues",
+        "Struggles when forced to ignore bodily cues"
       ]
     case .cognitiveArchitect:
       [
         "Feels detached from body/feeling",
         "Analysis paralysis when data is messy",
-        "Holds tight control and can feel inflexible",
+        "Holds tight control and can feel inflexible"
       ]
     case .dynamicResponder:
       [
         "Impulsivity when surprise hits",
         "Overstimulated by sustained high-intensity input",
-        "May skip detail in favor of the emotional arc",
+        "May skip detail in favor of the emotional arc"
       ]
     }
   }
@@ -143,49 +143,49 @@ enum APGIProfileType: String, CaseIterable {
       [
         "Practice grounding techniques during overloads",
         "Build predictable routines to reduce surprise load",
-        "Use interoceptive meditation to regulate β",
+        "Use interoceptive meditation to regulate β"
       ]
     case .analyticalGuard:
       [
         "Schedule deliberate curiosity breaks",
         "Check in with bodily cues before decisions",
-        "Narrate emotions aloud to invite connection",
+        "Narrate emotions aloud to invite connection"
       ]
     case .adaptiveBalancer:
       [
         "Define a few guiding values to choose between paths",
         "Alternate focused work with playful rest",
-        "Journal shifts to make them tangible",
+        "Journal shifts to make them tangible"
       ]
     case .openExplorer:
       [
         "Batch experiments into time-limited sprints",
         "Lean on accountability partners to finish",
-        "Capture insights before moving to the next novelty",
+        "Capture insights before moving to the next novelty"
       ]
     case .contemplativeAnchor:
       [
         "Introduce gentle novelty—small rituals that shift the frame",
         "Pair reflective work with light movement",
-        "Set playful deadlines to inject momentum",
+        "Set playful deadlines to inject momentum"
       ]
     case .somaticNavigator:
       [
         "Honor somatic hygiene between big moments",
         "Ground through breath and posture before deciding",
-        "Lean into rest when β spikes high",
+        "Lean into rest when β spikes high"
       ]
     case .cognitiveArchitect:
       [
         "Check in with the body before signing off",
         "Design micro-experiments instead of debating endlessly",
-        "Delegate perception-heavy tasks to trusting collaborators",
+        "Delegate perception-heavy tasks to trusting collaborators"
       ]
     case .dynamicResponder:
       [
         "Anchor with brief rituals before reacting",
         "Pause to record observations before jumping in",
-        "Schedule reflective check-ins after high-energy efforts",
+        "Schedule reflective check-ins after high-energy efforts"
       ]
     }
   }
@@ -202,7 +202,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Low θₜ and rich signals crowd the reservoir, inviting overwhelm."),
         PsychologicalStateMatch(
           stateId: 41, likelihood: .veryHigh,
-          reason: "Embodied attunement primes shared-empathy states."),
+          reason: "Embodied attunement primes shared-empathy states.")
       ]
     case .analyticalGuard:
       [
@@ -214,7 +214,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Stress surfaces when low ε surprises breach high π defenses."),
         PsychologicalStateMatch(
           stateId: 29, likelihood: .moderate,
-          reason: "Confusion arrives when rigid models meet ambiguous feedback."),
+          reason: "Confusion arrives when rigid models meet ambiguous feedback.")
       ]
     case .adaptiveBalancer:
       [
@@ -226,7 +226,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Engagement follows from steady attention and gentle surprise handling."),
         PsychologicalStateMatch(
           stateId: 28, likelihood: .moderate,
-          reason: "Frustration flares when balanced cues still pull in competing directions."),
+          reason: "Frustration flares when balanced cues still pull in competing directions.")
       ]
     case .openExplorer:
       [
@@ -238,7 +238,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Awe ignites when novelty overwhelms previously tight models."),
         PsychologicalStateMatch(
           stateId: 7, likelihood: .high,
-          reason: "Inspiration rides the rapid recombination of fresh predictions."),
+          reason: "Inspiration rides the rapid recombination of fresh predictions.")
       ]
     case .contemplativeAnchor:
       [
@@ -249,7 +249,7 @@ enum APGIProfileType: String, CaseIterable {
           stateId: 8, likelihood: .high, reason: "Steady precision nurtures calm serenity."),
         PsychologicalStateMatch(
           stateId: 5, likelihood: .moderate,
-          reason: "Optimism sustains when cautious models consistently succeed."),
+          reason: "Optimism sustains when cautious models consistently succeed.")
       ]
     case .somaticNavigator:
       [
@@ -261,7 +261,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Heightened somatic precision keeps anxiety accessible near the surface."),
         PsychologicalStateMatch(
           stateId: 35, likelihood: .high,
-          reason: "When the body floods, overwhelm can cascade quickly."),
+          reason: "When the body floods, overwhelm can cascade quickly.")
       ]
     case .cognitiveArchitect:
       [
@@ -273,7 +273,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Confusion appears when even elegant plans cannot resolve surprise."),
         PsychologicalStateMatch(
           stateId: 34, likelihood: .moderate,
-          reason: "Pessimism settles after repeated model failures."),
+          reason: "Pessimism settles after repeated model failures.")
       ]
     case .dynamicResponder:
       [
@@ -285,7 +285,7 @@ enum APGIProfileType: String, CaseIterable {
           reason: "Awe follows from large, sudden prediction errors in positive contexts."),
         PsychologicalStateMatch(
           stateId: 35, likelihood: .moderate,
-          reason: "Sustained high arousal can tip into overwhelm without rest."),
+          reason: "Sustained high arousal can tip into overwhelm without rest.")
       ]
     }
   }

@@ -72,5 +72,5 @@ let tourSteps: [TourStep] = [
       "Compare multiple profiles side-by-side to track changes in your cognitive patterns over time or understand differences between states.",
     position: .left,
     highlightColor: .orange
-  ),
+  )
 ]

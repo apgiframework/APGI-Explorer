@@ -12,8 +12,7 @@ class SpotlightManager {
   }
 
   func indexProfile(_ profile: QuizProfile, apgiProfile: APGIProfile, profileType: APGIProfileType)
-    async
-  {
+    async {
     let searchableItem = CSSearchableItem(
       uniqueIdentifier: profile.id.uuidString,
       domainIdentifier: "com.lesoto.APGE-Explorer.profiles",
@@ -77,7 +76,7 @@ class SpotlightManager {
     attributeSet.contentDescription =
       "APGI Profile: \(profileType.rawValue)\nEpsilon: \(Int(apgiProfile.epsilon)), Precision: \(Int(apgiProfile.precision)), Threshold: \(Int(apgiProfile.threshold)), Somatic Bias: \(Int(apgiProfile.somaticBias))"
     attributeSet.keywords = [
-      "APGI", "profile", profileType.rawValue, "psychological", "assessment",
+      "APGI", "profile", profileType.rawValue, "psychological", "assessment"
     ]
     attributeSet.displayName = profile.name
     attributeSet.creator = "APGI Explorer"
@@ -92,8 +91,7 @@ class SpotlightManager {
   }
 
   func handleSpotlightSearchResult(_ identifier: String, profileManager: ProfileManager) async
-    -> QuizProfile?
-  {
+    -> QuizProfile? {
     guard let profileId = UUID(uuidString: identifier),
       let profile = try? await profileManager.persistence.fetchProfile(id: profileId)
     else {

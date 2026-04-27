@@ -187,8 +187,7 @@ extension ScreenshotAutomationRunner {
   }
 
   private static func handleFormat(_ config: ScreenshotConfig, arguments: [String], index: Int)
-    -> ScreenshotConfig
-  {
+    -> ScreenshotConfig {
     var newConfig = config
     if index + 1 < arguments.count {
       let formatString = arguments[index + 1]
@@ -201,8 +200,7 @@ extension ScreenshotAutomationRunner {
   }
 
   private static func handleQuality(_ config: ScreenshotConfig, arguments: [String], index: Int)
-    -> ScreenshotConfig
-  {
+    -> ScreenshotConfig {
     var newConfig = config
     if index + 1 < arguments.count {
       let qualityString = arguments[index + 1]

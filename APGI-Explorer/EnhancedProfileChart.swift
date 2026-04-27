@@ -56,7 +56,7 @@ struct EnhancedProfileChart: View {
   let profile: APGIProfile
   let comparisonProfiles: [APGIProfile]
 
-  @StateObject private var performanceManager = PerformanceManager.shared
+  @ObservedObject private var performanceManager = PerformanceManager.shared
   @StateObject private var performanceTracker = PerformanceTracker()
 
   @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
@@ -123,7 +123,7 @@ struct EnhancedProfileChart: View {
         profileName: String(describing: self.profile.thresholdCategory).capitalized),
       ChartDataPoint(
         parameter: "β (Somatic Bias)", value: self.profile.somaticBias,
-        profileName: String(describing: self.profile.somaticCategory).capitalized),
+        profileName: String(describing: self.profile.somaticCategory).capitalized)
     ]
 
     self.cachedProfileDataPoints = data
@@ -148,7 +148,7 @@ struct EnhancedProfileChart: View {
         ChartDataPoint(
           parameter: "θₜ (Threshold)", value: self.profile.threshold, profileName: "Current"),
         ChartDataPoint(
-          parameter: "β (Somatic Bias)", value: self.profile.somaticBias, profileName: "Current"),
+          parameter: "β (Somatic Bias)", value: self.profile.somaticBias, profileName: "Current")
       ])
 
       // Limit comparisons based on performance mode
@@ -165,7 +165,7 @@ struct EnhancedProfileChart: View {
           ChartDataPoint(
             parameter: "θₜ (Threshold)", value: compProfile.threshold, profileName: profileName),
           ChartDataPoint(
-            parameter: "β (Somatic Bias)", value: compProfile.somaticBias, profileName: profileName),
+            parameter: "β (Somatic Bias)", value: compProfile.somaticBias, profileName: profileName)
         ])
       }
 
@@ -384,7 +384,8 @@ struct EnhancedProfileChart: View {
           .padding(.bottom, 4)
 
         Text(
-          "This visualization shows the relative strengths of each cognitive parameter. The higher the point, the stronger that parameter is in your profile."
+          "This visualization shows the relative strengths of each cognitive parameter. " +
+          "The higher the point, the stronger that parameter is in your profile."
         )
         .font(.caption)
         .foregroundColor(.secondary)
@@ -756,8 +757,8 @@ struct EnhancedProfileChart: View {
       id: Int(abs(profile.epsilon.hashValue)),  // Convert to positive Int
       name: "APGI Profile",
       description: "Profile created from APGI parameters",
-      parameters: PsychologicalState.APGIParameters(
-        predictionError: PsychologicalState.PredictionErrorSpec(
+      parameters: APGIParameters(
+        predictionError: PredictionErrorSpec(
           accuracy: ParameterRange(
             min: Double(100 - profile.epsilon),
             max: Double(100 - profile.epsilon + 10),
@@ -786,7 +787,7 @@ struct EnhancedProfileChart: View {
           dominance: .balanced
         )
       ),
-      metadata: PsychologicalState.StateMetadata(
+      metadata: StateMetadata(
         duration: .medium,
         metabolicCost: .moderate,
         neurologicalBasis: ["cortical", "subcortical"],

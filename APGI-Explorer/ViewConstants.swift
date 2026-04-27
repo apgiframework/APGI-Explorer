@@ -4,10 +4,12 @@ import SwiftUI
 
 enum LayoutConstants {
   // Spacing
-  static let largeSpacing: CGFloat = 30
-  static let mediumSpacing: CGFloat = 20
-  static let smallSpacing: CGFloat = 10
-  static let tinySpacing: CGFloat = 4
+  static let giantSpacing: CGFloat = APGISpacing.giant
+  static let extraLargeSpacing: CGFloat = APGISpacing.xl
+  static let largeSpacing: CGFloat = APGISpacing.lg
+  static let mediumSpacing: CGFloat = APGISpacing.md
+  static let smallSpacing: CGFloat = APGISpacing.sm
+  static let tinySpacing: CGFloat = APGISpacing.xs
 
   /// Padding
   static var topPadding: CGFloat {
@@ -26,11 +28,11 @@ enum LayoutConstants {
     AccessibilityManager.shared.shouldUseLargeText ? 45 : 30
   }
 
-  static let buttonPadding: CGFloat = 16
+  static let buttonPadding: CGFloat = APGISpacing.md
 
   // Corner Radius
-  static let buttonCornerRadius: CGFloat = 15
-  static let cardCornerRadius: CGFloat = 8
+  static let buttonCornerRadius: CGFloat = APGIRadius.standard
+  static let cardCornerRadius: CGFloat = APGIRadius.standard
 
   /// Shadow
   static let buttonShadowRadius: CGFloat = 3

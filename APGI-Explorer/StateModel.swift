@@ -58,8 +58,7 @@ class StateModel: ObservableObject {
 
   // MARK: - Async Operations
 
-  func findSimilarStates(to state: PsychologicalState, limit: Int = 5) async -> [PsychologicalState]
-  {
+  func findSimilarStates(to state: PsychologicalState, limit: Int = 5) async -> [PsychologicalState] {
     self.isLoadingSimilarStates = true
     defer { isLoadingSimilarStates = false }
 
@@ -85,8 +84,7 @@ class StateModel: ObservableObject {
   }
 
   func calculateSimilarity(between state1: PsychologicalState, and state2: PsychologicalState) async
-    -> Double
-  {
+    -> Double {
     // Check cache first
     if let cachedSimilarity = cache.getCachedSimilarity(state1: state1.id, state2: state2.id) {
       return cachedSimilarity
@@ -104,8 +102,7 @@ class StateModel: ObservableObject {
   }
 
   private func performSimilarityCalculation(state1: PsychologicalState, state2: PsychologicalState)
-    async -> Double
-  {
+    async -> Double {
     // Use the built-in similarity method from PsychologicalState
     state1.similarity(to: state2)
   }

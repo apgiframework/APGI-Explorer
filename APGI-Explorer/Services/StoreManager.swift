@@ -372,7 +372,7 @@ enum ProfileError: Error {
 // MARK: - Store Settings View
 
 struct StoreSettingsView: View {
-  @StateObject private var storeManager = StoreManager.shared
+  @ObservedObject private var storeManager = StoreManager.shared
   @State private var showingPurchaseError = false
 
   var body: some View {
@@ -462,7 +462,7 @@ struct ProductRow: View {
             Task {
               try? await self.storeManager.purchase(self.product)
             }
-          }) {
+          }, label: {
             Text("Purchase")
               .font(.caption)
               .padding(.horizontal, 12)
@@ -470,7 +470,7 @@ struct ProductRow: View {
               .background(Color.blue)
               .foregroundColor(.white)
               .cornerRadius(4)
-          }
+          })
           .buttonStyle(PlainButtonStyle())
         }
       }

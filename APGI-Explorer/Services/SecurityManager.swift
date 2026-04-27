@@ -98,8 +98,7 @@ enum SecurityManagerError: Error {
     let data = try self.retrieveData(forKey: SecurityKeys.userProfile)
     let decoder = JSONDecoder()
     if let contextKey = CodingUserInfoKey.managedObjectContext,
-      let context = self.persistentContainer?.viewContext
-    {
+      let context = self.persistentContainer?.viewContext {
       decoder.userInfo[contextKey] = context
     }
     return try decoder.decode(ProfileEntity.self, from: data)
@@ -159,7 +158,7 @@ enum SecurityManagerError: Error {
       SecurityKeys.appSettings,
       SecurityKeys.sessionToken,
       SecurityKeys.analyticsConsent,
-      SecurityKeys.lastBackupDate,
+      SecurityKeys.lastBackupDate
     ]
     for key in keys {
       try self.deleteKey(key)
@@ -224,8 +223,7 @@ extension SecurityManager {
     if let profileData = data["userProfile"] as? Data {
       let decoder = JSONDecoder()
       if let contextKey = CodingUserInfoKey.managedObjectContext,
-        let context = self.persistentContainer?.viewContext
-      {
+        let context = self.persistentContainer?.viewContext {
         decoder.userInfo[contextKey] = context
       }
       let profile = try decoder.decode(ProfileEntity.self, from: profileData)

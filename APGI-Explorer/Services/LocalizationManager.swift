@@ -81,8 +81,7 @@ class LocalizationManager: ObservableObject {
 
   private func loadSavedLanguage() {
     if let savedLanguage = UserDefaults.standard.string(forKey: "selected_language"),
-      let language = SupportedLanguage(rawValue: savedLanguage)
-    {
+      let language = SupportedLanguage(rawValue: savedLanguage) {
       self.currentLanguage = language
       Bundle.setLanguage(language.rawValue)
     }
@@ -133,8 +132,7 @@ struct LocalizationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) {
-        _ in
+      .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
         // Trigger view update when language changes
       }
   }
@@ -168,7 +166,7 @@ extension Text {
 // MARK: - Localization Settings View
 
 struct LocalizationSettingsView: View {
-  @StateObject private var localizationManager = LocalizationManager.shared
+  @ObservedObject private var localizationManager = LocalizationManager.shared
 
   var body: some View {
     Form {

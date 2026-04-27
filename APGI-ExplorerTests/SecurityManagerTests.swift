@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class SecurityManagerTests: XCTestCase {
-  private var securityManager: SecurityManager!
+  private var securityManager: SecurityManager?
 
   override func setUpWithError() throws {
     self.securityManager = SecurityManager.shared
@@ -53,17 +53,17 @@ final class SecurityManagerTests: XCTestCase {
       "theme": "dark",
       "notifications": true,
       "autoBackup": false,
-      "maxProfiles": 10,
+      "maxProfiles": 10
     ]
 
     try await securityManager.storeAppSettings(testSettings)
     let retrievedSettings = try await securityManager.retrieveAppSettings()
 
     XCTAssertNotNil(retrievedSettings)
-    XCTAssertEqual(retrievedSettings!["theme"] as? String, "dark")
-    XCTAssertEqual(retrievedSettings!["notifications"] as? Bool, true)
-    XCTAssertEqual(retrievedSettings!["autoBackup"] as? Bool, false)
-    XCTAssertEqual(retrievedSettings!["maxProfiles"] as? Int, 10)
+    XCTAssertEqual(retrievedSettings?["theme"] as? String, "dark")
+    XCTAssertEqual(retrievedSettings?["notifications"] as? Bool, true)
+    XCTAssertEqual(retrievedSettings?["autoBackup"] as? Bool, false)
+    XCTAssertEqual(retrievedSettings?["maxProfiles"] as? Int, 10)
   }
 
   func testDataIntegrityValidation() async throws {
@@ -105,7 +105,7 @@ final class SecurityManagerTests: XCTestCase {
     XCTAssertEqual(retrievedToken, testToken)
     XCTAssertEqual(retrievedConsent, consent)
     XCTAssertEqual(retrievedDate, testDate)
-    XCTAssertEqual(retrievedSettings!["theme"] as? String, "light")
+    XCTAssertEqual(retrievedSettings?["theme"] as? String, "light")
   }
 
   func testClearAllSecureData() async throws {

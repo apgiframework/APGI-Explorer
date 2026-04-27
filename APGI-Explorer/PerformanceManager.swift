@@ -113,8 +113,7 @@ class PerformanceManager: ObservableObject {
           let type = info[kIOPSTypeKey as String] as? String,
           type == kIOPSInternalBatteryType,
           let state = info[kIOPSPowerSourceStateKey as String] as? String,
-          state == kIOPSBatteryPowerValue
-        {
+          state == kIOPSBatteryPowerValue {
           return true
         }
       }
@@ -529,11 +528,25 @@ extension View {
 
 class PerformanceTracker: ObservableObject {
   @Published var metrics = [String: TimeInterval]()
+  @Published var memorySnapshots = [String: UInt64]()
+  @Published var cpuUsage: Double = 0.0
+
+  private var signpostLog: OSLog
+  private let subsystem = "com.lesoto.APGI-Explorer"
+
+  init() {
+    self.signpostLog = OSLog(subsystem: subsystem, category: "Performance")
+  }
 
   func track<T>(_ operation: String, block: () throws -> T) rethrows -> T {
+    let signpostID = OSSignpostID(log: signpostLog)
+    os_signpost(.begin, log: signpostLog, name: "Operation", signpostID: signpostID, "%{public} started", operation)
+
     let startTime = CFAbsoluteTimeGetCurrent()
     let result = try block()
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
+
+    os_signpost(.end, log: signpostLog, name: "Operation", signpostID: signpostID, "%{public} completed in %.3fs", operation, timeElapsed)
 
     DispatchQueue.main.async {
       self.metrics[operation] = timeElapsed
@@ -543,15 +556,73 @@ class PerformanceTracker: ObservableObject {
   }
 
   func trackAsync<T>(_ operation: String, block: () async throws -> T) async rethrows -> T {
+    let signpostID = OSSignpostID(log: signpostLog)
+    os_signpost(.begin, log: signpostLog, name: "AsyncOperation", signpostID: signpostID, "%{public} started", operation)
+
     let startTime = CFAbsoluteTimeGetCurrent()
     let result = try await block()
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
+
+    os_signpost(.end, log: signpostLog, name: "AsyncOperation", signpostID: signpostID, "%{public} completed in %.3fs", operation, timeElapsed)
 
     DispatchQueue.main.async {
       self.metrics[operation] = timeElapsed
     }
 
     return result
+  }
+
+  func captureMemorySnapshot(for operation: String) {
+    var info = mach_task_basic_info()
+    var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+
+    let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
+      $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+        task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+      }
+    }
+
+    if kerr == KERN_SUCCESS {
+      let memoryUsed = info.resident_size
+      DispatchQueue.main.async {
+        self.memorySnapshots[operation] = memoryUsed
+      }
+    }
+  }
+
+  func measureCPUUsage() {
+    #if os(macOS)
+    var cpuInfo: processor_info_array_t?
+    var numCpuInfo: mach_msg_type_number_t = 0
+    var numCpuUInfo: natural_t = 0
+
+    let result = host_processor_info(
+      mach_host_self(),
+      PROCESSOR_CPU_LOAD_INFO,
+      &numCpuUInfo,
+      &cpuInfo,
+      &numCpuInfo
+    )
+
+    if result == KERN_SUCCESS, let cpuInfoArray = cpuInfo {
+      var totalTicks: UInt32 = 0
+      var totalIdle: UInt32 = 0
+
+      for i in 0..<Int(numCpuUInfo) {
+        let cpuLoad = cpuInfoArray.advanced(by: Int(CPU_STATE_MAX) * i)
+        totalTicks += UInt32(cpuLoad[Int(CPU_STATE_USER)]) + UInt32(cpuLoad[Int(CPU_STATE_SYSTEM)]) + UInt32(cpuLoad[Int(CPU_STATE_IDLE)])
+        totalIdle += UInt32(cpuLoad[Int(CPU_STATE_IDLE)])
+      }
+
+      let usage = totalTicks > 0 ? Double(totalTicks - totalIdle) / Double(totalTicks) : 0.0
+
+      DispatchQueue.main.async {
+        self.cpuUsage = usage
+      }
+
+      vm_deallocate(mach_task_self_, vm_address_t(bitPattern: cpuInfoArray), vm_size_t(Int(numCpuInfo) * MemoryLayout<integer_t>.stride))
+    }
+    #endif
   }
 }
 

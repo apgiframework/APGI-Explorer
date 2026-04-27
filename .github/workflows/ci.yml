@@ -31,5 +31,20 @@ jobs:
     - name: Build Project
       run: xcodebuild -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -quiet
       
-    - name: Run Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -quiet
+    - name: Run Unit Tests
+      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerTests -quiet
+      
+    - name: Run UI Tests
+      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests -quiet
+      
+    - name: Run Performance Tests
+      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerTests/PerformanceTests -quiet
+      
+    - name: Run Window Management Tests
+      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests/testWindowManagement -quiet
+      
+    - name: Run Stress Tests
+      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests/testRapidProfileCreation -quiet
+      
+    - name: Run Crash Recovery Tests
+      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests/testCrashRecovery -quiet

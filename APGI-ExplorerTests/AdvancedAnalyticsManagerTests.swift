@@ -4,8 +4,8 @@ import XCTest
 
 @MainActor
 final class AdvancedAnalyticsManagerTests: XCTestCase {
-  var analyticsManager: AdvancedAnalyticsManager!
-  var mockDataStore: MockDataStore!
+  var analyticsManager: AdvancedAnalyticsManager?
+  var mockDataStore: MockDataStore?
 
   override func setUpWithError() throws {
     continueAfterFailure = false

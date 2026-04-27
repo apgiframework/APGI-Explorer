@@ -33,14 +33,14 @@ struct ResultsView: View {
 
   private var profileColor: Color {
     switch self.profileType {
-    case .sensitiveIntegrator: .orange
-    case .analyticalGuard: .blue
-    case .adaptiveBalancer: .green
-    case .openExplorer: .pink
-    case .contemplativeAnchor: .teal
-    case .somaticNavigator: .purple
-    case .cognitiveArchitect: .mint
-    case .dynamicResponder: .red
+    case .sensitiveIntegrator: .errorYellow
+    case .analyticalGuard: .thresholdBlue
+    case .adaptiveBalancer: .neuromodGreen
+    case .openExplorer: .workspacePurple
+    case .contemplativeAnchor: .inactiveSlate
+    case .somaticNavigator: .workspacePurple
+    case .cognitiveArchitect: .neuromodGreen
+    case .dynamicResponder: .precisionRed
     }
   }
 
@@ -48,7 +48,7 @@ struct ResultsView: View {
 
   var body: some View {
     ScrollView {
-      VStack(spacing: 24) {
+      VStack(spacing: APGISpacing.lg) {
         self.profileHeaderView
 
         Picker("View", selection: self.$selectedTab) {
@@ -58,7 +58,7 @@ struct ResultsView: View {
           Text("Strategies").tag(3)
         }
         .pickerStyle(.segmented)
-        .padding(.horizontal)
+        .padding(.horizontal, APGISpacing.md)
 
         Group {
           switch self.selectedTab {
@@ -72,12 +72,10 @@ struct ResultsView: View {
 
         self.saveProfileSection
       }
-      .padding()
+      .padding(APGISpacing.lg)
     }
     .navigationTitle("Your APGI Profile")
-    #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
-    #endif
+    .background(Color.spaceBlack)
     .toolbar {
       #if os(macOS)
         ToolbarItem(placement: .automatic) {
@@ -85,16 +83,7 @@ struct ResultsView: View {
             action: { self.showingExportSheet = true },
             label: {
               Image(systemName: "square.and.arrow.up")
-                .imageScale(.large)
-            })
-        }
-      #else
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button(
-            action: { self.showingExportSheet = true },
-            label: {
-              Image(systemName: "square.and.arrow.up")
-                .imageScale(.large)
+                .foregroundColor(.thresholdBlue)
             })
         }
       #endif
@@ -121,86 +110,87 @@ struct ResultsView: View {
       self.analytics.track(
         event: .quizCompleted(
           profileType: self.profileType, score: self.quizModel.calculatePartialScore().epsilon,
-          duration: 0))
+          duration: self.quizModel.duration))
       self.analytics.setUserProperty(self.profileType.rawValue, forKey: "recentProfileType")
     }
   }
 
   private var profileHeaderView: some View {
-    VStack(spacing: 16) {
-      Text(self.profileType.rawValue)
-        .font(.title)
-        .fontWeight(.bold)
-        .padding()
-        .background(
-          RoundedRectangle(cornerRadius: 12)
-            .fill(self.profileColor.opacity(0.2))
-        )
+    StandardCard {
+      VStack(spacing: APGISpacing.md) {
+        Text(self.profileType.rawValue)
+          .font(APGITypography.h1)
+          .foregroundColor(.primary)
+          .padding()
+          .background(
+            RoundedRectangle(cornerRadius: APGIRadius.standard)
+              .fill(self.profileColor.opacity(0.2))
+          )
 
-      Text(self.profileType.description)
-        .font(.body)
-        .multilineTextAlignment(.center)
-        .foregroundColor(.secondary)
+        Text(self.profileType.description)
+          .font(APGITypography.body)
+          .multilineTextAlignment(.center)
+          .foregroundColor(.secondary)
 
-      APGIRadarChart(profile: self.apgiProfile)
-        .frame(height: 250)
+        APGIRadarChart(profile: self.apgiProfile)
+          .frame(height: 250)
+      }
     }
   }
 
   private var overviewTab: some View {
-    VStack(alignment: .leading, spacing: 20) {
+    VStack(alignment: .leading, spacing: APGISpacing.md) {
       ParameterCardView(
         name: "Prediction Error Sensitivity (ε)",
         value: self.apgiProfile.epsilon,
         interpretation: self.interpretEpsilon(self.apgiProfile.epsilon),
-        color: .orange
+        color: .precisionRed
       )
 
       ParameterCardView(
         name: "Precision Allocation (π)",
         value: self.apgiProfile.precision,
         interpretation: self.interpretPrecision(self.apgiProfile.precision),
-        color: .green
+        color: .neuromodGreen
       )
 
       ParameterCardView(
         name: "Ignition Threshold (θₜ)",
         value: self.apgiProfile.threshold,
         interpretation: self.interpretThreshold(self.apgiProfile.threshold),
-        color: .purple
+        color: .thresholdBlue
       )
 
       ParameterCardView(
         name: "Somatic Bias (β)",
         value: self.apgiProfile.somaticBias,
         interpretation: self.interpretSomaticBias(self.apgiProfile.somaticBias),
-        color: .blue
+        color: .workspacePurple
       )
     }
   }
 
   private var detailsTab: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Derived Metrics")
-        .font(.headline)
+    StandardCard {
+      VStack(alignment: .leading, spacing: APGISpacing.md) {
+        Text("Derived Metrics")
+          .font(APGITypography.h3)
 
-      InfoRow(title: "Interaction Score", value: "\(Int(self.apgiProfile.interactionScore)) / 100")
-      InfoRow(
-        title: "Temporal Stability", value: "\(Int(self.apgiProfile.temporalStability)) / 100")
-      InfoRow(title: "Environmental Fit", value: "\(Int(self.apgiProfile.environmentalFit)) / 100")
+        InfoRow(title: "Interaction Score", value: "\(Int(self.apgiProfile.interactionScore)) / 100")
+        InfoRow(
+          title: "Temporal Stability", value: "\(Int(self.apgiProfile.temporalStability)) / 100")
+        InfoRow(title: "Environmental Fit", value: "\(Int(self.apgiProfile.environmentalFit)) / 100")
+      }
     }
-    .padding()
-    .background(self.cardBackground)
-    .cornerRadius(16)
   }
 
   private var statesTab: some View {
-    VStack(alignment: .leading, spacing: 16) {
+    VStack(alignment: .leading, spacing: APGISpacing.md) {
       Text("Psychological States for Your Profile")
-        .font(.headline)
+        .font(APGITypography.h3)
 
       Text("Based on your APGI parameters, here are the states you're most likely to experience:")
-        .font(.subheadline)
+        .font(APGITypography.body)
         .foregroundColor(.secondary)
 
       ForEach(self.profileType.likelyStates, id: \.stateId) { match in
@@ -216,7 +206,7 @@ struct ResultsView: View {
   }
 
   private var strategiesTab: some View {
-    VStack(alignment: .leading, spacing: 20) {
+    VStack(alignment: .leading, spacing: APGISpacing.lg) {
       StrengthsSection(strengths: self.profileType.strengths)
       ChallengesSection(challenges: self.profileType.challenges)
       StrategiesSection(strategies: self.profileType.strategies)
@@ -224,24 +214,23 @@ struct ResultsView: View {
   }
 
   private var saveProfileSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Save Your Results")
-        .font(.headline)
+    StandardCard {
+      VStack(alignment: .leading, spacing: APGISpacing.md) {
+        Text("Save Your Results")
+          .font(APGITypography.h3)
 
-      TextField("Profile Name", text: self.$profileName)
-        .textFieldStyle(.roundedBorder)
+        TextField("Profile Name", text: self.$profileName)
+          .textFieldStyle(.roundedBorder)
 
-      LoadingButton(
-        title: "Save to Profile",
-        isLoading: false,
-        style: self.profileName.isEmpty ? SecondaryButtonStyle() : PrimaryButtonStyle(),
-        action: self.saveProfile
-      )
-      .disabled(self.profileName.isEmpty)
+        LoadingButton(
+          title: "Save to Profile",
+          isLoading: false,
+          style: self.profileName.isEmpty ? SecondaryButtonStyle() : PrimaryButtonStyle(),
+          action: self.saveProfile
+        )
+        .disabled(self.profileName.isEmpty)
+      }
     }
-    .padding()
-    .background(self.cardBackground)
-    .cornerRadius(16)
   }
 
   private var cardBackground: Color {
@@ -491,9 +480,9 @@ struct APGIRadarChart: View {
   private var normalizedValues: [Double] {
     [
       self.profile.epsilon, self.profile.precision, self.profile.threshold,
-      self.profile.somaticBias,
+      self.profile.somaticBias
     ]
-    .map { max(0, min($0 / 100, 1)) }
+      .map { max(0, min($0 / 100, 1)) }
   }
 
   private func makeAxisAngles(count: Int) -> [Double] {
@@ -502,9 +491,7 @@ struct APGIRadarChart: View {
     return (0..<count).map { Double($0) * step - .pi / 2 }
   }
 
-  private func makeRadarPoints(center: CGPoint, radius: Double, angles: [Double], values: [Double])
-    -> [CGPoint]
-  {
+  private func makeRadarPoints(center: CGPoint, radius: Double, angles: [Double], values: [Double]) -> [CGPoint] {
     zip(angles, values).map { angle, value in
       CGPoint(
         x: center.x + cos(angle) * radius * value,

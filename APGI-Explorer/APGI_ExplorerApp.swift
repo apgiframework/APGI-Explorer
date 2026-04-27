@@ -34,15 +34,17 @@ struct APGIExplorerApp: App {
       }
     }
 
-    // Request notification permissions
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
-      granted, error in
-      if let error {
-        Self.logger.logError("Notification authorization failed: \(error.localizedDescription)")
-      } else if granted {
-        Self.logger.log("Notification permission granted")
-      } else {
-        Self.logger.log("Notification permission denied")
+    // Request notification permissions - deferred to ensure app is fully initialized
+    DispatchQueue.main.async {
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+        if let error {
+          // Silently handle notification authorization failures - notifications are optional
+          Self.logger.log("Notification authorization not available: \(error.localizedDescription)")
+        } else if granted {
+          Self.logger.log("Notification permission granted")
+        } else {
+          Self.logger.log("Notification permission denied by user")
+        }
       }
     }
 

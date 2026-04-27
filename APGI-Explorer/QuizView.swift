@@ -119,7 +119,8 @@ struct QuizView: View {
     )
     .progressViewStyle(.linear)
     .tint(.blue)
-    .padding()
+    .padding(.horizontal)
+    .padding(.top, 8)
   }
 
   private var progressTextSection: some View {
@@ -135,9 +136,9 @@ struct QuizView: View {
 
   private var currentSectionSection: some View {
     Text(self.sectionName(for: self.quizModel.questions[self.currentQuestionIndex]))
-      .font(.subheadline)
+      .font(.caption)
       .foregroundColor(.blue)
-      .padding(.vertical, 8)
+      .padding(.vertical, 4)
   }
 
   private var questionSection: some View {
@@ -169,8 +170,7 @@ struct QuizView: View {
       if self.currentQuestionIndex < self.quizModel.questions.count - 1 {
         Button(
           action: {
-            if self.quizModel.answers[self.quizModel.questions[self.currentQuestionIndex].id] != nil
-            {
+            if self.quizModel.answers[self.quizModel.questions[self.currentQuestionIndex].id] != nil {
               self.currentQuestionIndex += 1
             }
           },
@@ -195,7 +195,8 @@ struct QuizView: View {
         }
       }
     }
-    .padding()
+    .padding(.horizontal)
+    .padding(.vertical, 8)
   }
 
   private func setupHandoffActivity() {
@@ -315,14 +316,15 @@ private struct QuestionOptionRow: View {
           }
           .buttonStyle(AppPlainButtonStyle())
         }
-        .padding()
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .background(
           RoundedRectangle(cornerRadius: 10)
             .fill(self.isSelected ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
         )
         .overlay(
           RoundedRectangle(cornerRadius: 10)
-            .stroke(self.isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            .stroke(self.isSelected ? Color.blue : Color.clear, lineWidth: 1)
         )
       }
       .focusable()
@@ -355,27 +357,25 @@ struct QuestionView: View {
   @State private var tooltipOptionID: UUID?
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        Text(self.question.text)
-          .font(.title2)
-          .fontWeight(.medium)
-          .fixedSize(horizontal: false, vertical: true)
+    VStack(alignment: .leading, spacing: 12) {
+      Text(self.question.text)
+        .font(.title3)
+        .fontWeight(.medium)
+        .fixedSize(horizontal: false, vertical: true)
 
-        ForEach(self.question.options) { option in
-          QuestionOptionRow(
-            option: option,
-            isSelected: self.selectedAnswer == option.value,
-            tooltipOptionID: self.$tooltipOptionID,
-            onSelect: {
-              self.onAnswer(option.value)
-            }
-          )
-        }
+      ForEach(self.question.options) { option in
+        QuestionOptionRow(
+          option: option,
+          isSelected: self.selectedAnswer == option.value,
+          tooltipOptionID: self.$tooltipOptionID,
+          onSelect: {
+            self.onAnswer(option.value)
+          }
+        )
       }
-      .padding()
-      .frame(maxWidth: .infinity, alignment: .leading)
     }
+    .padding(.horizontal)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }

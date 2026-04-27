@@ -142,7 +142,7 @@ struct InteractiveStateView: View {
       LazyVGrid(
         columns: [
           GridItem(.flexible()),
-          GridItem(.flexible()),
+          GridItem(.flexible())
         ], spacing: 12
       ) {
         ForEach(self.nearbyPreviewStates) { nearbyState in
@@ -234,9 +234,7 @@ struct InteractiveStateView: View {
     self.stateModel.states.first { $0.id == id }
   }
 
-  private func findSimilarStates(to state: PsychologicalState, limit: Int = 5) async
-    -> [PsychologicalState]
-  {
+  private func findSimilarStates(to state: PsychologicalState, limit: Int = 5) async -> [PsychologicalState] {
     await self.stateModel.findSimilarStates(to: state, limit: limit)
   }
 

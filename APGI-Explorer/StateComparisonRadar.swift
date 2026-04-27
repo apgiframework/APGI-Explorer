@@ -30,9 +30,7 @@ struct StateComparisonRadar: View {
 
       Chart {
         ForEach(self.allStates) { state in
-          ForEach(["Prediction Error", "Precision", "Threshold", "Somatic Bias"], id: \.self) {
-            parameter in
-            LineMark(
+          ForEach(["Prediction Error", "Precision", "Threshold", "Somatic Bias"], id: \.self) { parameter in LineMark(
               x: .value("Parameter", parameter),
               y: .value("Value", self.valueForState(state, parameter: parameter))
             )

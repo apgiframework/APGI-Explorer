@@ -25,7 +25,7 @@ struct PsychologicalStatesView: View {
   }
 
   private let parameters = [
-    "All", "ε (Prediction Error)", "π (Precision)", "θₜ (Threshold)", "β (Somatic Bias)",
+    "All", "ε (Prediction Error)", "π (Precision)", "θₜ (Threshold)", "β (Somatic Bias)"
   ]
   private let gradient = LinearGradient(
     gradient: Gradient(colors: [.blue, .purple]),
@@ -61,11 +61,11 @@ struct PsychologicalStatesView: View {
 
   private func colorForParameter(_ key: String) -> Color {
     switch key {
-    case "predictionError": .red
-    case "precision": .green
-    case "threshold": .orange
-    case "somaticBias": .purple
-    default: .blue
+    case "predictionError": .precisionRed
+    case "precision": .neuromodGreen
+    case "threshold": .thresholdBlue
+    case "somaticBias": .workspacePurple
+    default: .thresholdBlue
     }
   }
 
@@ -111,7 +111,7 @@ struct PsychologicalStatesView: View {
       self.searchBar
       self.parameterSummaryView
     }
-    .background(Material.ultraThinMaterial)
+    .background(Color.darkNavy)
     .animation(.easeInOut, value: self.showParameterSummary)
   }
 
@@ -122,29 +122,29 @@ struct PsychologicalStatesView: View {
       self.displayModeToggle
       self.filterMenu
     }
-    .padding(.horizontal)
-    .padding(.vertical, 8)
+    .padding(.horizontal, APGISpacing.md)
+    .padding(.vertical, APGISpacing.sm)
   }
 
   private var searchTextField: some View {
     HStack {
       Image(systemName: "magnifyingglass")
-        .foregroundColor(.secondary)
+        .foregroundColor(.inactiveSlate)
         .padding(.leading, 8)
 
       TextField("Search states...", text: self.$searchText)
         .textFieldStyle(.plain)
         .padding(.vertical, 8)
         .padding(.trailing, 8)
-        .background(AppColors.secondaryBackground.opacity(0.5))
-        .cornerRadius(8)
+        .background(Color.spaceBlack)
+        .cornerRadius(APGIRadius.standard)
         .overlay(self.searchHintsOverlay)
     }
-    .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
-    .cornerRadius(8)
+    .background(Color.spaceBlack)
+    .cornerRadius(APGIRadius.standard)
     .overlay(
-      RoundedRectangle(cornerRadius: 8)
-        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+      RoundedRectangle(cornerRadius: APGIRadius.standard)
+        .stroke(Color.darkNavy, lineWidth: 1)
     )
   }
 
@@ -153,8 +153,8 @@ struct PsychologicalStatesView: View {
     if self.showSearchHints, self.searchText.isEmpty {
       HStack {
         Text("Try: anxiety, focus, creativity...")
-          .font(.caption)
-          .foregroundColor(.secondary)
+          .font(APGITypography.caption)
+          .foregroundColor(.inactiveSlate)
         Spacer()
       }
       .padding(.horizontal, 12)
@@ -182,8 +182,8 @@ struct PsychologicalStatesView: View {
     } label: {
       Label("Sort", systemImage: "line.3.horizontal.decrease.circle")
         .padding(8)
-        .background(AppColors.buttonBackground.opacity(0.1))
-        .cornerRadius(8)
+        .background(Color.thresholdBlue.opacity(0.1))
+        .cornerRadius(APGIRadius.standard)
     }
     .menuStyle(.borderlessButton)
   }
@@ -192,20 +192,20 @@ struct PsychologicalStatesView: View {
   private var parameterSummaryView: some View {
     if self.showParameterSummary, self.selectedParameterKey != nil {
       HStack {
-        Text("Showing by: ").font(.caption).foregroundColor(.secondary)
+        Text("Showing by: ").font(APGITypography.micro).foregroundColor(.inactiveSlate)
         self.parameterFilterButtons
         Spacer()
         Button(
           action: { self.showParameterSummary = false },
           label: {
             Image(systemName: "xmark.circle.fill")
-              .foregroundColor(.secondary)
+              .foregroundColor(.inactiveSlate)
           }
         )
         .buttonStyle(.plain)
       }
-      .padding(.horizontal)
-      .padding(.bottom, 8)
+      .padding(.horizontal, APGISpacing.md)
+      .padding(.bottom, APGISpacing.sm)
       .transition(.opacity)
     }
   }
@@ -226,14 +226,14 @@ struct PsychologicalStatesView: View {
         .fill(self.colorForParameter(key).opacity(0.7))
         .frame(width: 10, height: 10)
       Text(paramName.prefix(1))
-        .font(.caption)
+        .font(APGITypography.micro)
         .foregroundColor(.primary)
     }
     .padding(.horizontal, 8)
     .padding(.vertical, 4)
     .background(
       self.selectedParameterKey == key
-        ? self.colorForParameter(key).opacity(0.2) : Color.gray.opacity(0.1)
+        ? self.colorForParameter(key).opacity(0.2) : Color.inactiveSlate.opacity(0.1)
     )
     .cornerRadius(12)
     .accessibleTap(
@@ -259,12 +259,12 @@ struct PsychologicalStatesView: View {
     VStack(spacing: 16) {
       Image(systemName: "magnifyingglass")
         .font(.system(size: 44))
-        .foregroundColor(.secondary)
+        .foregroundColor(.inactiveSlate)
       Text("No states found")
-        .font(.headline)
+        .font(APGITypography.h3)
       Text("Try adjusting your search or filter criteria")
-        .font(.subheadline)
-        .foregroundColor(.secondary)
+        .font(APGITypography.body)
+        .foregroundColor(.inactiveSlate)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
@@ -283,13 +283,13 @@ struct PsychologicalStatesView: View {
 
             // Use first letter of state name as fallback
             Text(state.name.prefix(1))
-              .font(.headline)
+              .font(APGITypography.h3)
               .foregroundColor(self.colorForState(state))
           }
 
           VStack(alignment: .leading, spacing: 4) {
             Text(state.name)
-              .font(.headline)
+              .font(APGITypography.label)
               .lineLimit(1)
 
             if let key = selectedParameterKey, key != "All" {
@@ -303,7 +303,7 @@ struct PsychologicalStatesView: View {
 
           Image(systemName: "chevron.right")
             .font(.caption)
-            .foregroundColor(.secondary)
+            .foregroundColor(.inactiveSlate)
         }
         .padding(.vertical, 8)
       }
@@ -322,58 +322,54 @@ struct PsychologicalStatesView: View {
       ) {
         ForEach(self.filteredStates, id: \.id) { state in
           NavigationLink(destination: StateDetailView(state: state)) {
-            VStack(spacing: 12) {
-              // State icon/emoji
-              ZStack {
-                Circle()
-                  .fill(self.colorForState(state).opacity(0.2))
-                  .frame(width: 50, height: 50)
+            InteractiveCard(action: {}, content: {
+              VStack(spacing: 12) {
+                // State icon/emoji
+                ZStack {
+                  Circle()
+                    .fill(self.colorForState(state).opacity(0.2))
+                    .frame(width: 50, height: 50)
 
-                // Use first letter of state name as fallback
-                Text(state.name.prefix(1))
-                  .font(.title3.bold())
-                  .foregroundColor(self.colorForState(state))
-              }
-
-              // State name
-              Text(state.name)
-                .font(.subheadline.bold())
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-
-              // Parameter value if filtered
-              if let key = selectedParameterKey, key != "All" {
-                VStack(spacing: 4) {
-                  Text(self.parameterDisplayName(for: key)?.prefix(1) ?? "")
-                    .font(.caption.bold())
-                    .frame(width: 24, height: 24)
-                    .background(AppColors.success.opacity(0.2))
-                    .foregroundColor(AppColors.success)
-
-                  Text(self.formattedParameterValue(self.getValue(for: state, key: key), for: key))
-                    .font(.caption.monospaced())
-                    .foregroundColor(self.colorForParameter(key))
+                  // Use first letter of state name as fallback
+                  Text(state.name.prefix(1))
+                    .font(APGITypography.h2)
+                    .foregroundColor(self.colorForState(state))
                 }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(AppColors.adaptiveGray5)
-                .cornerRadius(12)
+
+                // State name
+                Text(state.name)
+                  .font(APGITypography.label)
+                  .multilineTextAlignment(.center)
+                  .lineLimit(2)
+
+                // Parameter value if filtered
+                if let key = selectedParameterKey, key != "All" {
+                  VStack(spacing: 4) {
+                    Text(self.parameterDisplayName(for: key)?.prefix(1) ?? "")
+                      .font(APGITypography.micro.bold())
+                      .frame(width: 24, height: 24)
+                      .background(Color.neuromodGreen.opacity(0.2))
+                      .foregroundColor(.neuromodGreen)
+
+                    Text(self.formattedParameterValue(self.getValue(for: state, key: key), for: key))
+                      .font(APGITypography.mono)
+                      .foregroundColor(self.colorForParameter(key))
+                  }
+                  .padding(.vertical, 4)
+                  .padding(.horizontal, 8)
+                  .background(Color.darkNavy)
+                  .cornerRadius(12)
+                }
               }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-              RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-            )
-            .contentShape(Rectangle())
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+            })
           }
           .buttonStyle(.plain)
         }
       }
       .padding(12)
     }
-    .background(AppColors.secondaryBackground.opacity(0.5))
+    .background(Color.darkNavy.opacity(0.5))
   }
 
   private func parameterRow(state: PsychologicalState, key: String) -> some View {

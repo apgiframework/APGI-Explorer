@@ -17,21 +17,21 @@ struct LiveScoreTracker: View {
     TrackedParameter(key: "epsilon", label: "ε", description: "Prediction Error"),
     TrackedParameter(key: "precision", label: "π", description: "Precision"),
     TrackedParameter(key: "threshold", label: "θₜ", description: "Threshold"),
-    TrackedParameter(key: "somatic", label: "β", description: "Somatic Bias"),
+    TrackedParameter(key: "somatic", label: "β", description: "Somatic Bias")
   ]
 
   var body: some View {
-    VStack(spacing: 12) {
+    VStack(spacing: 4) {
       Text("Your Emerging Profile")
-        .font(.subheadline)
+        .font(.caption)
         .fontWeight(.semibold)
         .foregroundColor(.secondary)
 
       SmallRadarChart(profile: self.quizModel.calculatePartialScore())
-        .frame(height: 140)
-        .padding(.horizontal, 20)
+        .frame(height: 80)
+        .padding(.horizontal, 10)
 
-      VStack(spacing: 10) {
+      VStack(spacing: 4) {
         ForEach(self.trackedParameters, id: \.key) { parameter in
           ConfidenceBar(
             parameter: parameter.label,
@@ -51,13 +51,8 @@ struct LiveScoreTracker: View {
           .foregroundColor(.green)
       }
     }
-    .padding(.vertical, 12)
-    .padding(.horizontal)
-    .background(
-      RoundedRectangle(cornerRadius: 16)
-        .fill(self.panelBackground)
-        .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 3)
-    )
+    .padding(.vertical, 8)
+    .padding(.horizontal, 8)
   }
 
   private var panelBackground: Color {
@@ -85,10 +80,10 @@ struct ConfidenceBar: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .leading, spacing: 2) {
       HStack {
         Text("\(self.parameter) • \(self.title)")
-          .font(.caption)
+          .font(.system(size: 10))
           .foregroundColor(.secondary)
         Spacer()
         Text("\(Int(self.confidence * 100))%")
@@ -118,8 +113,10 @@ struct SmallRadarChart: View {
 
   private var values: [Double] {
     [
-      self.profile.epsilon, self.profile.precision, self.profile.threshold,
-      self.profile.somaticBias,
+      self.profile.epsilon,
+      self.profile.precision,
+      self.profile.threshold,
+      self.profile.somaticBias
     ]
     .map { max(0, min($0 / 100, 1)) }
   }

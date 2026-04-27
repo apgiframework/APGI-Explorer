@@ -68,7 +68,7 @@ class AdvancedAnalyticsManager: ObservableObject {
 
     // Analyze parameter trends over time
     let parameters: [KeyPath<QuizProfile, Double>] = [
-      \.epsilon, \.precision, \.threshold, \.somaticBias,
+      \.epsilon, \.precision, \.threshold, \.somaticBias
     ]
     let parameterNames = ["Epsilon", "Precision", "Threshold", "Somatic Bias"]
 
@@ -152,8 +152,7 @@ class AdvancedAnalyticsManager: ObservableObject {
     )
   }
 
-  private func generateInsight(for parameterName: String, trend: TrendDataPoint) -> AnalyticsInsight
-  {
+  private func generateInsight(for parameterName: String, trend: TrendDataPoint) -> AnalyticsInsight {
     let insightType: InsightType
     let message: String
     let severity: InsightSeverity

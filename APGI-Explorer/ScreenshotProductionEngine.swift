@@ -24,7 +24,7 @@ struct ProductionScreenshotConfig {
       "main_dashboard",
       "profile_results",
       "settings",
-      "data_export",
+      "data_export"
     ],
     allowedOutputFormats: ["png", "jpeg"],
     maxFileSize: 10 * 1024 * 1024,  // 10MB

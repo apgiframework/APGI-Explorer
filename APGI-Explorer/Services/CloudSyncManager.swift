@@ -244,8 +244,7 @@ class CloudSyncManager: ObservableObject {
           let record = records.first(where: { $0.recordID == recordID }),
           let localUpdated = record["updatedAt"] as? Date,
           let serverUpdated = serverRecord["updatedAt"] as? Date,
-          localUpdated > serverUpdated
-        {
+          localUpdated > serverUpdated {
           recordsToReSave.append(record)
         }
       }
@@ -276,8 +275,7 @@ class CloudSyncManager: ObservableObject {
   }
 
   private func downloadProfile(_ cloudProfile: CloudProfile, in context: NSManagedObjectContext)
-    async throws
-  {
+    async throws {
     guard let profileDict = cloudProfile.profileData,
       let idStr = profileDict["id"] as? String,
       let id = UUID(uuidString: idStr),

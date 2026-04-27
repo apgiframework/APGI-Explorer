@@ -3,8 +3,8 @@ import XCTest
 @testable import APGI_Explorer
 
 final class ResearchExportTests: XCTestCase {
-  var researchExportManager: ResearchExportManager!
-  var testProfile: ProfileExport!
+  var researchExportManager: ResearchExportManager?
+  var testProfile: ProfileExport?
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -20,7 +20,7 @@ final class ResearchExportTests: XCTestCase {
         "epsilon": 75,
         "precision": 60,
         "threshold": 45,
-        "somatic": 30,
+        "somatic": 30
       ]
     )
 
@@ -76,10 +76,10 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(csvString)
 
     // Verify CSV headers
-    XCTAssertTrue(csvString!.contains("Metric,Value,Category,Description"))
-    XCTAssertTrue(csvString!.contains("APGI_Total"))
-    XCTAssertTrue(csvString!.contains("APGI_Autonomy"))
-    XCTAssertTrue(csvString!.contains("Profile_Name"))
+    XCTAssertTrue(csvString?.contains("Metric,Value,Category,Description") ?? false)
+    XCTAssertTrue(csvString?.contains("APGI_Total") ?? false)
+    XCTAssertTrue(csvString?.contains("APGI_Autonomy") ?? false)
+    XCTAssertTrue(csvString?.contains("Profile_Name") ?? false)
   }
 
   func testXMLExport() throws {
@@ -91,10 +91,10 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(xmlString)
 
     // Verify XML structure
-    XCTAssertTrue(xmlString!.contains("<?xml version=\"1.0\""))
-    XCTAssertTrue(xmlString!.contains("<APGIProfileExport>"))
-    XCTAssertTrue(xmlString!.contains("<Metadata>"))
-    XCTAssertTrue(xmlString!.contains("<APGIScores>"))
+    XCTAssertTrue(xmlString?.contains("<?xml version=\"1.0\"") ?? false)
+    XCTAssertTrue(xmlString?.contains("<APGIProfileExport>") ?? false)
+    XCTAssertTrue(xmlString?.contains("<Metadata>") ?? false)
+    XCTAssertTrue(xmlString?.contains("<APGIScores>") ?? false)
   }
 
   func testSPSSExport() throws {
@@ -116,13 +116,15 @@ final class ResearchExportTests: XCTestCase {
 
     XCTAssertFalse(exportData.isEmpty)
 
-    let rScript = String(data: exportData, encoding: .utf8)
-    XCTAssertNotNil(rScript)
+    guard let rScript = String(data: exportData, encoding: .utf8) else {
+      XCTFail("Failed to convert export data to string")
+      return
+    }
 
     // Verify R script content
-    XCTAssertTrue(rScript!.contains("# APGI Profile Data Export"))
-    XCTAssertTrue(rScript!.contains("apgi_data <- data.frame("))
-    XCTAssertTrue(rScript!.contains("save(apgi_data"))
+    XCTAssertTrue(rScript.contains("# APGI Profile Data Export"))
+    XCTAssertTrue(rScript.contains("apgi_data <- data.frame("))
+    XCTAssertTrue(rScript.contains("save(apgi_data)"))
   }
 
   func testExcelExport() throws {
@@ -133,7 +135,7 @@ final class ResearchExportTests: XCTestCase {
     // Excel export currently uses CSV format internally
     let csvString = String(data: exportData, encoding: .utf8)
     XCTAssertNotNil(csvString)
-    XCTAssertTrue(csvString!.contains("Metric,Value,Category,Description"))
+    XCTAssertTrue(csvString?.contains("Metric,Value,Category,Description") ?? false)
   }
 
   func testBibTeXExport() throws {
@@ -145,10 +147,10 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(bibtexString)
 
     // Verify BibTeX structure
-    XCTAssertTrue(bibtexString!.contains("@misc{"))
-    XCTAssertTrue(bibtexString!.contains("title = {"))
-    XCTAssertTrue(bibtexString!.contains("author = {"))
-    XCTAssertTrue(bibtexString!.contains("year = {"))
+    XCTAssertTrue(bibtexString?.contains("@misc{") ?? false)
+    XCTAssertTrue(bibtexString?.contains("title = {") ?? false)
+    XCTAssertTrue(bibtexString?.contains("author = {") ?? false)
+    XCTAssertTrue(bibtexString?.contains("year = {") ?? false)
   }
 
   func testEndNoteExport() throws {
@@ -161,10 +163,10 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(endNoteString)
 
     // Verify EndNote structure
-    XCTAssertTrue(endNoteString!.contains("%0 Generic"))
-    XCTAssertTrue(endNoteString!.contains("%T"))
-    XCTAssertTrue(endNoteString!.contains("%A"))
-    XCTAssertTrue(endNoteString!.contains("%D"))
+    XCTAssertTrue(endNoteString?.contains("%0 Generic") ?? false)
+    XCTAssertTrue(endNoteString?.contains("%T") ?? false)
+    XCTAssertTrue(endNoteString?.contains("%A") ?? false)
+    XCTAssertTrue(endNoteString?.contains("%D") ?? false)
   }
 
   func testAPAReportExport() throws {
@@ -188,7 +190,7 @@ final class ResearchExportTests: XCTestCase {
   func testExportFormatProperties() {
     let formats: [ExportFormat] = [
       .json, .csv, .pdf, .png, .spss, .stata, .rData,
-      .excel, .xml, .bibTeX, .endNote, .apa, .mla,
+      .excel, .xml, .bibTeX, .endNote, .apa, .mla
     ]
 
     for format in formats {

@@ -2045,7 +2045,7 @@ extension PsychologicalState {
         neurologicalBasis: ["Subfornical organ, hypothalamus, anterior cingulate"],
         adaptiveValue: .homeostatic
       )
-    ),
+    )
   ]
 }
 

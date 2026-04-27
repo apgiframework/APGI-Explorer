@@ -47,7 +47,7 @@ class KeychainManager {
       kSecAttrService as String: self.service,
       kSecAttrAccount as String: key,
       kSecValueData as String: data,
-      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
     ]
 
     SecItemDelete(query as CFDictionary)
@@ -71,7 +71,7 @@ class KeychainManager {
       kSecAttrService as String: self.service,
       kSecAttrAccount as String: key,
       kSecReturnData as String: true,
-      kSecMatchLimit as String: kSecMatchLimitOne,
+      kSecMatchLimit as String: kSecMatchLimitOne
     ]
 
     var result: AnyObject?
@@ -97,7 +97,7 @@ class KeychainManager {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
-      kSecAttrAccount as String: key,
+      kSecAttrAccount as String: key
     ]
 
     let status = SecItemDelete(query as CFDictionary)
@@ -115,7 +115,7 @@ class KeychainManager {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
-      kSecAttrAccount as String: key,
+      kSecAttrAccount as String: key
     ]
 
     let attributes: [String: Any] = [

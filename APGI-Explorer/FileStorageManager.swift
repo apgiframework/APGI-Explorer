@@ -252,22 +252,20 @@ class FileStorageManager: ObservableObject {
       "showConfidenceIndicators": prefs.showConfidenceIndicators,
       "autoSaveEnabled": prefs.autoSaveEnabled,
       "soundEffectsEnabled": prefs.soundEffectsEnabled,
-      "hapticsEnabled": prefs.hapticsEnabled,
-    ]
+      "hapticsEnabled": prefs.hapticsEnabled
+      ]
   }
 
   private func restoreSettings(_ settings: [String: Any]) {
     let prefs = UserDefaultsManager.shared
 
     if let chartStyle = settings["preferredChartStyle"] as? String,
-      let style = ChartStyle(rawValue: chartStyle)
-    {
+      let style = ChartStyle(rawValue: chartStyle) {
       prefs.preferredChartStyle = style
     }
 
     if let theme = settings["theme"] as? String,
-      let appTheme = AppTheme(rawValue: theme)
-    {
+      let appTheme = AppTheme(rawValue: theme) {
       prefs.theme = appTheme
     }
 

@@ -32,19 +32,15 @@ enum ColorSchemeContrast {
 // MARK: - App Color System
 
 enum AppColors {
-  // Primary colors from asset catalog
-  static let primary = Color("Primary")
-  static let secondary = Color("Secondary")
-  static let background = Color("Background")
-  static let cardBackground = Color("CardBackground")
+  // Primary colors mapped to design guide semantics
+  static let primary = Color.thresholdBlue
+  static let secondary = Color.workspacePurple
+  static let background = Color.spaceBlack
+  static let cardBackground = Color.spaceBlack
 
   /// System colors with dark mode support
   static var adaptiveGray: Color {
-    #if os(macOS)
-      Color(NSColor.systemGray)
-    #else
-      Color(UIColor.systemGray)
-    #endif
+    Color.inactiveSlate
   }
 
   static var adaptiveGray2: Color {
@@ -87,11 +83,18 @@ enum AppColors {
     #endif
   }
 
-  // Semantic colors
-  static let error = Color.red
-  static let success = Color.green
-  static let warning = Color.orange
-  static let info = Color.blue
+  // Semantic colors from design guide
+  static let error = Color.precisionRed
+  static let success = Color.neuromodGreen
+  static let warning = Color.errorYellow
+  static let info = Color.thresholdBlue
+
+  // Iconography
+  static let iconDefault = Color.inactiveSlate
+  static let iconActive = Color.thresholdBlue
+  static let iconSuccess = Color.neuromodGreen
+  static let iconWarning = Color.errorYellow
+  static let iconError = Color.precisionRed
 
   /// Background colors
   static var primaryBackground: Color {
@@ -169,15 +172,16 @@ enum AppColors {
 struct PrimaryButtonStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .padding(.horizontal, LayoutConstants.buttonPadding)
-      .padding(.vertical, 12)
+      .font(APGITypography.label)
+      .padding(.horizontal, APGISpacing.md)
+      .padding(.vertical, APGISpacing.sm)
       .background(
         RoundedRectangle(cornerRadius: LayoutConstants.buttonCornerRadius)
           .fill(
             configuration.isPressed
-              ? AppColors.buttonBackground.opacity(0.8) : AppColors.buttonBackground)
+              ? AppColors.primary.opacity(0.8) : AppColors.primary)
       )
-      .foregroundColor(AppColors.buttonText)
+      .foregroundColor(.white)
       .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
       .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
   }
@@ -186,15 +190,16 @@ struct PrimaryButtonStyle: ButtonStyle {
 struct SecondaryButtonStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .padding(.horizontal, LayoutConstants.buttonPadding)
-      .padding(.vertical, 12)
+      .font(APGITypography.label)
+      .padding(.horizontal, APGISpacing.md)
+      .padding(.vertical, APGISpacing.sm)
       .background(
         RoundedRectangle(cornerRadius: LayoutConstants.buttonCornerRadius)
-          .stroke(AppColors.buttonBackground, lineWidth: 1.5)
+          .stroke(AppColors.primary, lineWidth: 1.5)
           .fill(
-            configuration.isPressed ? AppColors.secondaryBackground : AppColors.primaryBackground)
+            configuration.isPressed ? AppColors.secondaryBackground : Color.clear)
       )
-      .foregroundColor(AppColors.buttonBackground)
+      .foregroundColor(AppColors.primary)
       .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
       .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
   }
@@ -203,13 +208,14 @@ struct SecondaryButtonStyle: ButtonStyle {
 struct DestructiveButtonStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .padding(.horizontal, LayoutConstants.buttonPadding)
-      .padding(.vertical, 12)
+      .font(APGITypography.label)
+      .padding(.horizontal, APGISpacing.md)
+      .padding(.vertical, APGISpacing.sm)
       .background(
         RoundedRectangle(cornerRadius: LayoutConstants.buttonCornerRadius)
           .fill(configuration.isPressed ? AppColors.error.opacity(0.8) : AppColors.error)
       )
-      .foregroundColor(AppColors.buttonText)
+      .foregroundColor(.white)
       .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
       .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
   }
@@ -581,9 +587,9 @@ struct StandardCard<Content: View>: View {
   let shadowRadius: CGFloat
 
   init(
-    backgroundColor: Color = AppColors.primaryBackground,
+    backgroundColor: Color = AppColors.background,
     cornerRadius: CGFloat = LayoutConstants.cardCornerRadius,
-    shadowRadius: CGFloat = LayoutConstants.buttonShadowRadius,
+    shadowRadius: CGFloat = 4,
     @ViewBuilder content: () -> Content
   ) {
     self.content = content()
@@ -594,11 +600,46 @@ struct StandardCard<Content: View>: View {
 
   var body: some View {
     self.content
-      .padding(LayoutConstants.mediumSpacing)
+      .padding(APGISpacing.cardPadding)
       .background(self.backgroundColor)
       .cornerRadius(self.cornerRadius)
+      .overlay(
+        RoundedRectangle(cornerRadius: self.cornerRadius)
+          .stroke(Color.darkNavy, lineWidth: 1)
+      )
       .shadow(
-        color: .black.opacity(ColorConstants.shadowOpacity), radius: self.shadowRadius, x: 0, y: 2)
+        color: .black.opacity(0.05), radius: self.shadowRadius, x: 0, y: 2)
+  }
+}
+
+struct InteractiveCard<Content: View>: View {
+  let content: Content
+  @State private var isHovered = false
+  let action: () -> Void
+
+  init(action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
+    self.action = action
+    self.content = content()
+  }
+
+  var body: some View {
+    Button(action: self.action) {
+      self.content
+        .padding(APGISpacing.cardPadding)
+        .background(Color.spaceBlack)
+        .cornerRadius(APGIRadius.standard)
+        .overlay(
+          RoundedRectangle(cornerRadius: APGIRadius.standard)
+            .stroke(self.isHovered ? Color.thresholdBlue : Color.darkNavy, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+    .buttonStyle(.plain)
+    .onHover { hovering in
+      withAnimation(.easeInOut(duration: 0.2)) {
+        self.isHovered = hovering
+      }
+    }
   }
 }
 

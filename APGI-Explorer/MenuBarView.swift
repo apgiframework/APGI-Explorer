@@ -34,11 +34,6 @@ struct MenuBarView: View {
       }
     }
     Divider()
-    // TODO: Screenshot automation temporarily disabled - needs runScreenshotAutomation implementation
-    // Button("Take Screenshots") {
-    //   runScreenshotAutomation()
-    // }
-    // Divider()
     Button("Quit") {
       NSApplication.shared.terminate(nil)
     }

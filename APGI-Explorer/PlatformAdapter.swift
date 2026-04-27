@@ -157,8 +157,7 @@ enum PlatformAdapter {
       )
 
       if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-        let window = windowScene.windows.first
-      {
+        let window = windowScene.windows.first {
         window.rootViewController?.present(activityViewController, animated: true)
       }
 

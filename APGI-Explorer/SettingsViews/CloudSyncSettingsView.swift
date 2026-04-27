@@ -2,7 +2,7 @@ import CloudKit
 import SwiftUI
 
 struct CloudSyncSettingsView: View {
-  @StateObject private var cloudSyncManager = CloudSyncManager.shared
+  @ObservedObject private var cloudSyncManager = CloudSyncManager.shared
   @State private var showingErrorAlert = false
   @State private var showingResetConfirmation = false
   @AppStorage("cloudAutoSyncEnabled") private var cloudAutoSyncEnabled = true
@@ -30,7 +30,7 @@ struct CloudSyncSettingsView: View {
             Task {
               await self.performSync()
             }
-          }) {
+          }, label: {
             HStack {
               if self.cloudSyncManager.isSyncing {
                 ProgressView()
@@ -41,7 +41,7 @@ struct CloudSyncSettingsView: View {
                 Text("Sync Now")
               }
             }
-          }
+          })
           .disabled(self.cloudSyncManager.isSyncing)
 
           if let lastSync = cloudSyncManager.lastSyncDate {

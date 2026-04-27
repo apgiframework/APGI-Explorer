@@ -76,50 +76,50 @@ class APGIScorer {
       2: 1.15,  // "How often do you notice small inconsistencies..." - Very high discrimination
       3: 1.0,  // "When learning something new..." - Standard reliability
       4: 1.2,  // "In social situations..." - High discrimination for social contexts
-      5: 0.9,  // "How do you experience novelty..." - Good reliability
+      5: 0.9  // "How do you experience novelty..." - Good reliability
     ],
     "precision": [
       6: 0.95,  // "Physical sensations interpretation" - High clinical relevance
       7: 1.1,  // "Attention in uncertainty" - Strong discrimination
       8: 1.05,  // "Social feedback influence" - Moderate-high reliability
       9: 1.0,  // "Logic vs intuition balance" - Standard
-      10: 0.9,  // "Opinion formation speed" - Good reliability
+      10: 0.9  // "Opinion formation speed" - Good reliability
     ],
     "threshold": [
       11: 1.15,  // "Background sounds interruption" - High discrimination
       12: 1.2,  // "Reading absorption" - Very high discrimination
       13: 1.05,  // "Emotional shift detection" - Good reliability
       14: 1.1,  // "Sensory information awareness" - Strong discrimination
-      15: 1.0,  // "Flow state achievement" - Standard reliability
+      15: 1.0  // "Flow state achievement" - Standard reliability
     ],
     "somatic": [
       16: 1.1,  // "Emotion location" - High clinical relevance
       17: 1.15,  // "Decision making guide" - Strong discrimination
       18: 1.05,  // "Internal bodily awareness" - Good reliability
       19: 1.2,  // "Stress experience" - Very high discrimination
-      20: 1.0,  // "Abstract concepts embodiment" - Standard
+      20: 1.0  // "Abstract concepts embodiment" - Standard
     ],
     "interaction": [
       21: 1.0,  // Interaction question 1
       22: 1.0,  // Interaction question 2
       23: 1.0,  // Interaction question 3
       24: 1.0,  // Interaction question 4
-      25: 1.0,  // Interaction question 5
+      25: 1.0  // Interaction question 5
     ],
     "temporal": [
       26: 1.0,  // Temporal question 1
       27: 1.0,  // Temporal question 2
       28: 1.0,  // Temporal question 3
       29: 1.0,  // Temporal question 4
-      30: 1.0,  // Temporal question 5
+      30: 1.0  // Temporal question 5
     ],
     "environmental": [
       31: 1.0,  // Environmental question 1
       32: 1.0,  // Environmental question 2
       33: 1.0,  // Environmental question 3
       34: 1.0,  // Environmental question 4
-      35: 1.0,  // Environmental question 5
-    ],
+      35: 1.0  // Environmental question 5
+    ]
   ]
 
   // MARK: - Main Scoring Function
@@ -253,8 +253,7 @@ class APGIScorer {
     var alternatingCount = 0
     for index in 1..<sortedAnswers.count
     where abs(sortedAnswers[index] - sortedAnswers[index - 1])
-      >= ScoringConstants.maximumAnswerValueDifference
-    {
+      >= ScoringConstants.maximumAnswerValueDifference {
       alternatingCount += 1
     }
 
@@ -289,8 +288,7 @@ class APGIScorer {
 
     for questionId in parameterQuestions {
       if let answer = answers[questionId],
-        let weight = weights[questionId]
-      {
+        let weight = weights[questionId] {
         let normalizedAnswer = self.normalizeAnswer(answer: answer)
         weightedSum += normalizedAnswer * weight
         totalWeight += weight
@@ -371,14 +369,13 @@ class APGIScorer {
       1: 0.95, 2: 0.90, 3: 0.95, 4: 0.85, 5: 0.90,
       6: 0.90, 7: 0.85, 8: 0.80, 9: 0.85, 10: 0.80,
       11: 0.90, 12: 0.85, 13: 0.80, 14: 0.85, 15: 0.90,
-      16: 0.90, 17: 0.85, 18: 0.95, 19: 0.90, 20: 0.85,
+      16: 0.90, 17: 0.85, 18: 0.95, 19: 0.90, 20: 0.85
     ]
 
     return baseReliabilities[questionId] ?? ScoringConstants.baseReliabilityDefault
   }
 
-  private func calculateStandardError(score: Double, reliability: Double, sampleSize: Int) -> Double
-  {
+  private func calculateStandardError(score: Double, reliability: Double, sampleSize: Int) -> Double {
     // Standard error calculation based on reliability and sample size
     let variance = (ScoringConstants.scoreRange - score) * score / ScoringConstants.scoreRange  // Normalized variance
     let adjustedVariance = variance * (1 - reliability)  // Adjust for reliability

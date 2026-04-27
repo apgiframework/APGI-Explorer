@@ -29,7 +29,7 @@ final class StoreKitTests: XCTestCase {
       .premiumYearly,
       .professionalFeatures,
       .researchPack,
-      .unlimitedProfiles,
+      .unlimitedProfiles
     ]
 
     for productID in productIDs {
@@ -73,7 +73,7 @@ final class StoreKitTests: XCTestCase {
       .verificationFailed,
       .productNotFound,
       .purchaseFailed,
-      .unknown,
+      .unknown
     ]
 
     for error in errors {

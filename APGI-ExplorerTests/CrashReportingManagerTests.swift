@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class CrashReportingManagerTests: XCTestCase {
-  var crashReportingManager: CrashReportingManager!
+  var crashReportingManager: CrashReportingManager?
 
   override func setUpWithError() throws {
     continueAfterFailure = false

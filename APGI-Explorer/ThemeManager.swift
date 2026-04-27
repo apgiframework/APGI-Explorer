@@ -29,8 +29,7 @@ class ThemeManager: ObservableObject {
 
   private func loadTheme() {
     if let rawValue = userDefaults.string(forKey: themeKey),
-      let theme = AppTheme(rawValue: rawValue)
-    {
+      let theme = AppTheme(rawValue: rawValue) {
       self.currentTheme = theme
     } else {
       self.currentTheme = .system

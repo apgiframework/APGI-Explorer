@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class LocalizationTests: XCTestCase {
-  var localizationManager: LocalizationManager!
+  var localizationManager: LocalizationManager?
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -22,7 +22,7 @@ final class LocalizationTests: XCTestCase {
 
   func testSupportedLanguages() {
     let languages: [LocalizationManager.SupportedLanguage] = [
-      .english, .spanish, .french, .german, .russian,
+      .english, .spanish, .french, .german, .russian
     ]
 
     for language in languages {

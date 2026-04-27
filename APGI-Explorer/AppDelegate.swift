@@ -50,8 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: "Later")
 
         if alert.runModal() == .alertFirstButtonReturn,
-          let websiteURL = URL(string: "https://lesoto.github.io/APGI-Explorer")
-        {
+          let websiteURL = URL(string: "https://lesoto.github.io/APGI-Explorer") {
           NSWorkspace.shared.open(websiteURL)
         }
       }

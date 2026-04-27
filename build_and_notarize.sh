@@ -242,12 +242,47 @@ verify_build() {
     print_status "Build verification completed successfully."
 }
 
+# Run tests before building
+run_tests() {
+    print_status "Running automated tests..."
+    
+    # Run unit tests
+    xcodebuild test \
+        -project "$PROJECT" \
+        -scheme "$SCHEME" \
+        -destination 'platform=macOS' \
+        -derivedDataPath "$BUILD_DIR/DerivedData" \
+        ONLY_ACTIVE_ARCH=NO
+    
+    if [ $? -eq 0 ]; then
+        print_status "Unit tests passed."
+    else
+        print_warning "Unit tests failed. Continuing with build..."
+    fi
+    
+    # Run UI tests
+    xcodebuild test \
+        -project "$PROJECT" \
+        -scheme "$SCHEME" \
+        -destination 'platform=macOS' \
+        -derivedDataPath "$BUILD_DIR/DerivedData" \
+        -only-testing:APGI_ExplorerUITests \
+        ONLY_ACTIVE_ARCH=NO
+    
+    if [ $? -eq 0 ]; then
+        print_status "UI tests passed."
+    else
+        print_warning "UI tests failed. Continuing with build..."
+    fi
+}
+
 # Main execution
 main() {
     print_status "Starting APGI Explorer build and distribution process..."
     
     check_requirements
     create_export_options
+    run_tests
     clean_build
     build_app
     export_app

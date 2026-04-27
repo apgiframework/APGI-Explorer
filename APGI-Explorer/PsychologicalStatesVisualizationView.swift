@@ -11,42 +11,41 @@ struct PsychologicalStatesVisualizationView: View {
   private let pointSize: CGFloat = 8
 
   var body: some View {
-    NavigationView {
-      HSplitView {
-        // Left side - Phase Space Chart
+    HSplitView {
+      // Left side - Phase Space Chart
         VStack(spacing: 0) {
           // Header with legend
-          VStack(spacing: 8) {
+          VStack(spacing: APGISpacing.sm) {
             Text("Phase Space: Precision vs. Threshold")
-              .font(.title2.bold())
-              .padding(.top)
+              .font(APGITypography.h2)
+              .padding(.top, APGISpacing.md)
 
             // Legend
             HStack(spacing: 20) {
-              self.legendItem(color: .green, label: "Positive")
-              self.legendItem(color: .red, label: "Negative")
-              self.legendItem(color: .blue, label: "Neutral")
-              self.legendItem(color: .orange, label: "Overwhelm")
-              self.legendItem(color: .purple, label: "Transcendent")
+              self.legendItem(color: .neuromodGreen, label: "Positive")
+              self.legendItem(color: .precisionRed, label: "Negative")
+              self.legendItem(color: .thresholdBlue, label: "Neutral")
+              self.legendItem(color: .errorYellow, label: "Overwhelm")
+              self.legendItem(color: .workspacePurple, label: "Transcendent")
             }
           }
-          .padding(.horizontal)
+          .padding(.horizontal, APGISpacing.md)
 
           // Chart
           self.phaseSpaceChart
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
+            .padding(APGISpacing.md)
 
           // Instructions
           Text("Click a node to view detailed parameter breakdown.")
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .padding(.bottom, 8)
+            .font(APGITypography.micro)
+            .foregroundColor(.inactiveSlate)
+            .padding(.bottom, APGISpacing.sm)
 
           // State Library
           self.stateLibrary
             .frame(height: 200)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color.darkNavy)
         }
         .frame(minWidth: 500)
 
@@ -59,12 +58,11 @@ struct PsychologicalStatesVisualizationView: View {
           }
         }
         .frame(minWidth: 400, maxWidth: .infinity)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color.spaceBlack)
       }
-      .navigationTitle("Psychological States Visualization")
-      .onAppear {
-        self.stateModel.states.sort { $0.name < $1.name }
-      }
+    .navigationTitle("Psychological States Visualization")
+    .onAppear {
+      self.stateModel.states.sort { $0.name < $1.name }
     }
   }
 
@@ -427,7 +425,7 @@ struct RadarChartView: View {
     Parameter(name: "Reactivity", value: 0.6, key: "reactivity"),
     Parameter(name: "Somatic Bias", value: 0.4, key: "somaticBias"),
     Parameter(name: "Focus Stability", value: 0.9, key: "focus"),
-    Parameter(name: "Cognitive Load", value: 0.3, key: "cognitive"),
+    Parameter(name: "Cognitive Load", value: 0.3, key: "cognitive")
   ]
 
   var body: some View {

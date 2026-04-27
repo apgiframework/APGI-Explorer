@@ -40,7 +40,7 @@ class CrashReportingManager: ObservableObject {
       ("SIGSEGV", signalResult3),
       ("SIGFPE", signalResult4),
       ("SIGBUS", signalResult5),
-      ("SIGPIPE", signalResult6),
+      ("SIGPIPE", signalResult6)
     ]
 
     for (name, result) in results {
@@ -214,7 +214,7 @@ private func handleUncaughtException(exception: NSException) {
     userInfo: [
       NSLocalizedDescriptionKey: exception.reason ?? "Unknown exception",
       "exceptionName": exception.name.rawValue,
-      "exceptionReason": exception.reason ?? "",
+      "exceptionReason": exception.reason ?? ""
     ])
 
   CrashReportingManager.shared.reportCrash(error, context: "Uncaught Exception")

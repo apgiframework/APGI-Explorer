@@ -60,8 +60,7 @@ final class KeychainTests: XCTestCase {
   }
 
   func testDeleteNonExistentItem() throws {
-    XCTAssertThrowsError(try XCTUnwrap(try self.keychain?.retrieve(forKey: "non_existent_key"))) {
-      error in
+    XCTAssertThrowsError(try XCTUnwrap(try self.keychain?.retrieve(forKey: "non_existent_key"))) { error in
       XCTAssertTrue(error is KeychainManager.KeychainError)
       if case KeychainManager.KeychainError.itemNotFound = error {
         XCTAssertTrue(true)

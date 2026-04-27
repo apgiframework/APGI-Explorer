@@ -42,7 +42,7 @@ struct APGI_Explorer_iOSApp: App {
     navBarAppearance.configureWithTransparentBackground()
     navBarAppearance.titleTextAttributes = [
       .foregroundColor: UIColor.label,
-      .font: UIFont.systemFont(ofSize: 17, weight: .semibold),
+      .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
     ]
 
     UINavigationBar.appearance().standardAppearance = navBarAppearance
@@ -54,11 +54,11 @@ struct APGI_Explorer_iOSApp: App {
     tabBarAppearance.configureWithTransparentBackground()
     tabBarAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
       .foregroundColor: UIColor.systemBlue,
-      .font: UIFont.systemFont(ofSize: 12, weight: .semibold),
+      .font: UIFont.systemFont(ofSize: 12, weight: .semibold)
     ]
     tabBarAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
       .foregroundColor: UIColor.secondaryLabel,
-      .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+      .font: UIFont.systemFont(ofSize: 12, weight: .regular)
     ]
 
     UITabBar.appearance().standardAppearance = tabBarAppearance
@@ -67,12 +67,14 @@ struct APGI_Explorer_iOSApp: App {
   }
 
   private func setupNotifications() {
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
-      granted, error in
-      if granted {
-        os_log("Notification permission granted")
-      } else if let error {
-        os_log("Notification permission error: %@", error.localizedDescription)
+    // Defer to next run loop to ensure app is fully initialized
+    DispatchQueue.main.async {
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+        if granted {
+          os_log("Notification permission granted")
+        } else if let error {
+          os_log("Notification permission error: %@", error.localizedDescription)
+        }
       }
     }
   }

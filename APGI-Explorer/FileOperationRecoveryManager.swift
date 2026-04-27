@@ -81,8 +81,7 @@ class FileOperationRecoveryManager: ObservableObject {
   }
 
   private func generateRecoveryActions(for error: Error, operation _: FileOperation)
-    -> [RecoveryAction]
-  {
+    -> [RecoveryAction] {
     var actions: [RecoveryAction] = []
 
     if let nsError = error as NSError? {
@@ -133,8 +132,7 @@ class FileOperationRecoveryManager: ObservableObject {
   }
 
   private func performRecoveryAction(_ action: RecoveryAction, operation: FileOperation)
-    async throws
-  {
+    async throws {
     switch action {
     case .retry:
       try await operation.execute()

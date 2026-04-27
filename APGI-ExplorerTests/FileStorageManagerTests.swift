@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class FileStorageManagerTests: XCTestCase {
-  var fileStorageManager: FileStorageManager!
+  var fileStorageManager: FileStorageManager?
 
   override func setUpWithError() throws {
     continueAfterFailure = false

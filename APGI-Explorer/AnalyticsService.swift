@@ -116,7 +116,7 @@ enum AnalyticsEvent {
         "profile_type": profileType.rawValue,
         "score": score,
         "duration_seconds": duration,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .quizQuestionAnswered(let questionId, let questionIndex, let answerValue, let timeSpent):
@@ -125,14 +125,14 @@ enum AnalyticsEvent {
         "question_index": questionIndex,
         "answer_value": answerValue,
         "time_spent_seconds": timeSpent,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .quizExited(let progress, let questionsAnswered):
       return [
         "progress_percentage": progress,
         "questions_answered": questionsAnswered,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     // State Navigation Events
@@ -140,7 +140,7 @@ enum AnalyticsEvent {
       return [
         "state_id": id,
         "state_name": name,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .stateExplored(let id, let name, let duration):
@@ -148,48 +148,48 @@ enum AnalyticsEvent {
         "state_id": id,
         "state_name": name,
         "duration_seconds": duration,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .transitionExplored(let from, let toState):
       return [
         "from_state_id": from,
         "to_state_id": toState,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     // Profile Events
     case .profileCreated(let profileType):
       return [
         "profile_type": profileType.rawValue,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .profileViewed(let profileType):
       return [
         "profile_type": profileType.rawValue,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .profileCompared(let profileTypes):
       return [
         "profile_types": profileTypes.map(\.rawValue),
         "count": profileTypes.count,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .profileShared(let profileType, let method):
       return [
         "profile_type": profileType.rawValue,
         "share_method": method,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .profileExported(let profileType, let format):
       return [
         "profile_type": profileType.rawValue,
         "export_format": format,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     // Comparison Events
@@ -197,14 +197,14 @@ enum AnalyticsEvent {
       return [
         "count": count,
         "state_ids": stateIds.map(String.init).joined(separator: ","),
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .comparisonStarted(let profileTypes):
       return [
         "profile_types": profileTypes.map(\.rawValue),
         "count": profileTypes.count,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     // Content Events
@@ -213,21 +213,21 @@ enum AnalyticsEvent {
         "content_type": contentType,
         "content_id": id,
         "share_method": method,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .contentBookmarked(let contentType, let id):
       return [
         "content_type": contentType,
         "content_id": id,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .contentSearched(let query, let resultCount):
       return [
         "query": query,
         "result_count": resultCount,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     // Settings & Preferences
@@ -237,21 +237,21 @@ enum AnalyticsEvent {
         "old_value": oldValue,
         "new_value": newValue,
         "change_amount": newValue - oldValue,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .settingChanged(let setting, let value):
       return [
         "setting": setting,
         "value": String(describing: value),
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .notificationPreferenceChanged(let type, let enabled):
       return [
         "notification_type": type,
         "enabled": enabled,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     // App Lifecycle
@@ -268,7 +268,7 @@ enum AnalyticsEvent {
       return [
         "previous_version": previousVersion,
         "new_version": newVersion,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .appTerminated:
@@ -278,13 +278,13 @@ enum AnalyticsEvent {
     case .screenViewed(let screenName):
       return [
         "screen_name": screenName,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .deepLinkReceived(let url):
       return [
         "url": url,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .handoffActivityRestored:
@@ -295,14 +295,14 @@ enum AnalyticsEvent {
       return [
         "error": error,
         "context": context,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
 
     case .performanceMetric(let name, let duration, let metadata):
       var props: [String: Any] = [
         "metric_name": name,
         "duration_seconds": duration,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
       metadata.forEach { props["metadata_\($0.key)"] = $0.value }
       return props
@@ -311,7 +311,7 @@ enum AnalyticsEvent {
       return [
         "error": error.localizedDescription,
         "context": context,
-        "timestamp": Date().timeIntervalSince1970,
+        "timestamp": Date().timeIntervalSince1970
       ]
     }
   }

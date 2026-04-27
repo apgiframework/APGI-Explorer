@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 class UserDefaultsManager {
   static let shared = UserDefaultsManager()
@@ -168,7 +169,7 @@ class UserDefaultsManager {
 
   func resetToDefaults() {
     guard let domain = Bundle.main.bundleIdentifier else {
-      print("Warning: Unable to get bundle identifier for reset")
+      os_log("Warning: Unable to get bundle identifier for reset", type: .error)
       return
     }
     self.defaults.removePersistentDomain(forName: domain)
@@ -240,7 +241,7 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
 
   var icon: String {
     switch self {
-    case .radar: "chart.radar"
+    case .radar: "chart.pie.fill"
     case .bar: "chart.bar"
     case .table: "tablecells"
     case .line: "chart.line.uptrend.xyaxis"

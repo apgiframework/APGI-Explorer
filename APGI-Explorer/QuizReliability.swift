@@ -168,9 +168,7 @@ class QuizReliabilityTracker {
   ///   - secondTest: Results from the second test
   ///   - timeBetween: Time interval between tests in seconds
   /// - Returns: Correlation between test scores (0-1)
-  func recordTestRetest(firstTest: APGIProfile, secondTest: APGIProfile, timeBetween: TimeInterval)
-    -> Double
-  {
+  func recordTestRetest(firstTest: APGIProfile, secondTest: APGIProfile, timeBetween: TimeInterval) -> Double {
     // Validate time interval
     guard timeBetween >= self.minTestRetestInterval else {
       os_log("Test-retest interval too short for reliable measurement", type: .error)
@@ -200,7 +198,7 @@ class QuizReliabilityTracker {
     // Calculate correlation for each dimension
     let dimensions = [
       "epsilon", "precision", "threshold", "somaticBias", "interactionScore", "temporalStability",
-      "environmentalFit",
+      "environmentalFit"
     ]
     var results: [String: Double] = [:]
 
@@ -246,7 +244,7 @@ class QuizReliabilityTracker {
       profile1.somaticBias,
       profile1.interactionScore,
       profile1.temporalStability,
-      profile1.environmentalFit,
+      profile1.environmentalFit
     ]
 
     let values2 = [
@@ -256,7 +254,7 @@ class QuizReliabilityTracker {
       profile2.somaticBias,
       profile2.interactionScore,
       profile2.temporalStability,
-      profile2.environmentalFit,
+      profile2.environmentalFit
     ]
 
     return self.pearsonCorrelation(firstValues: values1, secondValues: values2)

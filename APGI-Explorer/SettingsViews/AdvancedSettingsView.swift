@@ -124,16 +124,14 @@ struct AdvancedSettingsView: View {
       "hasCompletedOnboarding",
       "crashReportingConsent",
       "analyticsConsent",
-      "privacyPolicyAccepted",
+      "privacyPolicyAccepted"
     ]
 
     let defaults = UserDefaults.standard
     let allKeys = defaults.dictionaryRepresentation().keys
 
-    for key in allKeys {
-      if !keysToPreserve.contains(key) {
-        defaults.removeObject(forKey: key)
-      }
+    for key in allKeys where !keysToPreserve.contains(key) {
+      defaults.removeObject(forKey: key)
     }
 
     defaults.synchronize()
@@ -218,15 +216,13 @@ struct AdvancedSettingsView: View {
       "hasCompletedOnboarding",
       "crashReportingConsent",
       "analyticsConsent",
-      "privacyPolicyAccepted",
+      "privacyPolicyAccepted"
     ]
 
     let allKeys = defaults.dictionaryRepresentation().keys
 
-    for key in allKeys {
-      if !keysToPreserve.contains(key) {
-        defaults.removeObject(forKey: key)
-      }
+    for key in allKeys where !keysToPreserve.contains(key) {
+      defaults.removeObject(forKey: key)
     }
 
     defaults.synchronize()

@@ -3,30 +3,22 @@ import SwiftUI
 struct ContentView: View {
   var body: some View {
     ZStack {
-      LinearGradient(
-        gradient: Gradient(colors: [
-          Color.accentColor.opacity(ColorConstants.backgroundOpacity),
-          Color.secondary.opacity(ColorConstants.backgroundOpacity),
-        ]),
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      )
-      .edgesIgnoringSafeArea(.all)
+      Color.spaceBlack
+        .edgesIgnoringSafeArea(.all)
 
-      VStack(spacing: LayoutConstants.largeSpacing) {
+      VStack(spacing: APGISpacing.giant) {
         // App Title
-        VStack(spacing: LayoutConstants.smallSpacing) {
+        VStack(spacing: APGISpacing.sm) {
           Image(systemName: "brain.head.profile")
             .font(.system(size: LayoutConstants.iconFontSize))
-            .foregroundColor(.blue)
+            .foregroundColor(.thresholdBlue)
 
           Text("APGI Explorer")
-            .font(.largeTitle)
-            .fontWeight(.bold)
+            .font(APGITypography.h1)
             .foregroundColor(.primary)
 
           Text("Discover your psychological patterns")
-            .font(.subheadline)
+            .font(APGITypography.body)
             .foregroundColor(.secondary)
         }
         .padding(.top, LayoutConstants.topPadding)
@@ -34,20 +26,14 @@ struct ContentView: View {
 
         Spacer()
 
-        VStack(spacing: LayoutConstants.mediumSpacing) {
+        VStack(spacing: APGISpacing.md) {
           NavigationLink(destination: IntroView()) {
             HStack {
               Image(systemName: "play.fill")
               Text("Start Quiz")
-                .fontWeight(.semibold)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(AppColors.buttonBackground)
-            .foregroundColor(AppColors.buttonText)
-            .cornerRadius(LayoutConstants.buttonCornerRadius)
-            .shadow(radius: LayoutConstants.buttonShadowRadius)
           }
+          .buttonStyle(PrimaryButtonStyle())
 
           NavigationLink(
             destination: PsychologicalStatesView()
@@ -56,21 +42,15 @@ struct ContentView: View {
             HStack {
               Image(systemName: "book.fill")
               Text("Browse Psychological States")
-                .fontWeight(.semibold)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(AppColors.info)
-            .foregroundColor(AppColors.buttonText)
-            .cornerRadius(LayoutConstants.buttonCornerRadius)
-            .shadow(radius: LayoutConstants.buttonShadowRadius)
           }
+          .buttonStyle(SecondaryButtonStyle())
         }
         .padding(.horizontal, LayoutConstants.horizontalPadding)
         .padding(.bottom, LayoutConstants.bottomPadding)
       }
     }
-    .accentColor(.blue)
+    .accentColor(.thresholdBlue)
   }
 }
 

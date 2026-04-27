@@ -63,6 +63,8 @@ public class ProfileEntity: NSManagedObject, Codable {
 }
 
 extension ProfileEntity {
+  /// Creates a fetch request for ProfileEntity entities
+  /// - Returns: A configured NSFetchRequest for ProfileEntity
   @nonobjc public class func fetchRequest() -> NSFetchRequest<ProfileEntity> {
     NSFetchRequest<ProfileEntity>(entityName: "ProfileEntity")
   }

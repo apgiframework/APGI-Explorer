@@ -15,12 +15,36 @@ import SwiftUI
 class AccessibilityManager: ObservableObject {
   static let shared = AccessibilityManager()
 
+  @Published var colorBlindMode: ColorBlindMode = .none
   @Published var highContrastEnabled = false
   @Published var reducedMotionEnabled = false
   @Published var largeTextEnabled = false
   @Published var voiceOverEnabled = false
   @Published var preferredContentSize: ContentSizeCategory = .medium
   @Published var accessibilityLabelsEnabled = true
+
+  enum ColorBlindMode: String, CaseIterable, Identifiable {
+    case none = "None"
+    case protanopia = "Protanopia"
+    case deuteranopia = "Deuteranopia"
+    case tritanopia = "Tritanopia"
+    var id: String { self.rawValue }
+    var opacity: Double {
+      switch self {
+      case .none: 1.0
+      case .protanopia, .deuteranopia, .tritanopia: 0.8
+      }
+    }
+
+    var saturation: Double {
+      switch self {
+      case .none: 1.0
+      case .protanopia: 0.7
+      case .deuteranopia: 0.6
+      case .tritanopia: 0.5
+      }
+    }
+  }
 
   private var cancellables = Set<AnyCancellable>()
 
@@ -147,24 +171,24 @@ enum AccessibleColors {
   // MARK: - High Contrast Colors
 
   static var primaryText: Color {
-    AccessibilityManager.shared.shouldUseHighContrast ? Color.white : Color.primary
+    AccessibilityManager.shared.shouldUseHighContrast ? Color.black : Color.primary
   }
 
   static var secondaryText: Color {
-    AccessibilityManager.shared.shouldUseHighContrast ? Color.white.opacity(0.8) : Color.secondary
+    AccessibilityManager.shared.shouldUseHighContrast ? Color.black.opacity(0.8) : Color.secondary
   }
 
   static var background: Color {
-    AccessibilityManager.shared.shouldUseHighContrast ? Color.black : Color.adaptiveBackground
+    AccessibilityManager.shared.shouldUseHighContrast ? Color.white : Color.adaptiveBackground
   }
 
   static var cardBackground: Color {
     AccessibilityManager.shared.shouldUseHighContrast
-      ? Color.gray.opacity(0.3) : Color.adaptiveBackground
+      ? Color.white : Color.adaptiveBackground
   }
 
   static var accent: Color {
-    AccessibilityManager.shared.shouldUseHighContrast ? Color.yellow : Color.blue
+    AccessibilityManager.shared.shouldUseHighContrast ? Color.black : Color.blue
   }
 
   static var success: Color {

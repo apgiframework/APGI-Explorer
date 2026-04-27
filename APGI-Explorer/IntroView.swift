@@ -127,7 +127,7 @@ struct IntroView: View {
         #else
           .sheet(isPresented: self.$showQuiz) {
             QuizNavigationView()
-            .frame(minWidth: 800, minHeight: 600)
+            .frame(minWidth: 800, minHeight: 900)
           }
         #endif
 

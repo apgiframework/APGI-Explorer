@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class ContextualHelpManagerTests: XCTestCase {
-  var helpManager: ContextualHelpManager!
+  var helpManager: ContextualHelpManager?
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -50,7 +50,7 @@ final class ContextualHelpManagerTests: XCTestCase {
     let context = HelpContext.profileCreation
     let tutorial = self.helpManager.getTutorial(for: context)
     XCTAssertNotNil(tutorial)
-    XCTAssertTrue(tutorial!.contexts.contains(context))
+    XCTAssertTrue(tutorial?.contexts.contains(context) ?? false)
   }
 
   func testHelpContextTitles() {

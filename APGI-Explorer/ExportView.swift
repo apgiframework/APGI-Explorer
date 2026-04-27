@@ -85,11 +85,7 @@ struct ExportView: View {
         Task {
           self.profileType = await self.profileManager.determineProfileType(
             for: self.profile.results)
-          self.apgiProfile =
-            (try? self.profileManager.profile(from: self.profile.results))
-            ?? APGIProfile(
-              epsilon: 0, precision: 0, threshold: 0, somaticBias: 0, interactionScore: 0,
-              temporalStability: 0, environmentalFit: 0)
+          self.apgiProfile = await self.profileManager.enhancedProfile(from: self.profile.results)
         }
       }
       .sheet(isPresented: self.$showShareSheet) {
@@ -111,9 +107,8 @@ struct ExportView: View {
 
         // Use ResearchExportManager for specialized formats
         if self.exportFormat.category == .statistical || self.exportFormat.category == .bibliography
-          || self.exportFormat.category == .academic
-        {
-          let apgiScores = try self.profileManager.profile(from: self.profile.results)
+          || self.exportFormat.category == .academic {
+          let apgiScores = await self.profileManager.enhancedProfile(from: self.profile.results)
           let profileExport = ProfileExport(
             version: "1.0",
             timestamp: Date(),
@@ -178,11 +173,11 @@ struct ScoreRow: View {
 
   private var scoreColor: Color {
     switch self.value {
-    case 0..<25: Color(NSColor.systemRed)
-    case 25..<40: Color(NSColor.systemOrange)
-    case 40..<60: Color(NSColor.systemYellow)
-    case 60..<75: Color(NSColor.systemGreen)
-    case 75...100: Color(NSColor.systemBlue)
+    case 0..<25: .red
+    case 25..<40: .orange
+    case 40..<60: .yellow
+    case 60..<75: .green
+    case 75...100: .blue
     default: .primary
     }
   }

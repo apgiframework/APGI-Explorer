@@ -188,8 +188,7 @@ struct MenuCommands: Commands {
         if let currentIndex = profileManager.profiles.firstIndex(where: {
           $0.id == profileManager.currentProfile?.id
         }),
-          currentIndex > 0
-        {
+          currentIndex > 0 {
           self.profileManager.currentProfile = self.profileManager.profiles[currentIndex - 1]
         }
       }
@@ -200,8 +199,7 @@ struct MenuCommands: Commands {
         if let currentIndex = profileManager.profiles.firstIndex(where: {
           $0.id == profileManager.currentProfile?.id
         }),
-          currentIndex < profileManager.profiles.count - 1
-        {
+          currentIndex < profileManager.profiles.count - 1 {
           self.profileManager.currentProfile = self.profileManager.profiles[currentIndex + 1]
         }
       }

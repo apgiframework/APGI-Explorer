@@ -123,7 +123,7 @@ class ResearchExportManager: ObservableObject {
       ("APGI_SelfAcceptance", "Self-Acceptance"),
       ("APGI_PersonalGrowth", "Personal Growth"),
       ("Age", "Participant Age"),
-      ("Export_Date", "Export Timestamp"),
+      ("Export_Date", "Export Timestamp")
     ]
 
     for (name, label) in variables {
@@ -139,7 +139,7 @@ class ResearchExportManager: ObservableObject {
       profile.apgiScores.selfAcceptance,
       profile.apgiScores.personalGrowth,
       Double(profile.profile.age),
-      profile.timestamp.timeIntervalSince1970,
+      profile.timestamp.timeIntervalSince1970
     ]
 
     let valueStrings = values.map { String(format: "%.2f", $0) }
@@ -168,7 +168,7 @@ class ResearchExportManager: ObservableObject {
     // Variable names
     let names = [
       "apgi_total", "apgi_autonomy", "apgi_purpose", "apgi_selfacc", "apgi_growth", "age",
-      "export_date",
+      "export_date"
     ]
     for name in names {
       guard let nameData = name.data(using: .ascii) else {
@@ -185,7 +185,7 @@ class ResearchExportManager: ObservableObject {
       profile.apgiScores.selfAcceptance,
       profile.apgiScores.personalGrowth,
       Double(profile.profile.age),
-      profile.timestamp.timeIntervalSince1970,
+      profile.timestamp.timeIntervalSince1970
     ]
     for value in values {
       data.append(contentsOf: withUnsafeBytes(of: value.bitPattern.littleEndian) { Data($0) })
@@ -225,9 +225,8 @@ class ResearchExportManager: ObservableObject {
       # Also save as RData workspace
       save(apgi_data, file = "apgi_profile.RData")
 
-      # Print summary
-      print("APGI Profile Data Summary:")
-      print(apgi_data)
+      os_log("APGI Profile Data Summary:")
+      os_log("%{public}@", apgi_data.description)
       """
 
     return rScript.data(using: .utf8) ?? Data()
@@ -306,19 +305,19 @@ class ResearchExportManager: ObservableObject {
       ["APGI_Total", String(profile.apgiScores.overall), "Overall", "Total APGI Score"],
       [
         "APGI_Autonomy", String(profile.apgiScores.autonomy), "Autonomy",
-        "Level of autonomous functioning",
+        "Level of autonomous functioning"
       ],
       [
         "APGI_Purposefulness", String(profile.apgiScores.purposefulness), "Purposefulness",
-        "Sense of purpose and direction",
+        "Sense of purpose and direction"
       ],
       [
         "APGI_SelfAcceptance", String(profile.apgiScores.selfAcceptance), "Self-Acceptance",
-        "Level of self-acceptance",
+        "Level of self-acceptance"
       ],
       [
         "APGI_PersonalGrowth", String(profile.apgiScores.personalGrowth), "Personal Growth",
-        "Orientation toward growth",
+        "Orientation toward growth"
       ],
       ["Profile_Name", profile.profile.name, "Demographic", "Profile identifier"],
       ["Profile_Age", String(profile.profile.age), "Demographic", "Participant age"],
@@ -327,17 +326,22 @@ class ResearchExportManager: ObservableObject {
       ["Profile_Occupation", profile.profile.occupation, "Demographic", "Occupation"],
       [
         "Export_Date", ISO8601DateFormatter().string(from: profile.timestamp), "Metadata",
-        "Export timestamp",
+        "Export timestamp"
       ],
       ["Export_Version", profile.version, "Metadata", "Export format version"],
-      ["Profile_Type", profile.profileType, "Metadata", "APGI profile classification"],
+      ["Profile_Type", profile.profileType, "Metadata", "APGI profile classification"]
     ]
 
     for (index, row) in rows.enumerated() {
       let rowNum = index + 1
       sheetXML += "<row r=\"\(rowNum)\">"
       for (colIndex, cell) in row.enumerated() {
-        let colLetter = String(UnicodeScalar(65 + colIndex)!)
+        let colLetter: Character
+        if colIndex < 26, let scalar = UnicodeScalar(65 + colIndex) {
+          colLetter = Character(scalar)
+        } else {
+          colLetter = "A"
+        }
         let cellRef = "\(colLetter)\(rowNum)"
         if Double(cell) != nil {
           sheetXML += "<c r=\"\(cellRef)\"><v>\(cell)</v></c>"
@@ -569,7 +573,7 @@ class ResearchExportManager: ObservableObject {
       let pdfMetaData = [
         kCGPDFContextCreator: "APGI Explorer",
         kCGPDFContextAuthor: "APGI Explorer",
-        kCGPDFContextTitle: title,
+        kCGPDFContextTitle: title
       ]
 
       let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
@@ -586,7 +590,7 @@ class ResearchExportManager: ObservableObject {
 
       let attributes = [
         NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12),
-        NSAttributedString.Key.paragraphStyle: paragraphStyle,
+        NSAttributedString.Key.paragraphStyle: paragraphStyle
       ]
 
       let textRect = CGRect(x: 50, y: 50, width: 512, height: 692)
@@ -599,7 +603,7 @@ class ResearchExportManager: ObservableObject {
       let pdfMetaData = [
         kCGPDFContextCreator: "APGI Explorer",
         kCGPDFContextAuthor: "APGI Explorer",
-        kCGPDFContextTitle: title,
+        kCGPDFContextTitle: title
       ]
 
       let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
@@ -619,7 +623,7 @@ class ResearchExportManager: ObservableObject {
 
       let attributes = [
         NSAttributedString.Key.font: NSFont.systemFont(ofSize: 12),
-        NSAttributedString.Key.paragraphStyle: paragraphStyle,
+        NSAttributedString.Key.paragraphStyle: paragraphStyle
       ]
 
       let textRect = CGRect(x: 50, y: 50, width: 512, height: 692)

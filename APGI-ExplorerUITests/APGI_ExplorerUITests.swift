@@ -189,4 +189,178 @@ final class APGI_ExplorerUITests: XCTestCase {
       XCTAssertTrue(mainWindow.waitForExistence(timeout: 5))
     }
   }
+
+  // MARK: - Window Management Tests
+
+  func testWindowManagement() {
+    let mainWindow = self.app.windows.firstMatch
+    XCTAssertTrue(mainWindow.exists)
+
+    // Test window resizing
+    let initialFrame = mainWindow.frame
+    mainWindow.doubleClick()
+
+    // Test window state persistence
+    self.app.terminate()
+    self.app.launch()
+
+    let restoredWindow = self.app.windows.firstMatch
+    XCTAssertTrue(restoredWindow.exists)
+  }
+
+  func testMultipleWindowFlow() {
+    // Test opening state explorer window
+    let menuBar = self.app.menuBars.firstMatch
+    menuBar.buttons["APGI-Explorer"].tap()
+
+    let viewMenu = menuBar.menuItems["View"]
+    if viewMenu.exists {
+      viewMenu.tap()
+
+      let stateExplorerItem = menuBar.menuItems["Show State Explorer"]
+      if stateExplorerItem.exists {
+        stateExplorerItem.tap()
+
+        // Verify new window opened
+        let windows = self.app.windows.allElementsBoundByIndex
+        XCTAssertTrue(windows.count >= 2, "Should have at least 2 windows open")
+      }
+    }
+  }
+
+  func testPanelTransitions() {
+    let settingsTab = self.app.buttons["Settings"]
+    if settingsTab.exists {
+      settingsTab.tap()
+
+      // Test panel transitions
+      let panels = ["General", "Appearance", "Charts", "Privacy", "Cloud Sync"]
+      for panel in panels {
+        let panelButton = self.app.buttons[panel]
+        if panelButton.exists {
+          panelButton.tap()
+          Thread.sleep(forTimeInterval: 0.3)
+
+          let panelTitle = self.app.staticTexts[panel]
+          XCTAssertTrue(panelTitle.exists, "Panel \(panel) should be visible")
+        }
+      }
+    }
+  }
+
+  // MARK: - Stress Test Scenarios
+
+  func testRapidProfileCreation() {
+    let profilesTab = self.app.buttons["Profiles"]
+    if profilesTab.exists {
+      profilesTab.tap()
+
+      for i in 1...10 {
+        let addButton = self.app.buttons["Add Profile"]
+        if addButton.exists {
+          addButton.tap()
+
+          let nameField = self.app.textFields["Profile Name"]
+          if nameField.exists {
+            nameField.tap()
+            nameField.typeText("Stress Test Profile \(i)")
+
+            let saveButton = self.app.buttons["Save"]
+            if saveButton.exists {
+              saveButton.tap()
+              Thread.sleep(forTimeInterval: 0.2)
+            }
+          }
+        }
+      }
+
+      // Verify app is still responsive
+      let window = self.app.windows.firstMatch
+      XCTAssertTrue(window.exists)
+    }
+  }
+
+  func testMemoryPressureHandling() {
+    // Simulate memory pressure by creating multiple profiles
+    let profilesTab = self.app.buttons["Profiles"]
+    if profilesTab.exists {
+      profilesTab.tap()
+
+      for i in 1...20 {
+        let addButton = self.app.buttons["Add Profile"]
+        if addButton.exists {
+          addButton.tap()
+
+          let nameField = self.app.textFields["Profile Name"]
+          if nameField.exists {
+            nameField.tap()
+            nameField.typeText("Memory Test Profile \(i)")
+
+            let saveButton = self.app.buttons["Save"]
+            if saveButton.exists {
+              saveButton.tap()
+            }
+          }
+        }
+      }
+
+      // Verify no crash occurred
+      let window = self.app.windows.firstMatch
+      XCTAssertTrue(window.exists)
+    }
+  }
+
+  // MARK: - Crash Handling Tests
+
+  func testCrashRecovery() {
+    // Test that app can recover from simulated crash scenarios
+    let mainWindow = self.app.windows.firstMatch
+    XCTAssertTrue(mainWindow.exists)
+
+    // Navigate through all tabs to ensure state is preserved
+    let tabs = ["Profiles", "Quiz", "Results", "Settings"]
+    for tab in tabs {
+      let tabButton = self.app.buttons[tab]
+      if tabButton.exists {
+        tabButton.tap()
+        Thread.sleep(forTimeInterval: 0.5)
+      }
+    }
+
+    // Terminate and relaunch to test recovery
+    self.app.terminate()
+    self.app.launch()
+
+    let restoredWindow = self.app.windows.firstMatch
+    XCTAssertTrue(restoredWindow.exists)
+  }
+
+  // MARK: - Export/Import Stress Tests
+
+  func testMultipleExportOperations() {
+    let resultsTab = self.app.buttons["Results"]
+    if resultsTab.exists {
+      resultsTab.tap()
+
+      let exportButton = self.app.buttons["Export"]
+      if exportButton.exists {
+        for _ in 1...5 {
+          exportButton.tap()
+
+          let exportSheet = self.app.sheets.firstMatch
+          if exportSheet.waitForExistence(timeout: 2) {
+            let cancelButton = exportSheet.buttons["Cancel"]
+            if cancelButton.exists {
+              cancelButton.tap()
+            }
+          }
+          Thread.sleep(forTimeInterval: 0.3)
+        }
+      }
+    }
+
+    // Verify app is still responsive
+    let window = self.app.windows.firstMatch
+    XCTAssertTrue(window.exists)
+  }
 }

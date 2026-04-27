@@ -49,7 +49,7 @@ struct TransitionView: View {
   }
 }
 
-extension StateTransitionModel.Transition.Trigger: CustomStringConvertible {
+extension TransitionTrigger: CustomStringConvertible {
   var description: String {
     switch self {
     case .parameterShift(let parameter, let direction, let magnitude):
