@@ -4,21 +4,18 @@ import XCTest
 
 @MainActor
 final class SecurityManagerTests: XCTestCase {
-  private var securityManager: SecurityManager?
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  private var securityManager: SecurityManager!
 
-  override func setUpWithError() throws {
+  override func setUp() async throws {
+    try await super.setUp()
     self.securityManager = SecurityManager.shared
-    // Clear data in background without awaiting
-    Task {
-      try? await self.securityManager.clearAllSecureData()
-    }
+    try await self.securityManager.clearAllSecureData()
   }
 
-  override func tearDownWithError() throws {
-    // Clear data in background without awaiting
-    Task {
-      try? await self.securityManager.clearAllSecureData()
-    }
+  override func tearDown() async throws {
+    try await self.securityManager.clearAllSecureData()
+    try await super.tearDown()
   }
 
   func testStoreAndRetrieveSessionToken() async throws {

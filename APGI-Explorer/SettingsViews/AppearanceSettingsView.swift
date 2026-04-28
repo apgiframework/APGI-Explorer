@@ -8,28 +8,11 @@ struct AppearanceSettingsView: View {
   @AppStorage("fontSize") private var fontSize: Double = 16.0
 
   @EnvironmentObject private var themeManager: ThemeManager
+  @Environment(\.showTooltips) private var tooltipsEnabled
 
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
-        // Chart Style Section
-        VStack(alignment: .leading, spacing: 12) {
-          Text("Charts")
-            .font(.headline)
-            .fontWeight(.semibold)
-
-          Picker("Default Chart Style", selection: self.$defaultChartStyle) {
-            Text("Radar").tag(ChartStyle.radar)
-            Text("Bar").tag(ChartStyle.bar)
-            Text("Line").tag(ChartStyle.line)
-          }
-          .pickerStyle(SegmentedPickerStyle())
-          .help("Default chart style for profile visualization")
-        }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
-
         // Export Quality Section
         VStack(alignment: .leading, spacing: 12) {
           Text("Export Quality")
@@ -42,7 +25,7 @@ struct AppearanceSettingsView: View {
             Text("High").tag(ExportQuality.high)
           }
           .pickerStyle(SegmentedPickerStyle())
-          .help("Default quality for exported images and documents")
+          .conditionalHelp("Default quality for exported images and documents", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.gray.opacity(0.1))
@@ -60,7 +43,7 @@ struct AppearanceSettingsView: View {
             Text("Dark").tag(AppTheme.dark)
           }
           .pickerStyle(SegmentedPickerStyle())
-          .help("Choose your preferred color scheme")
+          .conditionalHelp("Choose your preferred color scheme", when: tooltipsEnabled)
 
           HStack {
             Text("Font Size")
@@ -70,7 +53,7 @@ struct AppearanceSettingsView: View {
           }
 
           Slider(value: self.$fontSize, in: 12...20, step: 1)
-            .help("Adjust the base font size throughout the app")
+            .conditionalHelp("Adjust the base font size throughout the app", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.gray.opacity(0.1))

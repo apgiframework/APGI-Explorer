@@ -238,6 +238,12 @@ class FileStorageManager: ObservableObject {
         os_log(
           "Automatic backup failed: %{public}@", log: OSLog.default, type: .error,
           error.localizedDescription)
+
+        // Send system alert if enabled
+        NotificationManager.shared.sendSystemAlert(
+          title: "Backup Failed",
+          message: "Automatic backup could not be completed: \(error.localizedDescription)"
+        )
       }
     }
   }

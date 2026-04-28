@@ -4,7 +4,8 @@ import XCTest
 
 @MainActor
 final class CrashReportingManagerTests: XCTestCase {
-  var crashReportingManager: CrashReportingManager?
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  var crashReportingManager: CrashReportingManager!
 
   override func setUpWithError() throws {
     continueAfterFailure = false

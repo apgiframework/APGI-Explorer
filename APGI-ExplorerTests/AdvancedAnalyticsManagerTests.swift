@@ -4,8 +4,10 @@ import XCTest
 
 @MainActor
 final class AdvancedAnalyticsManagerTests: XCTestCase {
-  var analyticsManager: AdvancedAnalyticsManager?
-  var mockDataStore: MockDataStore?
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  var analyticsManager: AdvancedAnalyticsManager!
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  var mockDataStore: MockDataStore!
 
   override func setUpWithError() throws {
     continueAfterFailure = false

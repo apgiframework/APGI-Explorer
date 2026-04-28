@@ -199,7 +199,9 @@ struct ValidatedTextField: View {
             .stroke(self.validationError?.severity.color ?? Color.clear, lineWidth: 1)
         )
         .onAppear {
-          self.validate()
+          DispatchQueue.main.async {
+            self.validate()
+          }
         }
         .onChange(of: self.text) { _, _ in
           self.validate()
@@ -256,7 +258,9 @@ struct ValidatedPicker<T: Hashable>: View {
           .stroke(self.validationError?.severity.color ?? Color.clear, lineWidth: 1)
       )
       .onAppear {
-        self.validate()
+        DispatchQueue.main.async {
+          self.validate()
+        }
       }
       .onChange(of: self.selection) { _, _ in
         self.validate()

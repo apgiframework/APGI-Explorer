@@ -35,8 +35,6 @@ struct SettingsView: View {
           ChartsSettingsView()
         case .privacy:
           DataPrivacySettingsView()
-        case .cloudSync:
-          CloudSyncSettingsView()
         case .notifications:
           NotificationsSettingsView()
         case .windowManagement:
@@ -58,7 +56,7 @@ struct SettingsView: View {
 // MARK: - Settings Tab Enum
 
 enum SettingsTab: CaseIterable {
-  case general, appearance, charts, privacy, cloudSync, notifications, windowManagement,
+  case general, appearance, charts, privacy, notifications, windowManagement,
     exportBackup, advanced, psychologicalStates
 
   var title: String {
@@ -67,7 +65,6 @@ enum SettingsTab: CaseIterable {
     case .appearance: "Appearance"
     case .charts: "Charts"
     case .privacy: "Privacy"
-    case .cloudSync: "Cloud Sync"
     case .notifications: "Notifications"
     case .windowManagement: "Window Management"
     case .exportBackup: "Export & Backup"
@@ -82,7 +79,6 @@ enum SettingsTab: CaseIterable {
     case .appearance: "paintbrush"
     case .charts: "chart.bar"
     case .privacy: "lock.shield"
-    case .cloudSync: "icloud"
     case .notifications: "bell"
     case .windowManagement: "rectangle.on.rectangle"
     case .exportBackup: "square.and.arrow.up"
@@ -99,7 +95,6 @@ enum SettingsTab: CaseIterable {
 // MARK: - Missing Settings Views (Placeholders)
 
 struct NotificationsSettingsView: View {
-  @AppStorage("quizReminderEnabled") private var enableQuizReminders = true
   @AppStorage("enableProfileUpdates") private var enableProfileUpdates = true
   @AppStorage("enableSystemAlerts") private var enableSystemAlerts = true
 
@@ -111,11 +106,6 @@ struct NotificationsSettingsView: View {
           .fontWeight(.bold)
 
         Form {
-          Section(header: Text("Quiz & Assessment")) {
-            Toggle("Quiz Reminders", isOn: self.$enableQuizReminders)
-              .help("Receive reminders to complete assessments")
-          }
-
           Section(header: Text("Profile & Data")) {
             Toggle("Profile Updates", isOn: self.$enableProfileUpdates)
               .help("Get notified about profile changes and insights")
@@ -146,6 +136,8 @@ struct WindowManagementSettingsView: View {
   @AppStorage("rememberWindowPositions") private var rememberPositions = true
   @AppStorage("autoSaveWindowState") private var autoSaveState = true
 
+  @Environment(\.showTooltips) private var tooltipsEnabled
+
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
@@ -161,15 +153,15 @@ struct WindowManagementSettingsView: View {
               Text("Side by Side").tag("sideBySide")
             }
             .pickerStyle(SegmentedPickerStyle())
-            .help("Default arrangement for multiple windows")
+            .conditionalHelp("Default arrangement for multiple windows", when: tooltipsEnabled)
           }
 
           Section(header: Text("Behavior")) {
             Toggle("Remember Window Positions", isOn: self.$rememberPositions)
-              .help("Restore window positions on app launch")
+              .conditionalHelp("Restore window positions on app launch", when: tooltipsEnabled)
 
             Toggle("Auto-Save Window State", isOn: self.$autoSaveState)
-              .help("Automatically save window positions and sizes")
+              .conditionalHelp("Automatically save window positions and sizes", when: tooltipsEnabled)
           }
 
           Section(header: Text("Window Types")) {
@@ -187,9 +179,16 @@ struct WindowManagementSettingsView: View {
 }
 
 struct ExportBackupSettingsView: View {
-  @AppStorage("defaultExportFormat") private var defaultFormat = "json"
+  @AppStorage("exportFormat") private var defaultFormat: ExportFormat = .json
   @AppStorage("backupFrequency") private var backupFrequency = "weekly"
   @AppStorage("autoBackupEnabled") private var autoBackup = true
+  @AppStorage("maxBackupFiles") private var maxBackupFiles: Int = 10
+
+  @Environment(\.showTooltips) private var tooltipsEnabled
+
+  @State private var maxBackupFilesString: String = "10"
+  @StateObject private var validationManager = SettingsValidationManager()
+
   @State private var operationMessage = ""
   @State private var showOperationAlert = false
   @State private var isWorking = false
@@ -204,10 +203,10 @@ struct ExportBackupSettingsView: View {
         Form {
           Section(header: Text("Export Settings")) {
             Picker("Default Export Format", selection: self.$defaultFormat) {
-              Text("JSON").tag("json")
-              Text("CSV").tag("csv")
-              Text("PDF").tag("pdf")
-              Text("PNG").tag("png")
+              Text("JSON").tag(ExportFormat.json)
+              Text("CSV").tag(ExportFormat.csv)
+              Text("PDF").tag(ExportFormat.pdf)
+              Text("PNG").tag(ExportFormat.png)
             }
             .pickerStyle(SegmentedPickerStyle())
             .help("Default format for data exports")
@@ -215,7 +214,7 @@ struct ExportBackupSettingsView: View {
 
           Section(header: Text("Backup Settings")) {
             Toggle("Enable Automatic Backups", isOn: self.$autoBackup)
-              .help("Automatically backup data at scheduled intervals")
+              .conditionalHelp("Automatically backup data at scheduled intervals", when: tooltipsEnabled)
 
             if self.autoBackup {
               Picker("Backup Frequency", selection: self.$backupFrequency) {
@@ -224,14 +223,26 @@ struct ExportBackupSettingsView: View {
                 Text("Monthly").tag("monthly")
               }
               .pickerStyle(SegmentedPickerStyle())
-              .help("How often to perform automatic backups")
+              .conditionalHelp("How often to perform automatic backups", when: tooltipsEnabled)
+
+              ValidatedTextField(
+                title: "Max Backup Files",
+                text: self.$maxBackupFilesString,
+                validator: { text in
+                  if let count = Int(text) {
+                    return self.validationManager.validateMaxBackupFiles(count)
+                  }
+                  return ValidationError(field: "Max Backup Files", message: "Must be a valid integer", severity: .error)
+                }
+              )
+              .conditionalHelp("Maximum number of automatic backups to keep before deleting older ones", when: tooltipsEnabled)
             }
 
             Button("Backup Now") {
               self.createBackupNow()
             }
             .disabled(self.isWorking)
-            .help("Create a backup immediately")
+            .conditionalHelp("Create a backup immediately", when: tooltipsEnabled)
           }
 
           Section(header: Text("Data Management")) {
@@ -239,19 +250,27 @@ struct ExportBackupSettingsView: View {
               self.exportAllProfiles()
             }
             .disabled(self.isWorking)
-            .help("Export all profile data")
+            .conditionalHelp("Export all profile data", when: tooltipsEnabled)
 
             Button("Import Profiles") {
               self.importProfiles()
             }
             .disabled(self.isWorking)
-            .help("Import profile data from file")
+            .conditionalHelp("Import profile data from file", when: tooltipsEnabled)
           }
         }
       }
       .padding()
     }
     .navigationTitle("Export & Backup")
+    .onAppear {
+      self.maxBackupFilesString = String(self.maxBackupFiles)
+    }
+    .onChange(of: self.maxBackupFilesString) { _, newValue in
+      if let count = Int(newValue), self.validationManager.validateMaxBackupFiles(count) == nil {
+        self.maxBackupFiles = count
+      }
+    }
     .onChange(of: self.backupFrequency) { _, newValue in
       if let frequency = BackupFrequency(rawValue: newValue) {
         UserDefaultsManager.shared.backupFrequency = frequency
@@ -326,9 +345,7 @@ struct ExportBackupSettingsView: View {
 }
 
 struct PsychologicalStatesSettingsView: View {
-  @AppStorage("showStateDescriptions") private var showDescriptions = true
   @AppStorage("autoRefreshStates") private var autoRefresh = false
-  @AppStorage("stateDisplayMode") private var displayMode = "grid"
 
   var body: some View {
     ScrollView {
@@ -338,28 +355,15 @@ struct PsychologicalStatesSettingsView: View {
           .fontWeight(.bold)
 
         Form {
-          Section(header: Text("Display")) {
-            Picker("Display Mode", selection: self.$displayMode) {
-              Text("Grid").tag("grid")
-              Text("List").tag("list")
-              Text("Cards").tag("cards")
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .help("Choose how states are displayed")
-
-            Toggle("Show Descriptions", isOn: self.$showDescriptions)
-              .help("Display detailed descriptions for each state")
-          }
-
           Section(header: Text("Behavior")) {
             Toggle("Auto-Refresh States", isOn: self.$autoRefresh)
               .help("Automatically refresh state data periodically")
           }
 
           Section(header: Text("Performance")) {
-            Text("Grid mode: Optimized for browsing")
-            Text("List mode: Compact for quick access")
-            Text("Cards mode: Detailed with animations")
+            Text("States are displayed in grid mode for optimal browsing")
+              .font(.caption)
+              .foregroundColor(.secondary)
           }
         }
       }

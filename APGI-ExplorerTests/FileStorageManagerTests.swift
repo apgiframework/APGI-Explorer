@@ -4,7 +4,8 @@ import XCTest
 
 @MainActor
 final class FileStorageManagerTests: XCTestCase {
-  var fileStorageManager: FileStorageManager?
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  private var fileStorageManager: FileStorageManager!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -20,19 +21,22 @@ final class FileStorageManagerTests: XCTestCase {
   }
 
   func testListBackups() throws {
-    let backups = try self.fileStorageManager.listBackups()
+    let manager = try XCTUnwrap(self.fileStorageManager)
+    let backups = try manager.listBackups()
     XCTAssertNotNil(backups)
     // May be empty, but should not crash
   }
 
-  func testScheduleAutomaticBackups() {
-    self.fileStorageManager.scheduleAutomaticBackups()
+  func testScheduleAutomaticBackups() throws {
+    let manager = try XCTUnwrap(self.fileStorageManager)
+    manager.scheduleAutomaticBackups()
     // Should not crash
     XCTAssertTrue(true)
   }
 
-  func testStopAutomaticBackups() {
-    self.fileStorageManager.stopAutomaticBackups()
+  func testStopAutomaticBackups() throws {
+    let manager = try XCTUnwrap(self.fileStorageManager)
+    manager.stopAutomaticBackups()
     // Should not crash
     XCTAssertTrue(true)
   }

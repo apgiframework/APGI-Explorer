@@ -82,6 +82,7 @@ final class StoreKitTests: XCTestCase {
     }
   }
 
+  @MainActor
   func testProductLoading() async throws {
     let expectation = XCTestExpectation(description: "Product loading completes")
 
@@ -102,22 +103,9 @@ final class StoreKitTests: XCTestCase {
     // The important thing is that the method completes without crashing
   }
 
+  @MainActor
   func testPurchaseRestoration() async throws {
-    let expectation = XCTestExpectation(description: "Purchase restoration completes")
-
-    Task {
-      await self.storeManager?.restorePurchases()
-
-      DispatchQueue.main.async {
-        expectation.fulfill()
-      }
-    }
-
-    await fulfillment(of: [expectation], timeout: 10.0)
-
-    // Verify loading state is reset
+    await self.storeManager?.restorePurchases()
     XCTAssertFalse(try XCTUnwrap(self.storeManager?.isLoading))
-
-    // The important thing is that the method completes without crashing
   }
 }

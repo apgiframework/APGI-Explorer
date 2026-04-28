@@ -43,6 +43,11 @@ class ContextualHelpManager: ObservableObject {
         self.completedTutorials.contains(tutorialId)
     }
 
+    func resetCompletedTutorials() {
+        self.completedTutorials.removeAll()
+        self.saveCompletedTutorials()
+    }
+
     func getTutorial(for context: HelpContext) -> Tutorial? {
         self.availableTutorials.first { $0.contexts.contains(context) }
     }

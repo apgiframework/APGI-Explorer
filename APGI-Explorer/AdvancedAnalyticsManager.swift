@@ -66,6 +66,10 @@ class AdvancedAnalyticsManager: ObservableObject {
     var trends: [TrendDataPoint] = []
     var insights: [AnalyticsInsight] = []
 
+    guard !profiles.isEmpty || !historical.isEmpty else {
+      return TrendAnalysisResult(trends: [], insights: [])
+    }
+
     // Analyze parameter trends over time
     let parameters: [KeyPath<QuizProfile, Double>] = [
       \.epsilon, \.precision, \.threshold, \.somaticBias

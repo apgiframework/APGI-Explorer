@@ -1,4 +1,3 @@
-import CloudKit
 import Combine
 import CoreData
 
@@ -9,6 +8,15 @@ enum PersistenceControllerError: Error {
 
 class PersistenceController: ObservableObject {
   static let shared = PersistenceController()
+
+  /// Static model to prevent duplicate entity registration across bundles
+  private static let managedObjectModel: NSManagedObjectModel = {
+    guard let modelURL = Bundle.main.url(forResource: "APGIExplorer", withExtension: "momd"),
+          let model = NSManagedObjectModel(contentsOf: modelURL) else {
+      fatalError("Failed to load Core Data model from main bundle")
+    }
+    return model
+  }()
 
   let container: NSPersistentContainer
 
@@ -36,7 +44,7 @@ class PersistenceController: ObservableObject {
   }()
 
   init(inMemory: Bool = false) {
-    self.container = NSPersistentCloudKitContainer(name: "APGIExplorer")
+    self.container = NSPersistentContainer(name: "APGIExplorer", managedObjectModel: Self.managedObjectModel)
 
     if inMemory {
       self.container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")

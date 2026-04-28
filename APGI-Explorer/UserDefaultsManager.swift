@@ -17,6 +17,8 @@ class UserDefaultsManager {
     static let defaultProfileName = "defaultProfileName"
     static let theme = "theme"
     static let quizReminderEnabled = "quizReminderEnabled"
+    static let enableProfileUpdates = "enableProfileUpdates"
+    static let enableSystemAlerts = "enableSystemAlerts"
     static let lastQuizDate = "lastQuizDate"
     static let totalQuizzesCompleted = "totalQuizzesCompleted"
     static let analyticsEnabled = "analyticsEnabled"
@@ -26,6 +28,9 @@ class UserDefaultsManager {
     static let lastBackupDate = "lastBackupDate"
     static let statesDisplayMode = "statesDisplayMode"
     static let defaultComparisonMode = "defaultComparisonMode"
+    static let defaultWindowArrangement = "defaultWindowArrangement"
+    static let rememberWindowPositions = "rememberWindowPositions"
+    static let autoSaveWindowState = "autoSaveWindowState"
   }
 
   // MARK: - Onboarding
@@ -95,6 +100,16 @@ class UserDefaultsManager {
     set { self.defaults.set(newValue, forKey: Keys.quizReminderEnabled) }
   }
 
+  var enableProfileUpdates: Bool {
+    get { self.defaults.bool(forKey: Keys.enableProfileUpdates) }
+    set { self.defaults.set(newValue, forKey: Keys.enableProfileUpdates) }
+  }
+
+  var enableSystemAlerts: Bool {
+    get { self.defaults.bool(forKey: Keys.enableSystemAlerts) }
+    set { self.defaults.set(newValue, forKey: Keys.enableSystemAlerts) }
+  }
+
   var analyticsEnabled: Bool {
     get { self.defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? false }
     set { self.defaults.set(newValue, forKey: Keys.analyticsEnabled) }
@@ -151,6 +166,30 @@ class UserDefaultsManager {
       return mode
     }
     set { self.defaults.set(newValue.rawValue, forKey: Keys.defaultComparisonMode) }
+  }
+
+  // MARK: - Window Management
+
+  var defaultWindowArrangement: WindowArrangement {
+    get {
+      guard let rawValue = defaults.string(forKey: Keys.defaultWindowArrangement),
+        let arrangement = WindowArrangement(rawValue: rawValue)
+      else {
+        return .cascade
+      }
+      return arrangement
+    }
+    set { self.defaults.set(newValue.rawValue, forKey: Keys.defaultWindowArrangement) }
+  }
+
+  var rememberWindowPositions: Bool {
+    get { self.defaults.bool(forKey: Keys.rememberWindowPositions) }
+    set { self.defaults.set(newValue, forKey: Keys.rememberWindowPositions) }
+  }
+
+  var autoSaveWindowState: Bool {
+    get { self.defaults.bool(forKey: Keys.autoSaveWindowState) }
+    set { self.defaults.set(newValue, forKey: Keys.autoSaveWindowState) }
   }
 
   // MARK: - Statistics
@@ -258,4 +297,10 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
     default: return nil
     }
   }
+}
+
+enum WindowArrangement: String, CaseIterable {
+  case cascade
+  case tile
+  case sideBySide
 }

@@ -4,11 +4,13 @@ import XCTest
 
 @MainActor
 final class LocalizationTests: XCTestCase {
-  var localizationManager: LocalizationManager?
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  var localizationManager: LocalizationManager!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
     self.localizationManager = LocalizationManager.shared
+    self.localizationManager.setLanguage(.english)
   }
 
   override func tearDownWithError() throws {

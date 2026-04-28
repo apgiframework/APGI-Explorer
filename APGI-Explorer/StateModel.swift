@@ -110,4 +110,11 @@ class StateModel: ObservableObject {
   func clearCache() {
     self.cache.clearCache()
   }
+
+  /// Refreshes state data - used by auto-refresh feature
+  func refreshIfNeeded() async {
+    // In a real app with a backend, this would check for new data
+    // For now, we just reload from the local source
+    await self.loadStates()
+  }
 }

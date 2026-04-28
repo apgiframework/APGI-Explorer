@@ -5,9 +5,10 @@ import os.log
 
 struct AdvancedSettingsView: View {
   @AppStorage("enableExperimentalFeatures") private var enableExperimentalFeatures: Bool = false
-  @AppStorage("betaUpdates") private var betaUpdates: Bool = false
   @AppStorage("showPerformanceMetrics") private var showPerformanceMetrics: Bool = false
   @AppStorage("enableDebugMode") private var enableDebugMode: Bool = false
+
+  @Environment(\.showTooltips) private var tooltipsEnabled
 
   @State private var showingResetAlert = false
   @State private var showingClearDataAlert = false
@@ -29,10 +30,7 @@ struct AdvancedSettingsView: View {
             .fontWeight(.semibold)
 
           Toggle("Enable Experimental Features", isOn: self.$enableExperimentalFeatures)
-            .help("Enable access to experimental features that may be unstable")
-
-          Toggle("Beta Updates", isOn: self.$betaUpdates)
-            .help("Receive early access to beta versions and features")
+            .conditionalHelp("Enable access to experimental features that may be unstable", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.orange.opacity(0.1))
@@ -45,10 +43,10 @@ struct AdvancedSettingsView: View {
             .fontWeight(.semibold)
 
           Toggle("Show Performance Metrics", isOn: self.$showPerformanceMetrics)
-            .help("Display performance metrics and debugging information")
+            .conditionalHelp("Display performance metrics and debugging information", when: tooltipsEnabled)
 
           Toggle("Enable Debug Mode", isOn: self.$enableDebugMode)
-            .help("Enable additional debugging features and logging")
+            .conditionalHelp("Enable additional debugging features and logging", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.gray.opacity(0.1))

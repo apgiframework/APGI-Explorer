@@ -109,6 +109,12 @@ class ProfileManager: ObservableObject {
             self.userDefaults.totalQuizzesCompleted += 1
             self.userDefaults.lastQuizDate = Date()
 
+            // Schedule next quiz reminder if enabled
+            if self.userDefaults.quizReminderEnabled {
+                let nextQuizDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+                NotificationManager.shared.scheduleQuizReminder(for: nextQuizDate)
+            }
+
             Task {
                 let apgiProfile = await self.enhancedProfile(from: profile.results)
                 let profileType = self.determineProfileType(for: apgiProfile)
@@ -134,6 +140,11 @@ class ProfileManager: ObservableObject {
         if self.currentProfile?.id == profile.id {
             self.currentProfile = updatedProfile
         }
+
+        // Send profile update notification if enabled
+        NotificationManager.shared.sendProfileUpdateNotification(
+            message: "Profile '\(profile.name)' has been updated."
+        )
     }
 
     func deleteProfile(_ profile: QuizProfile) async throws {

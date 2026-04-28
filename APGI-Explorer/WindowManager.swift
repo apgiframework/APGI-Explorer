@@ -83,10 +83,19 @@
 
       window.title = type.title
       window.center()
-      window.setFrameAutosaveName(type.rawValue)
       window.isReleasedWhenClosed = false
       window.minSize = type.minimumSize
       window.contentView = NSHostingView(rootView: content())
+
+      // Apply window state settings
+      if UserDefaultsManager.shared.rememberWindowPositions {
+        window.setFrameAutosaveName(type.rawValue)
+      }
+
+      if UserDefaultsManager.shared.autoSaveWindowState {
+        window.setFrameAutosaveName(type.rawValue)
+      }
+
       window.makeKeyAndOrderFront(nil)
 
       // Store reference
@@ -117,6 +126,84 @@
     func toggleFullscreen(type: WindowType) {
       guard let window = activeWindows[type] else { return }
       window.toggleFullScreen(nil)
+    }
+
+    // MARK: - Window Arrangement
+
+    func arrangeWindows() {
+      let arrangement = UserDefaultsManager.shared.defaultWindowArrangement
+      let windows = Array(activeWindows.values)
+
+      guard !windows.isEmpty else { return }
+
+      switch arrangement {
+      case .cascade:
+        arrangeCascade(windows)
+      case .tile:
+        arrangeTile(windows)
+      case .sideBySide:
+        arrangeSideBySide(windows)
+      }
+    }
+
+    private func arrangeCascade(_ windows: [NSWindow]) {
+      let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
+      let offset: CGFloat = 30
+
+      for (index, window) in windows.enumerated() {
+        let x = screen.origin.x + CGFloat(index) * offset
+        let y = screen.origin.y + CGFloat(index) * offset
+        let frame = NSRect(
+          x: x,
+          y: y,
+          width: min(screen.width - CGFloat(index) * offset, window.frame.width),
+          height: min(screen.height - CGFloat(index) * offset, window.frame.height)
+        )
+        window.setFrame(frame, display: true, animate: true)
+      }
+    }
+
+    private func arrangeTile(_ windows: [NSWindow]) {
+      let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
+      let count = windows.count
+      let columns = Int(ceil(sqrt(Double(count))))
+      let rows = Int(ceil(Double(count) / Double(columns)))
+
+      let windowWidth = screen.width / CGFloat(columns)
+      let windowHeight = screen.height / CGFloat(rows)
+
+      for (index, window) in windows.enumerated() {
+        let column = index % columns
+        let row = index / columns
+        let x = screen.origin.x + CGFloat(column) * windowWidth
+        let y = screen.origin.y + CGFloat(row) * windowHeight
+        let frame = NSRect(x: x, y: y, width: windowWidth, height: windowHeight)
+        window.setFrame(frame, display: true, animate: true)
+      }
+    }
+
+    private func arrangeSideBySide(_ windows: [NSWindow]) {
+      let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
+      let windowWidth = screen.width / CGFloat(windows.count)
+
+      for (index, window) in windows.enumerated() {
+        let x = screen.origin.x + CGFloat(index) * windowWidth
+        let frame = NSRect(x: x, y: screen.origin.y, width: windowWidth, height: screen.height)
+        window.setFrame(frame, display: true, animate: true)
+      }
+    }
+
+    // MARK: - Window State Management
+
+    func saveWindowState(for type: WindowType) {
+      guard UserDefaultsManager.shared.autoSaveWindowState,
+            let window = activeWindows[type] else { return }
+      window.setFrameAutosaveName(type.rawValue)
+    }
+
+    func restoreWindowState(for type: WindowType) {
+      guard UserDefaultsManager.shared.rememberWindowPositions else { return }
+      // NSWindow automatically restores frame using setFrameAutosaveName
     }
   }
 

@@ -224,9 +224,6 @@ class ResearchExportManager: ObservableObject {
 
       # Also save as RData workspace
       save(apgi_data, file = "apgi_profile.RData")
-
-      os_log("APGI Profile Data Summary:")
-      os_log("%{public}@", apgi_data.description)
       """
 
     return rScript.data(using: .utf8) ?? Data()

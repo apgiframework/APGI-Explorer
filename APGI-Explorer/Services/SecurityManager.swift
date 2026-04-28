@@ -216,6 +216,10 @@ extension SecurityManager {
       exportData["lastBackupDate"] = backupDate
     }
 
+    if let sessionToken = try await retrieveSessionToken() {
+      exportData["sessionToken"] = sessionToken
+    }
+
     return exportData
   }
 
@@ -240,6 +244,10 @@ extension SecurityManager {
 
     if let backupDate = data["lastBackupDate"] as? Date {
       try await self.storeLastBackupDate(backupDate)
+    }
+
+    if let sessionToken = data["sessionToken"] as? String {
+      try await self.storeSessionToken(sessionToken)
     }
   }
 }

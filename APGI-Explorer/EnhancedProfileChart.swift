@@ -1,57 +1,6 @@
 import Charts
 import SwiftUI
 
-// MARK: - Shape Extensions
-
-struct Diamond: Shape {
-  func path(in rect: CGRect) -> Path {
-    var path = Path()
-    path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-    path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-    path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-    path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
-    path.closeSubpath()
-    return path
-  }
-}
-
-struct Triangle: Shape {
-  func path(in rect: CGRect) -> Path {
-    var path = Path()
-    path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-    path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-    path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-    path.closeSubpath()
-    return path
-  }
-}
-
-struct Square: Shape {
-  func path(in rect: CGRect) -> Path {
-    var path = Path()
-    path.addRect(rect)
-    return path
-  }
-}
-
-// MARK: - Data Models
-
-struct ChartDataPoint: Identifiable {
-  let id = UUID()
-  let parameter: String
-  let value: Double
-  let profileName: String
-}
-
-struct HistoricalDataPoint: Identifiable {
-  let id = UUID()
-  let date: Date
-  let epsilon: Double
-  let precision: Double
-  let threshold: Double
-  let somaticBias: Double
-}
-
 struct EnhancedProfileChart: View {
   let profile: APGIProfile
   let comparisonProfiles: [APGIProfile]
@@ -59,13 +8,43 @@ struct EnhancedProfileChart: View {
   @ObservedObject private var performanceManager = PerformanceManager.shared
   @StateObject private var performanceTracker = PerformanceTracker()
 
+  @Environment(\.animationSpeed) private var animationSpeed
+
   @AppStorage("preferredChartStyle") private var defaultChartStyle: ChartStyle = .radar
-  @AppStorage("showDataPoints") private var showDataPoints: Bool = true
-  @AppStorage("showValuesOnBars") private var showValuesOnBars: Bool = true
-  @AppStorage("allowZooming") private var allowZooming: Bool = true
-  @AppStorage("normalizeValues") private var normalizeValues: Bool = true
-  @AppStorage("showAverageProfile") private var showAverageProfile: Bool = false
-  @AppStorage("showDifferencesOnly") private var showDifferencesOnly: Bool = false
+  @AppStorage("showChartGrid") internal var showChartGrid: Bool = true
+  @AppStorage("animateCharts") var animateCharts: Bool = true
+  @AppStorage("chartColorScheme") var chartColorScheme: String = "default"
+
+  /// Color scheme based on setting
+  var chartColors: [Color] {
+    switch chartColorScheme {
+    case "colorful":
+      return [.red, .orange, .yellow, .green, .blue, .purple, .pink]
+    case "monochrome":
+      return [.gray, .gray.opacity(0.7), .gray.opacity(0.5), .gray.opacity(0.3)]
+    default:
+      return [.blue, .green, .orange, .purple]
+    }
+  }
+
+  /// Grid visibility modifier
+  var gridVisibility: Visibility {
+    showChartGrid ? .automatic : .hidden
+  }
+
+  /// Computed animation duration based on both animateCharts setting and animationSpeed
+  internal var chartAnimation: Animation? {
+    guard animateCharts else { return nil }
+    let baseDuration = 0.3
+    let adjustedDuration = baseDuration.adjustedForAnimationSpeed(animationSpeed)
+    return .easeInOut(duration: adjustedDuration)
+  }
+  @AppStorage("showDataPoints") internal var showDataPoints: Bool = true
+  @AppStorage("showValuesOnBars") internal var showValuesOnBars: Bool = true
+  @AppStorage("allowZooming") internal var allowZooming: Bool = true
+  @AppStorage("normalizeValues") internal var normalizeValues: Bool = true
+  @AppStorage("showAverageProfile") var showAverageProfile: Bool = false
+  @AppStorage("showDifferencesOnly") var showDifferencesOnly: Bool = false
 
   // Performance optimization: Cache computed properties
   @State private var cachedHistoricalData: [HistoricalDataPoint]?
@@ -106,7 +85,7 @@ struct EnhancedProfileChart: View {
   }
 
   /// Performance optimization: Cache profile data points
-  private var profileDataPoints: [ChartDataPoint] {
+  internal var profileDataPoints: [ChartDataPoint] {
     if let cached = cachedProfileDataPoints {
       return cached
     }
@@ -131,7 +110,7 @@ struct EnhancedProfileChart: View {
   }
 
   /// Performance optimization: Cache comparison data and limit comparisons
-  private var comparisonData: [ChartDataPoint] {
+  var comparisonData: [ChartDataPoint] {
     if let cached = cachedComparisonData {
       return cached
     }
@@ -309,41 +288,7 @@ struct EnhancedProfileChart: View {
     }
   }
 
-  // MARK: - Tab Views
-
-  private var radarChartView: some View {
-    VStack {
-      Text("Cognitive Profile Radar")
-        .font(.headline)
-        .padding(.bottom)
-
-      // Using the existing StateComparisonRadar if available, or a placeholder
-      if let stateComparisonRadar = createStateComparisonRadar() {
-        stateComparisonRadar
-          .frame(height: 300)
-      } else {
-        Text("Radar chart not available")
-          .foregroundColor(.secondary)
-      }
-
-      Spacer()
-
-      VStack(alignment: .leading, spacing: 8) {
-        ForEach(self.profileDataPoints) { point in
-          HStack {
-            Circle()
-              .fill(self.colorForParameter(point.parameter))
-              .frame(width: 12, height: 12)
-            Text(point.parameter)
-            Spacer()
-            Text("\(Int(point.value))")
-              .font(.system(.body, design: .monospaced))
-          }
-        }
-      }
-      .padding()
-    }
-  }
+  // MARK: - Additional Chart Views
 
   private var chart3DView: some View {
     VStack {
@@ -356,7 +301,7 @@ struct EnhancedProfileChart: View {
           x: .value("Parameter", point.parameter),
           y: .value("Score", point.value)
         )
-        .foregroundStyle(by: .value("Profile", "Current"))
+        .foregroundStyle(chartColors.first ?? .blue)
         .symbolSize(100)
         .symbol {
           Circle()
@@ -367,6 +312,23 @@ struct EnhancedProfileChart: View {
       }
       .chartYScale(domain: 0...100)
       .chartLegend(.hidden)
+      .chartXAxis {
+        AxisMarks(preset: .aligned) { _ in
+          AxisValueLabel()
+          if showChartGrid {
+            AxisGridLine()
+          }
+        }
+      }
+      .chartYAxis {
+        AxisMarks(preset: .aligned) { _ in
+          AxisValueLabel()
+          if showChartGrid {
+            AxisGridLine()
+          }
+        }
+      }
+      .animation(chartAnimation, value: profile)
       .frame(height: 300)
       .padding()
       .background(
@@ -401,7 +363,6 @@ struct EnhancedProfileChart: View {
         .padding(.bottom)
 
       Chart {
-        // Epsilon Line
         ForEach(self.historicalData) { point in
           LineMark(
             x: .value("Date", point.date, unit: .day),
@@ -410,15 +371,8 @@ struct EnhancedProfileChart: View {
           .foregroundStyle(.blue)
           .interpolationMethod(.catmullRom)
           .lineStyle(StrokeStyle(lineWidth: 2))
-          .symbol {
-            Circle()
-              .strokeBorder(lineWidth: 2)
-              .foregroundStyle(.blue)
-              .frame(width: 6, height: 6)
-          }
         }
 
-        // Precision Line
         ForEach(self.historicalData) { point in
           LineMark(
             x: .value("Date", point.date, unit: .day),
@@ -427,46 +381,6 @@ struct EnhancedProfileChart: View {
           .foregroundStyle(.green)
           .interpolationMethod(.catmullRom)
           .lineStyle(StrokeStyle(lineWidth: 2))
-          .symbol {
-            Diamond()
-              .stroke(lineWidth: 2)
-              .foregroundStyle(.green)
-              .frame(width: 6, height: 6)
-          }
-        }
-
-        // Threshold Line
-        ForEach(self.historicalData) { point in
-          LineMark(
-            x: .value("Date", point.date, unit: .day),
-            y: .value("Score", point.threshold)
-          )
-          .foregroundStyle(.orange)
-          .interpolationMethod(.catmullRom)
-          .lineStyle(StrokeStyle(lineWidth: 2))
-          .symbol {
-            Square()
-              .stroke(lineWidth: 2)
-              .foregroundStyle(.orange)
-              .frame(width: 6, height: 6)
-          }
-        }
-
-        // Somatic Bias Line
-        ForEach(self.historicalData) { point in
-          LineMark(
-            x: .value("Date", point.date, unit: .day),
-            y: .value("Score", point.somaticBias)
-          )
-          .foregroundStyle(.purple)
-          .interpolationMethod(.catmullRom)
-          .lineStyle(StrokeStyle(lineWidth: 2))
-          .symbol {
-            Triangle()
-              .stroke(lineWidth: 2)
-              .foregroundStyle(.purple)
-              .frame(width: 6, height: 6)
-          }
         }
       }
       .chartXAxis {
@@ -477,20 +391,28 @@ struct EnhancedProfileChart: View {
                 .font(.caption2)
             }
             AxisTick()
+            if self.showChartGrid {
+              AxisGridLine()
+            }
+          }
+        }
+      }
+      .chartYAxis {
+        AxisMarks(position: .leading) { _ in
+          AxisValueLabel()
+          if self.showChartGrid {
             AxisGridLine()
           }
         }
       }
       .chartYScale(domain: 0...100)
+      .animation(chartAnimation, value: historicalData)
       .frame(height: 300)
       .padding()
 
-      // Legend
       HStack(spacing: 20) {
         LegendItem(color: .blue, label: "ε (Epsilon)")
         LegendItem(color: .green, label: "π (Precision)")
-        LegendItem(color: .orange, label: "θₜ (Threshold)")
-        LegendItem(color: .purple, label: "β (Somatic Bias)")
       }
       .padding()
     }
@@ -518,11 +440,12 @@ struct EnhancedProfileChart: View {
           by: .value("Value", self.normalizeValues ? dataPoint.value / 100.0 : dataPoint.value)
         )
         .cornerRadius(4)
-        .annotation(position: .overlay) {
-          if self.showValuesOnBars {
-            Text("\(Int(dataPoint.value))")
-              .font(.system(size: 10, weight: .bold))
-              .foregroundColor(dataPoint.value > 70 ? .white : .primary)
+      }
+      .chartXAxis {
+        AxisMarks(position: .bottom) { _ in
+          AxisValueLabel()
+          if self.showChartGrid {
+            AxisGridLine()
           }
         }
       }
@@ -533,11 +456,14 @@ struct EnhancedProfileChart: View {
       }
       .foregroundStyle(
         LinearGradient(
-          colors: [Color.red, Color.yellow, Color.green],
+          colors: self.chartColorScheme == "monochrome"
+            ? [Color.gray, Color.gray.opacity(0.5)]
+            : [Color.red, Color.yellow, Color.green],
           startPoint: .bottom,
           endPoint: .top
         )
       )
+      .animation(chartAnimation, value: effectiveComparisonData)
       .frame(height: comparisonHeight)
       .padding()
 
@@ -545,159 +471,6 @@ struct EnhancedProfileChart: View {
         .font(.caption)
         .foregroundColor(.secondary)
         .padding()
-    }
-  }
-
-  // MARK: - Additional Chart Views
-
-  private var barChartView: some View {
-    VStack {
-      Text("Parameter Bar Chart")
-        .font(.headline)
-        .padding(.bottom)
-
-      Chart(self.profileDataPoints) { point in
-        BarMark(
-          x: .value("Parameter", point.parameter),
-          y: .value("Score", self.normalizeValues ? point.value / 100.0 : point.value)
-        )
-        .foregroundStyle(self.colorForParameter(point.parameter))
-        .opacity(0.8)
-        .annotation(position: .overlay) {
-          if self.showValuesOnBars {
-            Text("\(Int(point.value))")
-              .font(.system(size: 10, weight: .bold))
-              .foregroundColor(point.value > 70 ? .white : .primary)
-          }
-        }
-      }
-      .chartYScale(domain: self.normalizeValues ? 0...1 : 0...100)
-      .chartLegend(.hidden)
-      .frame(height: 300)
-      .padding()
-      .background(
-        RoundedRectangle(cornerRadius: 12)
-          .fill(Color(NSColor.controlBackgroundColor).opacity(0.2))
-          .shadow(radius: 5)
-      )
-      .padding()
-
-      Spacer()
-
-      VStack(alignment: .leading) {
-        ForEach(self.profileDataPoints) { point in
-          HStack {
-            Circle()
-              .fill(self.colorForParameter(point.parameter))
-              .frame(width: 12, height: 12)
-            Text(point.parameter)
-            Spacer()
-            Text("\(Int(point.value))")
-              .font(.system(.body, design: .monospaced))
-          }
-        }
-      }
-      .padding()
-    }
-  }
-
-  private var lineChartView: some View {
-    VStack {
-      Text("Parameter Line Chart")
-        .font(.headline)
-        .padding(.bottom)
-
-      Chart(self.profileDataPoints) { point in
-        LineMark(
-          x: .value("Parameter", point.parameter),
-          y: .value("Score", self.normalizeValues ? point.value / 100.0 : point.value)
-        )
-        .foregroundStyle(self.colorForParameter(point.parameter))
-        .lineStyle(StrokeStyle(lineWidth: 3))
-        .symbol {
-          if self.showDataPoints {
-            Circle()
-              .fill(self.colorForParameter(point.parameter))
-              .frame(width: 8, height: 8)
-          }
-        }
-      }
-      .chartYScale(domain: self.normalizeValues ? 0...1 : 0...100)
-      .chartLegend(.hidden)
-      .frame(height: 300)
-      .padding()
-      .background(
-        RoundedRectangle(cornerRadius: 12)
-          .fill(Color(NSColor.controlBackgroundColor).opacity(0.2))
-          .shadow(radius: 5)
-      )
-      .padding()
-
-      Spacer()
-
-      VStack(alignment: .leading) {
-        ForEach(self.profileDataPoints) { point in
-          HStack {
-            Circle()
-              .fill(self.colorForParameter(point.parameter))
-              .frame(width: 12, height: 12)
-            Text(point.parameter)
-            Spacer()
-            Text("\(Int(point.value))")
-              .font(.system(.body, design: .monospaced))
-          }
-        }
-      }
-      .padding()
-    }
-  }
-
-  private var areaChartView: some View {
-    VStack {
-      Text("Parameter Area Chart")
-        .font(.headline)
-        .padding(.bottom)
-
-      Chart(self.profileDataPoints) { point in
-        AreaMark(
-          x: .value("Parameter", point.parameter),
-          y: .value("Score", self.normalizeValues ? point.value / 100.0 : point.value)
-        )
-        .foregroundStyle(
-          LinearGradient(
-            colors: [Color.red, Color.yellow, Color.green],
-            startPoint: .bottom,
-            endPoint: .top
-          )
-        )
-      }
-      .chartYScale(domain: self.normalizeValues ? 0...1 : 0...100)
-      .chartLegend(.hidden)
-      .frame(height: 300)
-      .padding()
-      .background(
-        RoundedRectangle(cornerRadius: 12)
-          .fill(Color(NSColor.controlBackgroundColor).opacity(0.2))
-          .shadow(radius: 5)
-      )
-      .padding()
-
-      Spacer()
-
-      VStack(alignment: .leading) {
-        ForEach(self.profileDataPoints) { point in
-          HStack {
-            Circle()
-              .fill(self.colorForParameter(point.parameter))
-              .frame(width: 12, height: 12)
-            Text(point.parameter)
-            Spacer()
-            Text("\(Int(point.value))")
-              .font(.system(.body, design: .monospaced))
-          }
-        }
-      }
-      .padding()
     }
   }
 
@@ -729,14 +502,9 @@ struct EnhancedProfileChart: View {
     return filteredData
   }
 
-  private func colorForParameter(_ parameter: String) -> Color {
-    switch parameter {
-    case "ε (Epsilon)": .blue
-    case "π (Precision)": .green
-    case "θₜ (Threshold)": .orange
-    case "β (Somatic Bias)": .purple
-    default: .gray
-    }
+  internal func colorForParameter(_ parameter: String) -> Color {
+    let baseColor = Color.baseColorForParameter(parameter)
+    return Color.applyColorScheme(to: baseColor, scheme: self.chartColorScheme)
   }
 
   private func createStateComparisonRadar() -> StateComparisonRadar? {
@@ -794,53 +562,5 @@ struct EnhancedProfileChart: View {
         adaptiveValue: .adaptive
       )
     )
-  }
-}
-
-// MARK: - Supporting Views
-
-struct LegendItem: View {
-  let color: Color
-  let label: String
-
-  var body: some View {
-    HStack(spacing: 4) {
-      Rectangle()
-        .fill(self.color)
-        .frame(width: 12, height: 12)
-      Text(self.label)
-        .font(.caption)
-    }
-  }
-}
-
-// MARK: - Preview
-
-struct EnhancedProfileChart_Previews: PreviewProvider {
-  static var previews: some View {
-    let previewProfile = APGIProfile(
-      epsilon: 65.0,
-      precision: 78.0,
-      threshold: 42.0,
-      somaticBias: 55.0,
-      interactionScore: 50.0,
-      temporalStability: 60.0,
-      environmentalFit: 70.0
-    )
-
-    let comparisonProfiles = [
-      APGIProfile(
-        epsilon: 45.0,
-        precision: 88.0,
-        threshold: 67.0,
-        somaticBias: 72.0,
-        interactionScore: 55.0,
-        temporalStability: 65.0,
-        environmentalFit: 75.0
-      )
-    ]
-
-    return EnhancedProfileChart(profile: previewProfile, comparisonProfiles: comparisonProfiles)
-      .preferredColorScheme(.dark)
   }
 }

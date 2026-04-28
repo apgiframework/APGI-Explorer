@@ -1,9 +1,7 @@
-import CloudKit
 import SwiftUI
 
 @main
 struct APGI_Explorer_iOSApp: App {
-  @StateObject private var cloudSyncManager = CloudSyncManager.shared
   @StateObject private var storeManager = StoreManager.shared
   @StateObject private var localizationManager = LocalizationManager.shared
   @StateObject private var profileManager = ProfileManager()
@@ -11,7 +9,6 @@ struct APGI_Explorer_iOSApp: App {
   var body: some Scene {
     WindowGroup {
       iOSMainTabView()
-        .environmentObject(self.cloudSyncManager)
         .environmentObject(self.storeManager)
         .environmentObject(self.localizationManager)
         .environmentObject(self.profileManager)
@@ -25,7 +22,6 @@ struct APGI_Explorer_iOSApp: App {
     // Load products
     Task {
       await self.storeManager.loadProducts()
-      await self.cloudSyncManager.checkAccountStatus()
       await SecurityManager.shared.configure()
     }
 

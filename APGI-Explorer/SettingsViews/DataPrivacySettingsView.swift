@@ -7,11 +7,11 @@ import UniformTypeIdentifiers
 // MARK: - Data & Privacy Settings View
 
 struct DataPrivacySettingsView: View {
-  @AppStorage("enableCrashReporting") private var enableCrashReporting: Bool = true
-  @AppStorage("enableDataCollection") private var enableDataCollection: Bool = false
   @AppStorage("privacyPolicyAccepted") private var privacyPolicyAccepted: Bool = false
   @AppStorage("analyticsConsent") private var analyticsConsent: Bool = false
   @AppStorage("crashReportingConsent") private var crashReportingConsent: Bool = false
+
+  @Environment(\.showTooltips) private var tooltipsEnabled
 
   @State private var showingPrivacyPolicy = false
   @State private var showingDataExport = false
@@ -23,17 +23,11 @@ struct DataPrivacySettingsView: View {
   var body: some View {
     ScrollView {
       LazyVStack(spacing: 20) {
-        // Privacy Settings Section
+        // Privacy Status Section
         VStack(alignment: .leading, spacing: 12) {
-          Text("Privacy Controls")
+          Text("Privacy Status")
             .font(.headline)
             .fontWeight(.semibold)
-
-          Toggle("Enable Crash Reporting", isOn: self.$enableCrashReporting)
-            .help("Automatically send crash reports to help improve the app")
-
-          Toggle("Enable Data Collection", isOn: self.$enableDataCollection)
-            .help("Allow collection of anonymous usage data for analytics")
 
           HStack {
             Text("Privacy Policy Status")
@@ -45,7 +39,7 @@ struct DataPrivacySettingsView: View {
             .foregroundColor(self.privacyPolicyAccepted ? .green : .red)
             .font(.caption)
           }
-          .help("Policy acceptance is managed through onboarding and policy flow")
+          .conditionalHelp("Policy acceptance is managed through onboarding and policy flow", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.gray.opacity(0.1))
@@ -58,10 +52,10 @@ struct DataPrivacySettingsView: View {
             .fontWeight(.semibold)
 
           Toggle("Analytics Consent", isOn: self.$analyticsConsent)
-            .help("Consent to analytics data collection")
+            .conditionalHelp("Consent to analytics data collection", when: tooltipsEnabled)
 
           Toggle("Crash Reporting Consent", isOn: self.$crashReportingConsent)
-            .help("Consent to automatic crash reporting")
+            .conditionalHelp("Consent to automatic crash reporting", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.gray.opacity(0.1))

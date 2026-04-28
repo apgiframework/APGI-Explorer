@@ -4,14 +4,15 @@ import XCTest
 
 @MainActor
 final class ContextualHelpManagerTests: XCTestCase {
-  var helpManager: ContextualHelpManager?
+  // swiftlint:disable:next implicitly_unwrapped_optional
+  private var helpManager: ContextualHelpManager!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
     self.helpManager = ContextualHelpManager.shared
     // Reset completed tutorials for clean test state
     UserDefaults.standard.removeObject(forKey: "completedTutorials")
-    self.helpManager.completedTutorials.removeAll()
+    self.helpManager.resetCompletedTutorials()
   }
 
   override func tearDownWithError() throws {
@@ -20,35 +21,39 @@ final class ContextualHelpManagerTests: XCTestCase {
     self.helpManager = nil
   }
 
-  func testContextualHelpManagerInitialization() {
-    XCTAssertNotNil(self.helpManager)
-    XCTAssertFalse(self.helpManager.isHelpVisible)
-    XCTAssertNil(self.helpManager.currentHelpContext)
-    XCTAssertFalse(self.helpManager.completedTutorials.isEmpty)  // Has default tutorials
+  func testContextualHelpManagerInitialization() throws {
+    let manager = try XCTUnwrap(self.helpManager)
+    XCTAssertNotNil(manager)
+    XCTAssertFalse(manager.isHelpVisible)
+    XCTAssertNil(manager.currentHelpContext)
+    XCTAssertFalse(manager.availableTutorials.isEmpty)  // Has default tutorials
   }
 
-  func testShowAndDismissHelp() {
+  func testShowAndDismissHelp() throws {
+    let manager = try XCTUnwrap(self.helpManager)
     let context = HelpContext.profileCreation
-    self.helpManager.showHelp(for: context)
-    XCTAssertTrue(self.helpManager.isHelpVisible)
-    XCTAssertEqual(self.helpManager.currentHelpContext, context)
+    manager.showHelp(for: context)
+    XCTAssertTrue(manager.isHelpVisible)
+    XCTAssertEqual(manager.currentHelpContext, context)
 
-    self.helpManager.dismissHelp()
-    XCTAssertFalse(self.helpManager.isHelpVisible)
-    XCTAssertNil(self.helpManager.currentHelpContext)
+    manager.dismissHelp()
+    XCTAssertFalse(manager.isHelpVisible)
+    XCTAssertNil(manager.currentHelpContext)
   }
 
-  func testMarkTutorialCompleted() {
+  func testMarkTutorialCompleted() throws {
+    let manager = try XCTUnwrap(self.helpManager)
     let tutorialId = "test_tutorial"
-    XCTAssertFalse(self.helpManager.isTutorialCompleted(tutorialId))
+    XCTAssertFalse(manager.isTutorialCompleted(tutorialId))
 
-    self.helpManager.markTutorialCompleted(tutorialId)
-    XCTAssertTrue(self.helpManager.isTutorialCompleted(tutorialId))
+    manager.markTutorialCompleted(tutorialId)
+    XCTAssertTrue(manager.isTutorialCompleted(tutorialId))
   }
 
-  func testGetTutorialForContext() {
+  func testGetTutorialForContext() throws {
+    let manager = try XCTUnwrap(self.helpManager)
     let context = HelpContext.profileCreation
-    let tutorial = self.helpManager.getTutorial(for: context)
+    let tutorial = manager.getTutorial(for: context)
     XCTAssertNotNil(tutorial)
     XCTAssertTrue(tutorial?.contexts.contains(context) ?? false)
   }

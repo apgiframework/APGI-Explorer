@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document specifies the exact design specifications for the APGI Appendix macOS application in light mode. All colors, typography, spacing, and component specifications are defined to ensure consistency across the application.
+This document specifies the exact design specifications for the APGI macOS applications. All colors, typography, spacing, and component specifications are defined to ensure consistency across the application.
 
 ---
 

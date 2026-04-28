@@ -8,6 +8,8 @@ struct ChartsSettingsView: View {
   @AppStorage("animateCharts") private var animateCharts: Bool = true
   @AppStorage("chartColorScheme") private var chartColorScheme: String = "default"
 
+  @Environment(\.showTooltips) private var tooltipsEnabled
+
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
@@ -18,10 +20,10 @@ struct ChartsSettingsView: View {
             .fontWeight(.semibold)
 
           Toggle("Show Grid", isOn: self.$showChartGrid)
-            .help("Display grid lines on charts")
+            .conditionalHelp("Display grid lines on charts", when: tooltipsEnabled)
 
           Toggle("Animate Charts", isOn: self.$animateCharts)
-            .help("Show smooth animations when chart data changes")
+            .conditionalHelp("Show smooth animations when chart data changes", when: tooltipsEnabled)
         }
         .padding()
         .background(Color.gray.opacity(0.1))

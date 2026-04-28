@@ -12,6 +12,111 @@ extension Notification.Name {
   static let openRecentProfile = Notification.Name("openRecentProfile")
 }
 
+// MARK: - Animation Speed Environment
+
+struct AnimationSpeedKey: EnvironmentKey {
+  static let defaultValue: Double = 1.0
+}
+
+extension EnvironmentValues {
+  var animationSpeed: Double {
+    get { self[AnimationSpeedKey.self] }
+    set { self[AnimationSpeedKey.self] = newValue }
+  }
+}
+
+/// Helper to get animation duration adjusted by speed
+extension Double {
+  func adjustedForAnimationSpeed(_ speed: Double) -> Double {
+    self / max(0.1, speed)
+  }
+}
+
+// MARK: - Show Tooltips Environment
+
+struct ShowTooltipsKey: EnvironmentKey {
+  static let defaultValue: Bool = true
+}
+
+extension EnvironmentValues {
+  var showTooltips: Bool {
+    get { self[ShowTooltipsKey.self] }
+    set { self[ShowTooltipsKey.self] = newValue }
+  }
+}
+
+/// View extension for conditional help
+extension View {
+  @ViewBuilder
+  func conditionalHelp(_ text: String, when showTooltips: Bool) -> some View {
+    if showTooltips {
+      self.help(text)
+    } else {
+      self
+    }
+  }
+}
+
+// MARK: - Debug & Experimental Feature Environment
+
+struct DebugModeKey: EnvironmentKey {
+  static let defaultValue: Bool = false
+}
+
+struct ExperimentalFeaturesKey: EnvironmentKey {
+  static let defaultValue: Bool = false
+}
+
+extension EnvironmentValues {
+  var debugModeEnabled: Bool {
+    get { self[DebugModeKey.self] }
+    set { self[DebugModeKey.self] = newValue }
+  }
+
+  var experimentalFeaturesEnabled: Bool {
+    get { self[ExperimentalFeaturesKey.self] }
+    set { self[ExperimentalFeaturesKey.self] = newValue }
+  }
+}
+
+/// View modifier to conditionally show views based on debug mode
+struct DebugModeModifier: ViewModifier {
+  @Environment(\.debugModeEnabled) private var isDebugMode
+
+  func body(content: Content) -> some View {
+    if isDebugMode {
+      content
+    } else {
+      EmptyView()
+    }
+  }
+}
+
+/// View modifier to conditionally show experimental features
+struct ExperimentalFeatureModifier: ViewModifier {
+  @Environment(\.experimentalFeaturesEnabled) private var isExperimentalEnabled
+
+  func body(content: Content) -> some View {
+    if isExperimentalEnabled {
+      content
+    } else {
+      EmptyView()
+    }
+  }
+}
+
+extension View {
+  /// Only show this view when debug mode is enabled
+  func debugOnly() -> some View {
+    self.modifier(DebugModeModifier())
+  }
+
+  /// Only show this view when experimental features are enabled
+  func experimentalOnly() -> some View {
+    self.modifier(ExperimentalFeatureModifier())
+  }
+}
+
 @main
 struct APGIExplorerApp: App {
   private static let logger = Logger()
@@ -20,6 +125,15 @@ struct APGIExplorerApp: App {
   @StateObject private var appState = AppState.shared
   @StateObject private var themeManager = ThemeManager.shared
   @AppStorage("fontSize") private var fontSize: Double = 16.0
+  @AppStorage("animationSpeed") private var animationSpeed: Double = 1.0
+  @AppStorage("showTooltips") private var showTooltips: Bool = true
+  @AppStorage("enableDebugMode") private var debugMode: Bool = false
+  @AppStorage("enableExperimentalFeatures") private var experimentalFeatures: Bool = false
+
+  /// Computed animation duration multiplier - lower speed = slower animations
+  private var animationMultiplier: Double {
+    1.0 / max(0.1, animationSpeed)
+  }
 
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -30,13 +144,13 @@ struct APGIExplorerApp: App {
     if CommandLine.arguments.contains("--screenshot-mode") {
       Task { @MainActor in
         try? await Task.sleep(nanoseconds: 2_000_000_000)
-        APGI_Explorer.ScreenshotAutomationRunner.run()
+        ScreenshotAutomationRunner.run()
       }
     }
 
-    // Request notification permissions - deferred to ensure app is fully initialized
+    // Request notification permissions
     DispatchQueue.main.async {
-      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
         if let error {
           // Silently handle notification authorization failures - notifications are optional
           Self.logger.log("Notification authorization not available: \(error.localizedDescription)")
@@ -48,9 +162,11 @@ struct APGIExplorerApp: App {
       }
     }
 
-    // Start automatic backup scheduling
+    // Start automatic backup scheduling if enabled
     DispatchQueue.main.async {
-      FileStorageManager.shared.scheduleAutomaticBackups()
+      if UserDefaults.standard.bool(forKey: "autoBackupEnabled") {
+        FileStorageManager.shared.scheduleAutomaticBackups()
+      }
     }
   }
 
@@ -64,6 +180,10 @@ struct APGIExplorerApp: App {
           .environmentObject(self.appState)
           .environmentObject(self.themeManager)
           .environment(\.font, Font.system(size: self.fontSize))
+          .environment(\.animationSpeed, self.animationSpeed)
+          .environment(\.showTooltips, self.showTooltips)
+          .environment(\.debugModeEnabled, self.debugMode)
+          .environment(\.experimentalFeaturesEnabled, self.experimentalFeatures)
           .withGlobalKeyboardShortcuts(profileManager: self.profileManager)
           .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
           .environment(\.currentTheme, self.themeManager.currentTheme)
@@ -76,6 +196,10 @@ struct APGIExplorerApp: App {
           .environmentObject(self.appState)
           .environmentObject(self.themeManager)
           .environment(\.font, Font.system(size: self.fontSize))
+          .environment(\.animationSpeed, self.animationSpeed)
+          .environment(\.showTooltips, self.showTooltips)
+          .environment(\.debugModeEnabled, self.debugMode)
+          .environment(\.experimentalFeaturesEnabled, self.experimentalFeatures)
           #if os(macOS)
             .frame(minWidth: 800, minHeight: 600)
           #endif
@@ -100,6 +224,10 @@ struct APGIExplorerApp: App {
           .environmentObject(self.stateModel)
           .environmentObject(self.themeManager)
           .environment(\.font, Font.system(size: self.fontSize))
+          .environment(\.animationSpeed, self.animationSpeed)
+          .environment(\.showTooltips, self.showTooltips)
+          .environment(\.debugModeEnabled, self.debugMode)
+          .environment(\.experimentalFeaturesEnabled, self.experimentalFeatures)
           .environment(\.appDependencies, AppDependencies.shared)
           .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
           .environment(\.currentTheme, self.themeManager.currentTheme)
@@ -111,6 +239,10 @@ struct APGIExplorerApp: App {
           .environmentObject(self.profileManager)
           .environmentObject(self.themeManager)
           .environment(\.font, Font.system(size: self.fontSize))
+          .environment(\.animationSpeed, self.animationSpeed)
+          .environment(\.showTooltips, self.showTooltips)
+          .environment(\.debugModeEnabled, self.debugMode)
+          .environment(\.experimentalFeaturesEnabled, self.experimentalFeatures)
           .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
           .environment(\.currentTheme, self.themeManager.currentTheme)
       }
@@ -121,6 +253,10 @@ struct APGIExplorerApp: App {
           .environmentObject(AppState.shared)
           .environmentObject(self.themeManager)
           .environment(\.font, Font.system(size: self.fontSize))
+          .environment(\.animationSpeed, self.animationSpeed)
+          .environment(\.showTooltips, self.showTooltips)
+          .environment(\.debugModeEnabled, self.debugMode)
+          .environment(\.experimentalFeaturesEnabled, self.experimentalFeatures)
           .preferredColorScheme(self.themeManager.currentTheme.getColorScheme())
           .environment(\.currentTheme, self.themeManager.currentTheme)
       }

@@ -19,10 +19,17 @@ struct PsychologicalStatesView: View {
   @AppStorage("showSearchHints") private var showSearchHints: Bool = true
   @AppStorage("lazyLoading") private var lazyLoading: Bool = true
   @AppStorage("cacheSearchResults") private var cacheSearchResults: Bool = true
+  @AppStorage("autoRefreshStates") private var autoRefreshStates: Bool = false
+
+  @State private var refreshTimer: Timer?
+  @State private var lastRefreshTime = Date()
 
   private var searchService: StateSearchService {
     self.dependencies.getStateSearchService()
   }
+
+  /// Refresh interval in seconds when auto-refresh is enabled
+  private let refreshInterval: TimeInterval = 30.0
 
   private let parameters = [
     "All", "ε (Prediction Error)", "π (Precision)", "θₜ (Threshold)", "β (Somatic Bias)"
@@ -91,12 +98,53 @@ struct PsychologicalStatesView: View {
         }
       }
     }
-    .onAppear {
-      self.stateModel.states.sort { $0.name < $1.name }
-    }
     .onChange(of: self.selectedParameter) {
       self.showParameterSummary = self.selectedParameter != "All"
     }
+    .onAppear {
+      self.setupRefreshTimer()
+    }
+    .onDisappear {
+      self.invalidateRefreshTimer()
+    }
+    .onChange(of: self.autoRefreshStates) { _, newValue in
+      if newValue {
+        self.setupRefreshTimer()
+      } else {
+        self.invalidateRefreshTimer()
+      }
+    }
+  }
+
+  /// Sets up the refresh timer for auto-refresh functionality
+  private func setupRefreshTimer() {
+    guard self.autoRefreshStates else { return }
+
+    // Invalidate any existing timer first
+    self.invalidateRefreshTimer()
+
+    // Create new timer that fires every refreshInterval seconds
+    self.refreshTimer = Timer.scheduledTimer(withTimeInterval: self.refreshInterval, repeats: true) { _ in
+      Task { @MainActor in
+        await self.refreshStateData()
+      }
+    }
+  }
+
+  /// Invalidates the refresh timer
+  private func invalidateRefreshTimer() {
+    self.refreshTimer?.invalidate()
+    self.refreshTimer = nil
+  }
+
+  /// Performs the actual data refresh
+  private func refreshStateData() async {
+    // Update the last refresh time
+    self.lastRefreshTime = Date()
+
+    // Trigger a refresh by recreating the state model or calling its refresh method
+    // Since StateModel is an ObservableObject, we can trigger an update
+    await self.stateModel.refreshIfNeeded()
   }
 
   private var mainContent: some View {
@@ -132,13 +180,12 @@ struct PsychologicalStatesView: View {
         .foregroundColor(.inactiveSlate)
         .padding(.leading, 8)
 
-      TextField("Search states...", text: self.$searchText)
+      TextField(self.showSearchHints ? "Search states (e.g. anxiety, focus)..." : "Search states...", text: self.$searchText)
         .textFieldStyle(.plain)
         .padding(.vertical, 8)
         .padding(.trailing, 8)
         .background(Color.spaceBlack)
         .cornerRadius(APGIRadius.standard)
-        .overlay(self.searchHintsOverlay)
     }
     .background(Color.spaceBlack)
     .cornerRadius(APGIRadius.standard)
@@ -150,15 +197,7 @@ struct PsychologicalStatesView: View {
 
   @ViewBuilder
   private var searchHintsOverlay: some View {
-    if self.showSearchHints, self.searchText.isEmpty {
-      HStack {
-        Text("Try: anxiety, focus, creativity...")
-          .font(APGITypography.caption)
-          .foregroundColor(.inactiveSlate)
-        Spacer()
-      }
-      .padding(.horizontal, 12)
-    }
+    // Removed because we now use dynamic TextField placeholders to prevent text overlapping
   }
 
   private var displayModeToggle: some View {
@@ -168,7 +207,8 @@ struct PsychologicalStatesView: View {
       }
     }
     .pickerStyle(.segmented)
-    .frame(width: 100)
+    .labelsHidden()
+    .frame(width: 120)
   }
 
   private var filterMenu: some View {
@@ -237,7 +277,7 @@ struct PsychologicalStatesView: View {
     )
     .cornerRadius(12)
     .accessibleTap(
-      action: { self.selectedParameter = self.parameterDisplayName(for: key) ?? "All" },
+      action: { self.selectedParameter = self.parameterFullName(for: key) ?? "All" },
       accessibilityLabel: "Select \(self.parameterDisplayName(for: key) ?? "All") parameter",
       accessibilityHint:
         "Filters states by \(self.parameterDisplayName(for: key) ?? "All") parameter"
@@ -434,6 +474,16 @@ struct PsychologicalStatesView: View {
     case "θₜ (Threshold)": "threshold"
     case "β (Somatic Bias)": "somaticBias"
     default: nil
+    }
+  }
+
+  private func parameterFullName(for key: String) -> String? {
+    switch key {
+    case "predictionError": return "ε (Prediction Error)"
+    case "precision": return "π (Precision)"
+    case "threshold": return "θₜ (Threshold)"
+    case "somaticBias": return "β (Somatic Bias)"
+    default: return nil
     }
   }
 
