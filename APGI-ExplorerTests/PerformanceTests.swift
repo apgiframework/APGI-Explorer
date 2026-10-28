@@ -6,13 +6,7 @@ import XCTest
 final class PerformanceTests: XCTestCase {
   func testAPGIScorerPerformance() {
     let scorer = APGIScorer()
-    let testAnswers: [Int: Int] = [
-      1: 1,
-      2: 2,
-      3: 3,
-      4: 1,
-      5: 2
-    ]
+    let testAnswers = Dictionary(uniqueKeysWithValues: (1...35).map { ($0, ($0 % 4) + 1) })
 
     measure {
       for _ in 0..<1000 {
@@ -26,7 +20,7 @@ final class PerformanceTests: XCTestCase {
 
     measure {
       for i in 0..<100 {
-        let answers = self.generateTestAnswers(count: 50, seed: i)
+        let answers = self.generateTestAnswers(count: 35, seed: i)
         _ = scorer.calculateRobustScore(answers: answers)
       }
     }

@@ -148,19 +148,7 @@ struct APGIExplorerApp: App {
       }
     }
 
-    // Request notification permissions
-    DispatchQueue.main.async {
-      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-        if let error {
-          // Silently handle notification authorization failures - notifications are optional
-          Self.logger.log("Notification authorization not available: \(error.localizedDescription)")
-        } else if granted {
-          Self.logger.log("Notification permission granted")
-        } else {
-          Self.logger.log("Notification permission denied by user")
-        }
-      }
-    }
+    // Notification authorization is requested only from the Notifications settings action.
 
     // Start automatic backup scheduling if enabled
     DispatchQueue.main.async {

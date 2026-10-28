@@ -30,7 +30,7 @@ struct ParameterSliderView: View {
         .font(.headline)
 
       ParameterSlider(
-        name: "Prediction Error",
+        name: "Illustrative reactivity",
         value: self.$predictionError,
         range: 0...100,
         step: 1
@@ -39,7 +39,7 @@ struct ParameterSliderView: View {
       }
 
       ParameterSlider(
-        name: "Precision",
+        name: "Illustrative information prioritisation",
         value: self.$precision,
         range: 0...5,
         step: 0.1
@@ -48,7 +48,7 @@ struct ParameterSliderView: View {
       }
 
       ParameterSlider(
-        name: "Threshold",
+        name: "Illustrative attention",
         value: self.$threshold,
         range: 0...100,
         step: 1
@@ -57,7 +57,7 @@ struct ParameterSliderView: View {
       }
 
       ParameterSlider(
-        name: "Somatic Bias",
+        name: "Illustrative body-signal attention",
         value: self.$somaticBias,
         range: 0...3,
         step: 0.1

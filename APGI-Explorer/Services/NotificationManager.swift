@@ -2,6 +2,12 @@ import Foundation
 import UserNotifications
 import os
 
+nonisolated enum NotificationAuthorizationPolicy {
+  static func canSchedule(_ status: UNAuthorizationStatus) -> Bool {
+    status == .authorized || status == .provisional
+  }
+}
+
 class NotificationManager {
   static let shared = NotificationManager()
   private let logger = os.Logger(subsystem: "com.apgi.explorer", category: "NotificationManager")
@@ -54,13 +60,7 @@ class NotificationManager {
       trigger: trigger
     )
 
-    center.add(request) { error in
-      if let error = error {
-        self.logger.error("Failed to schedule quiz reminder: \(error.localizedDescription)")
-      } else {
-        self.logger.log("Quiz reminder scheduled for \(date)")
-      }
-    }
+    Task { await addIfAuthorized(request) }
   }
 
   // MARK: - Profile Updates
@@ -83,13 +83,7 @@ class NotificationManager {
       trigger: nil
     )
 
-    center.add(request) { error in
-      if let error = error {
-        self.logger.error("Failed to send profile update notification: \(error.localizedDescription)")
-      } else {
-        self.logger.log("Profile update notification sent")
-      }
-    }
+    Task { await addIfAuthorized(request) }
   }
 
   // MARK: - System Alerts
@@ -112,12 +106,37 @@ class NotificationManager {
       trigger: nil
     )
 
-    center.add(request) { error in
-      if let error = error {
-        self.logger.error("Failed to send system alert: \(error.localizedDescription)")
-      } else {
-        self.logger.log("System alert sent: \(title)")
-      }
+    Task { await addIfAuthorized(request) }
+  }
+
+  private func addIfAuthorized(_ request: UNNotificationRequest) async {
+    let settings = await center.notificationSettings()
+    guard NotificationAuthorizationPolicy.canSchedule(settings.authorizationStatus) else { return }
+    do { try await center.add(request) } catch { logger.error("Could not schedule notification: \(error.localizedDescription)") }
+  }
+
+  func authorizationSummary() async -> String {
+    let settings = await center.notificationSettings()
+    if NotificationAuthorizationPolicy.canSchedule(settings.authorizationStatus) {
+      return "Notifications are enabled."
+    }
+    if settings.authorizationStatus == .denied {
+      return "Notifications are disabled. Enable APGI Explorer in System Settings → Notifications."
+    }
+    return "Notification permission has not been requested."
+  }
+
+  /// Called only after the user chooses Enable Notifications in Settings.
+  func requestAuthorizationIfNeeded() async -> String {
+    let settings = await center.notificationSettings()
+    guard settings.authorizationStatus == .notDetermined else {
+      return await authorizationSummary()
+    }
+    do {
+      _ = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+      return await authorizationSummary()
+    } catch {
+      return "Notifications are unavailable for this build. Use a signed app launched from Finder and check System Settings → Notifications."
     }
   }
 

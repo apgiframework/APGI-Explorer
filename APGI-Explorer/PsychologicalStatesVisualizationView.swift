@@ -140,7 +140,7 @@ struct PsychologicalStatesVisualizationView: View {
 
       // Axis labels
       VStack {
-        Text("Ignition Threshold (θ)")
+        Text("Illustrative attention (θ)")
           .font(.caption)
           .foregroundColor(.secondary)
         Spacer()
@@ -423,7 +423,7 @@ struct RadarChartView: View {
   private let parameters: [Parameter] = [
     Parameter(name: "Ext. Precision", value: 0.8, key: "precision"),
     Parameter(name: "Reactivity", value: 0.6, key: "reactivity"),
-    Parameter(name: "Somatic Bias", value: 0.4, key: "somaticBias"),
+    Parameter(name: "Illustrative body-signal attention", value: 0.4, key: "somaticBias"),
     Parameter(name: "Focus Stability", value: 0.9, key: "focus"),
     Parameter(name: "Cognitive Load", value: 0.3, key: "cognitive")
   ]

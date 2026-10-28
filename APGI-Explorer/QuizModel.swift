@@ -18,72 +18,6 @@ struct ValidationResult {
     }
 }
 
-// MARK: - Scoring System
-
-enum ScoringWeights {
-    static let parameterWeights: [String: Double] = [
-        "epsilon": 1.0,
-        "precision": 1.0,
-        "threshold": 1.0,
-        "somatic": 1.0,
-        "interactions": 0.5, // Meta-questions have different weight
-        "temporal": 0.3,
-        "environment": 0.3
-    ]
-
-    /// Question-specific weights based on reliability
-    static let questionReliability: [Int: Double] = [
-        // Epsilon questions (1-4) - Core direct questions
-        1: 0.95,
-        2: 0.90,
-        3: 0.95,
-        4: 0.85,
-        5: 0.90,
-
-        // Precision questions (6-10) - Direct questions
-        6: 0.90,
-        7: 0.85,
-        8: 0.80,
-        9: 0.85,
-        10: 0.80,
-
-        // Threshold questions (11-15) - Direct questions
-        11: 0.90,
-        12: 0.85,
-        13: 0.80,
-        14: 0.85,
-        15: 0.90,
-
-        // Somatic questions (16-20) - Direct questions
-        16: 0.90,
-        17: 0.85,
-        18: 0.95,
-        19: 0.90,
-        20: 0.85,
-
-        // Interaction questions (21-25) - Less direct
-        21: 0.70,
-        22: 0.70,
-        23: 0.65,
-        24: 0.70,
-        25: 0.65,
-
-        // Temporal questions (26-30) - Moderate reliability
-        26: 0.75,
-        27: 0.80,
-        28: 0.75,
-        29: 0.70,
-        30: 0.75,
-
-        // Environmental questions (31-35) - Context-dependent
-        31: 0.60,
-        32: 0.60,
-        33: 0.65,
-        34: 0.60,
-        35: 0.55
-    ]
-}
-
 // MARK: - Profile Models
 
 // Using ParameterLevel from ParameterValueTypes.swift instead of separate enums
@@ -172,463 +106,137 @@ struct APGIProfile: Codable, Equatable {
         (self.epsilon + self.precision + self.threshold + self.somaticBias) / 4.0
     }
 
-    var autonomy: Double {
-        self.precision
-    }
-
-    var purposefulness: Double {
-        self.threshold
-    }
-
-    var selfAcceptance: Double {
-        self.somaticBias
-    }
-
-    var personalGrowth: Double {
-        self.environmentalFit
-    }
 }
 
+/// Personal sessions stay on this device. Research sessions must use the server client.
 class QuizModel: ObservableObject {
+    nonisolated struct AnswerEvent: Codable, Equatable {
+        let sequence: Int
+        let itemID: Int
+        let value: Int
+        let previousValue: Int?
+        /// Monotonic response latency in milliseconds since the item was presented.
+        let latencyMS: Double
+    }
+
+    nonisolated struct Snapshot: Codable {
+        let sessionID: UUID
+        let instrumentID: String
+        let analysisMode: String
+        let excludedFromNorms: Bool
+        let currentQuestionIndex: Int
+        let answers: [Int: Int]
+        let events: [AnswerEvent]
+    }
+
     var questions: [QuizQuestion] { Self.allQuestions }
-    @Published var answers: [Int: Int] = [:] {
-        didSet {
-            // Update validation state when answers change
-            self._validationResult = nil
-        }
-    }
+    @Published var answers: [Int: Int] = [:]
+    @Published var currentQuestionIndex = 0
+    private(set) var sessionID = UUID()
+    private(set) var events: [AnswerEvent] = []
+    private let clock = ContinuousClock()
+    private var startedAt = ContinuousClock.now
+    private var presentedAt = ContinuousClock.now
 
-    @Published var currentQuestionIndex: Int = 0
-
-    // Track quiz timing for analytics
-    private let startTime: Date
-
-    /// Duration of the quiz in seconds
-    var duration: TimeInterval {
-        Date().timeIntervalSince(self.startTime)
-    }
-
-    // Cache for validation results
-    private var _validationResult: ValidationResult?
-    private let validationThreshold: Double = 0.7 // Minimum confidence threshold for valid responses
-
+    var duration: TimeInterval { seconds(startedAt.duration(to: clock.now)) }
     var isComplete: Bool {
-        self.answers.count == self.questions.count
+        Set(answers.keys) == APGIScorer.requiredItemIDs
+          && answers.values.allSatisfy { (1...4).contains($0) }
     }
 
-    init() {
-        self.startTime = Date()
+    private func seconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    }
+
+    func presentQuestion(at index: Int) {
+        guard questions.indices.contains(index) else { return }
+        currentQuestionIndex = index
+        presentedAt = clock.now
     }
 
     func selectAnswer(for questionId: Int, answer: Int) {
-        self.answers[questionId] = answer
-        // Invalidate cached validation result
-        self._validationResult = nil
+        guard APGIScorer.requiredItemIDs.contains(questionId), (1...4).contains(answer) else { return }
+        let previous = answers[questionId]
+        guard previous != answer else { return }
+        events.append(AnswerEvent(sequence: events.count, itemID: questionId, value: answer,
+                                  previousValue: previous,
+                                  latencyMS: max(0, seconds(presentedAt.duration(to: clock.now)) * 1000)))
+        answers[questionId] = answer
+        presentedAt = clock.now
     }
 
     func selectAnswer(_ answer: Int) {
-        guard self.currentQuestionIndex < self.questions.count else { return }
-        let questionId = self.questions[self.currentQuestionIndex].id
-        self.selectAnswer(for: questionId, answer: answer)
+        guard questions.indices.contains(currentQuestionIndex) else { return }
+        selectAnswer(for: questions[currentQuestionIndex].id, answer: answer)
     }
 
     func restoreAnswers(_ restoredAnswers: [Int: Int]) {
-        self.answers = restoredAnswers
-        // Invalidate cached validation result
-        self._validationResult = nil
-    }
-
-    func nextQuestion() {
-        if self.currentQuestionIndex < self.questions.count - 1 {
-            self.currentQuestionIndex += 1
+        answers = restoredAnswers.filter {
+            APGIScorer.requiredItemIDs.contains($0.key) && (1...4).contains($0.value)
         }
+        presentedAt = clock.now
     }
 
-    func previousQuestion() {
-        if self.currentQuestionIndex > 0 {
-            self.currentQuestionIndex -= 1
-        }
+    func snapshot(at index: Int) -> Snapshot {
+        Snapshot(sessionID: sessionID, instrumentID: "apgi-explorer-35",
+                 analysisMode: "exploratory", excludedFromNorms: true,
+                 currentQuestionIndex: index, answers: answers, events: events)
     }
 
+    func restore(_ snapshot: Snapshot) {
+        guard snapshot.instrumentID == "apgi-explorer-35",
+              snapshot.analysisMode == "exploratory", snapshot.excludedFromNorms else { return }
+        sessionID = snapshot.sessionID
+        events = snapshot.events
+        restoreAnswers(snapshot.answers)
+        presentQuestion(at: min(max(snapshot.currentQuestionIndex, 0), questions.count - 1))
+    }
+
+    func nextQuestion() { presentQuestion(at: min(currentQuestionIndex + 1, questions.count - 1)) }
+    func previousQuestion() { presentQuestion(at: max(currentQuestionIndex - 1, 0)) }
     var hasAnsweredCurrentQuestion: Bool {
-        guard self.currentQuestionIndex < self.questions.count else { return false }
-        return self.answers[self.questions[self.currentQuestionIndex].id] != nil
+        questions.indices.contains(currentQuestionIndex) && answers[questions[currentQuestionIndex].id] != nil
     }
 
+    // Compatibility for progress views: these values describe completion, not reliability.
     func questionsNeededForConfidence(target: Double = 0.9) -> Int? {
-        let currentConfidence = self.calculateResponseConfidence()
-        guard currentConfidence < target, self.answers.count < self.questions.count else {
-            return nil
-        }
-
-        let remaining = self.questions.count - self.answers.count
-        guard remaining > 0 else { return nil }
-
-        let shortfall = target - currentConfidence
-        let capacity = 1 - currentConfidence
-        let estimatedQuestions = Int(ceil(Double(remaining) * max(0, shortfall / max(capacity, 0.01))))
-        return min(remaining, max(1, estimatedQuestions))
+        let remaining = questions.count - answers.count
+        return remaining > 0 ? remaining : nil
     }
-
     func confidenceLevel(for parameter: String) -> Double {
-        let parameterQuestions = self.questions.filter { $0.parameter == parameter }
-        guard !parameterQuestions.isEmpty else { return 0.0 }
-        let answered = parameterQuestions.filter { self.answers[$0.id] != nil }.count
-        let completionRatio = Double(answered) / Double(parameterQuestions.count)
-        let globalConfidence = self.calculateResponseConfidence()
-        return min(1, completionRatio * 0.7 + globalConfidence * 0.3)
+        let items = questions.filter { $0.parameter == parameter }
+        guard !items.isEmpty else { return 0 }
+        return Double(items.filter { answers[$0.id] != nil }.count) / Double(items.count)
     }
-
-    // MARK: - Validation & Response Analysis
-
-    /// Validates response consistency and patterns
     func validateResponses() -> ValidationResult {
-        if let cachedResult = _validationResult {
-            return cachedResult
-        }
-
-        var warnings: [String] = []
-        var confidence = self.calculateResponseConfidence()
-
-        // CRIT-002 Fix: Check completion rate first - require minimum 80%
-        let completionRate = Double(answers.count) / Double(self.questions.count)
-        if completionRate < 0.8 {
-            warnings.append(
-                "Quiz completion below 80% threshold. Please answer at least 28 of 35 questions for valid results."
-            )
-            confidence *= 0.5 // Significant confidence reduction for low completion
-        }
-
-        // Check for straight-lining (all same answers)
-        if self.isStraightLining() {
-            warnings.append(
-                "Your responses show a pattern of straight-lining, which may indicate inattentive responding."
-            )
-            confidence *= 0.8 // Reduce confidence for potential straight-lining
-        }
-
-        // Check for inconsistent responses to similar questions
-        if self.hasInconsistentResponses() {
-            warnings.append("Some of your responses to similar questions appear inconsistent.")
-            confidence *= 0.85
-        }
-
-        // Check for response patterns that might indicate random responding
-        if self.showsRandomResponsePattern() {
-            warnings.append("Your response pattern suggests potential random or inattentive responding.")
-            confidence *= 0.7
-        }
-
-        if completionRate < 0.9 {
-            warnings.append(
-                "You've completed \(Int(completionRate * 100))% of the questions. Completing all questions provides more accurate results."
-            )
-            confidence *= 0.9
-        }
-
-        // Check for extreme responding (all high or all low)
-        if self.isExtremeResponding() {
-            warnings.append("Your responses show a pattern of extreme responding (all high or all low).")
-            confidence *= 0.85
-        }
-
-        let result = ValidationResult(
-            isValid: confidence >= self.validationThreshold && completionRate >= 0.8,
-            warnings: warnings,
-            confidence: min(max(confidence, 0), 1), // Ensure confidence is between 0 and 1
-            completionRate: completionRate
-        )
-
-        self._validationResult = result
-        return result
+        let complete = isComplete
+        let completion = Double(Set(answers.keys).intersection(APGIScorer.requiredItemIDs).count) / 35
+        return ValidationResult(isValid: complete,
+                                warnings: complete ? [] : ["Answer all 35 items with valid options to view a result."],
+                                confidence: 0, completionRate: completion)
     }
-
-    /// Calculates the confidence score based on response patterns
-    private func calculateResponseConfidence() -> Double {
-        guard !self.answers.isEmpty else { return 0.0 }
-
-        var confidence = 0.0
-        let completionRate = Double(answers.count) / Double(self.questions.count)
-
-        // Base confidence on completion rate (50% weight)
-        confidence += completionRate * 0.5
-
-        // Check response time consistency (if available)
-        // This is a placeholder - in a real app, you'd track response times
-        let timeConsistencyScore = 0.9 // Assume good time consistency by default
-        confidence += timeConsistencyScore * 0.3
-
-        // Check for response variability (20% weight)
-        let responseVariability = self.calculateResponseVariability()
-        confidence += responseVariability * 0.2
-
-        return min(max(confidence, 0), 1) // Ensure between 0 and 1
+    func calculateScore() -> (profile: APGIProfile?, validation: ValidationResult) {
+        (try? APGIScorer().calculateRobustScore(answers: answers).get(), validateResponses())
     }
-
-    private func calculateResponseVariability() -> Double {
-        let answerValues = Array(answers.values)
-        guard !answerValues.isEmpty else { return 0.0 }
-
-        let mean = Double(answerValues.reduce(0, +)) / Double(answerValues.count)
-        let variance =
-            answerValues.reduce(0.0) { $0 + pow(Double($1) - mean, 2) } / Double(answerValues.count)
-
-        // Normalize variance to 0-1 range (assuming 1-4 scale)
-        // A variance of around 1.33 is considered good (not too consistent, not too random)
-        return min(variance / 1.33, 1.0)
-    }
-
-    private func isStraightLining() -> Bool {
-        // If all answers are the same (except for unanswered questions)
-        let answerValues = Set(answers.values)
-        return answerValues.count <= 2 && self.answers.count > 3
-    }
-
-    private func hasInconsistentResponses() -> Bool {
-        // Check for similar questions with opposite answers
-        // This is a simplified version - in a real app, you'd map related questions
-
-        // Example: Check if questions about similar concepts have opposite answers
-        let epsilonQuestions = self.questions.filter { $0.parameter == "epsilon" }
-        var inconsistencyCount = 0
-
-        for firstIndex in 0 ..< (epsilonQuestions.count - 1) {
-            for secondIndex in (firstIndex + 1) ..< epsilonQuestions.count {
-                if let answer1 = answers[epsilonQuestions[firstIndex].id],
-                   let answer2 = answers[epsilonQuestions[secondIndex].id],
-                   abs(answer1 - answer2) >= 3 { // Big difference in answers
-                    inconsistencyCount += 1
-                }
-            }
-        }
-
-        return inconsistencyCount > epsilonQuestions.count / 2
-    }
-
-    private func showsRandomResponsePattern() -> Bool {
-        // Check for patterns that might indicate random responding
-        // This is a simplified check - in practice, you'd use more sophisticated methods
-
-        let answerValues = Array(answers.values)
-        guard answerValues.count > 5 else { return false }
-
-        // Check for alternating patterns (e.g., 1, 4, 1, 4, 1, 4)
-        var alternatingPattern = true
-        for index in 2 ..< answerValues.count where answerValues[index] != answerValues[index - 2] {
-            alternatingPattern = false
-            break
-        }
-
-        return alternatingPattern
-    }
-
-    private func isExtremeResponding() -> Bool {
-        // Check if most answers are at the extremes (1 or 4)
-        let extremeCount = self.answers.values.filter { $0 == 1 || $0 == 4 }.count
-        return Double(extremeCount) / Double(self.answers.count) > 0.8 // More than 80% extreme responses
-    }
-
-    // MARK: - Scoring
-
-    func calculateScore() -> (profile: APGIProfile, validation: ValidationResult) {
-        let (rawScores, maxPossible) = self.accumulateScores()
-        let normalizedScores = self.normalizedPercentiles(
-            rawScores: rawScores, maxPossible: maxPossible
-        )
-
-        let validation = self.validateResponses()
-
-        var adjustedScores = normalizedScores
-        if !validation.isValid {
-            for (param, score) in adjustedScores {
-                adjustedScores[param] = score * validation.confidence
-            }
-        }
-
-        let profile = APGIProfile(
-            epsilon: adjustedScores["epsilon"] ?? 0,
-            precision: adjustedScores["precision"] ?? 0,
-            threshold: adjustedScores["threshold"] ?? 0,
-            somaticBias: adjustedScores["somatic"] ?? 0,
-            interactionScore: calculateInteractionScore(from: rawScores),
-            temporalStability: normalizedScores["temporal"] ?? 0,
-            environmentalFit: normalizedScores["environment"] ?? 0
-        )
-
-        return (profile, validation)
-    }
-
     func calculatePartialScore() -> APGIProfile {
-        let (rawScores, maxPossible) = self.accumulateScores()
-        let normalizedScores = self.normalizedPercentiles(
-            rawScores: rawScores, maxPossible: maxPossible
-        )
-
-        return APGIProfile(
-            epsilon: normalizedScores["epsilon"] ?? 0,
-            precision: normalizedScores["precision"] ?? 0,
-            threshold: normalizedScores["threshold"] ?? 0,
-            somaticBias: normalizedScores["somatic"] ?? 0,
-            interactionScore: normalizedScores["interactions"] ?? 0,
-            temporalStability: normalizedScores["temporal"] ?? 0,
-            environmentalFit: normalizedScores["environment"] ?? 0
-        )
+        APGIScorer.descriptiveProfile(answers: answers)
     }
-
     static func calculateAPGIProfile(from results: [String: Int]) -> APGIProfile {
-        // Check if the results are already aggregated scores rather than raw answers
-        let hasAggregatedKeys = results.keys.contains(where: {
-            ["epsilon", "precision", "threshold", "somatic"].contains($0)
-        })
-
-        if hasAggregatedKeys {
-            return APGIProfile(
-                epsilon: Double(results["epsilon"] ?? 0),
-                precision: Double(results["precision"] ?? 0),
-                threshold: Double(results["threshold"] ?? 0),
-                somaticBias: Double(results["somatic"] ?? 0),
-                interactionScore: Double(results["interactions"] ?? 0),
-                temporalStability: Double(results["temporal"] ?? 0),
-                environmentalFit: Double(results["environment"] ?? 0)
-            )
-        }
-
-        // Fallback for legacy data (raw question answers with stringified integer keys)
-        let intKeyResults = Dictionary(
-            uniqueKeysWithValues: results.compactMap { key, value in
-                Int(key).map { ($0, value) }
-            }
-        )
-
-        return self.calculateScore(from: intKeyResults)
+        // Stored aggregates are already scores; never reconstruct individual answers.
+        APGIProfile(epsilon: Double(results["epsilon"] ?? 0),
+                    precision: Double(results["precision"] ?? 0),
+                    threshold: Double(results["threshold"] ?? 0),
+                    somaticBias: Double(results["somatic"] ?? 0),
+                    interactionScore: Double(results["interactions"] ?? 0),
+                    temporalStability: Double(results["temporal"] ?? 0),
+                    environmentalFit: Double(results["environment"] ?? 0))
     }
-
-    private static func calculateScore(from answers: [Int: Int]) -> APGIProfile {
-        var rawScores = [String: Double]()
-        var maxPossible = [String: Double]()
-
-        // Use the static copy of questions
-        let questions = Self.allQuestions
-
-        for question in questions {
-            guard let answer = answers[question.id] else { continue }
-
-            let weight = ScoringWeights.questionReliability[question.id] ?? 0.8
-            let paramWeight = ScoringWeights.parameterWeights[question.parameter] ?? 1.0
-
-            let weightedValue = Double(answer) * weight * paramWeight
-            rawScores[question.parameter, default: 0] += weightedValue
-            maxPossible[question.parameter, default: 0] += 4.0 * weight * paramWeight
-        }
-
-        var normalizedScores = [String: Double]()
-        for (param, raw) in rawScores {
-            guard let max = maxPossible[param], max > 0 else { continue }
-            normalizedScores[param] = (raw / max) * 100
-        }
-
-        return APGIProfile(
-            epsilon: normalizedScores["epsilon"] ?? 0,
-            precision: normalizedScores["precision"] ?? 0,
-            threshold: normalizedScores["threshold"] ?? 0,
-            somaticBias: normalizedScores["somatic"] ?? 0,
-            interactionScore: calculateStaticInteractionScore(from: rawScores),
-            temporalStability: normalizedScores["temporal"] ?? 0,
-            environmentalFit: normalizedScores["environment"] ?? 0
-        )
-    }
-
-    private static func calculateStaticInteractionScore(from rawScores: [String: Double]) -> Double {
-        let epsilon = rawScores["epsilon"] ?? 0
-        let precision = rawScores["precision"] ?? 0
-        let threshold = rawScores["threshold"] ?? 0
-        let somatic = rawScores["somatic"] ?? 0
-        let interactions = rawScores["interactions"] ?? 0
-
-        let interactionWeight = 0.6
-        let derivedWeight = 0.4
-
-        let rawInteractionScore =
-            (interactions * interactionWeight)
-                + ((epsilon * precision * 0.3 + epsilon * somatic * 0.3 + threshold * (1 - epsilon / 100)
-                        * 0.4) * derivedWeight)
-
-        let maxInteractionScore = 20.0
-        return min(100, (rawInteractionScore / maxInteractionScore) * 100)
-    }
-
-    private func calculateInteractionScore(from rawScores: [String: Double]) -> Double {
-        // Complex interaction scoring based on parameter relationships
-        let epsilon = rawScores["epsilon"] ?? 0
-        let precision = rawScores["precision"] ?? 0
-        let threshold = rawScores["threshold"] ?? 0
-        let somatic = rawScores["somatic"] ?? 0
-        let interactions = rawScores["interactions"] ?? 0
-
-        // Weighted interaction score
-        let interactionWeight = 0.6
-        let derivedWeight = 0.4
-
-        let rawInteractionScore =
-            (interactions * interactionWeight)
-                + ((epsilon * precision * 0.3 + epsilon * somatic * 0.3 + threshold * (1 - epsilon / 100)
-                        * 0.4) * derivedWeight)
-
-        // Normalize (assuming max possible interaction score)
-        let maxInteractionScore = 20.0 // Approximate max based on question weights
-        return min(100, (rawInteractionScore / maxInteractionScore) * 100)
-    }
-
-    private func accumulateScores() -> ([String: Double], [String: Double]) {
-        var rawScores = [String: Double]()
-        var maxPossible = [String: Double]()
-
-        for question in self.questions {
-            guard let answer = answers[question.id] else { continue }
-
-            let weight = ScoringWeights.questionReliability[question.id] ?? 0.8
-            let paramWeight = ScoringWeights.parameterWeights[question.parameter] ?? 1.0
-
-            let weightedValue = Double(answer) * weight * paramWeight
-            rawScores[question.parameter, default: 0] += weightedValue
-            maxPossible[question.parameter, default: 0] += 4.0 * weight * paramWeight
-        }
-
-        return (rawScores, maxPossible)
-    }
-
-    private func normalizedPercentiles(rawScores: [String: Double], maxPossible: [String: Double]) -> [String: Double] {
-        var normalizedScores = [String: Double]()
-
-        for (param, raw) in rawScores {
-            guard let max = maxPossible[param], max > 0 else { continue }
-            normalizedScores[param] = (raw / max) * 100
-        }
-
-        return normalizedScores
-    }
-
-    /// Returns raw scores as [String: Int] for backward compatibility with ProfileManager
-    /// Used by ResultsView.swift for profile creation where ProfileManager expects integer scores
-    /// New scoring methods return APGIProfile with Double values, but this method maintains compatibility
     func calculateRawScore() -> [String: Int] {
-        var scores = [
-            "epsilon": 0,
-            "precision": 0,
-            "threshold": 0,
-            "somatic": 0,
-            "interactions": 0,
-            "temporal": 0,
-            "environment": 0
-        ]
-
-        for question in self.questions {
-            if let answer = answers[question.id] {
-                scores[question.parameter, default: 0] += answer
-            }
-        }
-
-        return scores
+        guard let profile = calculateScore().profile else { return [:] }
+        return ["epsilon": Int(profile.epsilon.rounded()), "precision": Int(profile.precision.rounded()),
+                "threshold": Int(profile.threshold.rounded()), "somatic": Int(profile.somaticBias.rounded()),
+                "interactions": Int(profile.interactionScore.rounded()),
+                "temporal": Int(profile.temporalStability.rounded()), "environment": Int(profile.environmentalFit.rounded())]
     }
 }
 

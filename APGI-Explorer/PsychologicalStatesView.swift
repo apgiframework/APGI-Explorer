@@ -32,7 +32,7 @@ struct PsychologicalStatesView: View {
   private let refreshInterval: TimeInterval = 30.0
 
   private let parameters = [
-    "All", "ε (Prediction Error)", "π (Precision)", "θₜ (Threshold)", "β (Somatic Bias)"
+    "All", "Illustrative reactivity", "Illustrative information prioritisation", "Illustrative attention", "Illustrative body-signal attention"
   ]
   private let gradient = LinearGradient(
     gradient: Gradient(colors: [.blue, .purple]),
@@ -469,40 +469,40 @@ struct PsychologicalStatesView: View {
 
   private func parameterKey(for option: String) -> String? {
     switch option {
-    case "ε (Prediction Error)": "predictionError"
-    case "π (Precision)": "precision"
-    case "θₜ (Threshold)": "threshold"
-    case "β (Somatic Bias)": "somaticBias"
+    case "Illustrative reactivity": "predictionError"
+    case "Illustrative information prioritisation": "precision"
+    case "Illustrative attention": "threshold"
+    case "Illustrative body-signal attention": "somaticBias"
     default: nil
     }
   }
 
   private func parameterFullName(for key: String) -> String? {
     switch key {
-    case "predictionError": return "ε (Prediction Error)"
-    case "precision": return "π (Precision)"
-    case "threshold": return "θₜ (Threshold)"
-    case "somaticBias": return "β (Somatic Bias)"
+    case "predictionError": return "Illustrative reactivity"
+    case "precision": return "Illustrative information prioritisation"
+    case "threshold": return "Illustrative attention"
+    case "somaticBias": return "Illustrative body-signal attention"
     default: return nil
     }
   }
 
   private func parameterDisplayName(for key: String) -> String? {
     switch key {
-    case "predictionError": "ε"
-    case "precision": "π"
-    case "threshold": "θₜ"
-    case "somaticBias": "β"
+    case "predictionError": "Illustrative reactivity"
+    case "precision": "Illustrative information prioritisation"
+    case "threshold": "Illustrative attention"
+    case "somaticBias": "Illustrative body-signal attention"
     default: nil
     }
   }
 
   private func parameterName(for key: String) -> String? {
     switch key {
-    case "predictionError": "Prediction Error"
-    case "precision": "Precision"
-    case "threshold": "Threshold"
-    case "somaticBias": "Somatic Bias"
+    case "predictionError": "Illustrative reactivity"
+    case "precision": "Illustrative information prioritisation"
+    case "threshold": "Illustrative attention"
+    case "somaticBias": "Illustrative body-signal attention"
     default: nil
     }
   }

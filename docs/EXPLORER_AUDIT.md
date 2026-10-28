@@ -1,0 +1,131 @@
+# Explorer audit — October 27, 2026
+
+## Current result
+
+The macOS app has a working HTTP client targeting `https://api.apgiframework.com`.
+Launch and Settings → General request `/v1/meta`. Personal answers, item histories
+and scores are not included in network requests. Settings displays HTTP/network
+failures while the personal questionnaire continues offline.
+
+This is a personal exploratory release. It does **not** implement the blocked
+research release in the supplied register. All StoreKit products and local
+research scoring are disabled. No research uploader or participant registration
+runs, and no pre-existing profile can enter a research session.
+
+## Live API evidence
+
+Read-only requests were made against the canonical host during this audit:
+
+| Endpoint | Result | Consequence |
+| --- | --- | --- |
+| `/openapi.json` | HTTP 200, OpenAPI 3.1 | Deployed contract pinned in `contracts/openapi-v1.json` |
+| `/v1/meta` | HTTP 500, `INTERNAL_SERVER_ERROR`, request ID `553943f8-aa25-46d9-8e65-2bb1fc1defe3` | Release metadata cannot currently load |
+| `/v1/version` | HTTP 401, `authentication_required` | Generated operation exists but is not required by the public connection check |
+
+The pinned contract exposes participants, two consent types, studies, batteries,
+trial ingestion and completion. It does not expose the complete Explorer research
+contract required by the register:
+
+- A retrievable, server-pinned 35-item bank with its canonical hash, version and item options.
+- Four-purpose, locale-specific versioned consent copy and the product/research consent rules requested by the register. The deployed consent enum has only `research_participation` and `data_sharing`.
+- The requested event sequence/idempotency acknowledgement with a `server_verified` condition before local deletion.
+- A published allow-list connecting server-returned score fields to approved user-facing labels.
+- An Explorer remote-configuration contract defining `validation_results` and research enablement. Unknown or malformed fields cannot enable either feature in this client.
+
+These dependencies must be defined and deployed before enabling research. The
+client never invents routes or silently substitutes bundled questions or local
+scores. The existing server trial-ingestion endpoint alone is insufficient to
+prove the register's exactly-once, verified-upload acceptance criterion.
+
+## Code changes and acceptance coverage
+
+| Register items | Result / evidence |
+| --- | --- |
+| S0-IDN-10.1–10.2; S1-EXP-03.8 | Canonical identifiers in `contracts/identifiers.json` and `APGIIdentifiers`. Help/updates point to `apgiframework.com`; source/support use the organisation repository. No old personal-account URL in runtime sources/metadata. Retiring old hosting and the personal repository still requires account access. |
+| S1-CMP-01.4 | `APGIScorer` explicitly identified as an instrument scoring key, not a scientific model. |
+| S1-LNG-04; S1-EXP-01.1–01.4; S3-PR6-01 | Four requested descriptive labels applied to personal result, comparison, export and chart surfaces. Eight group names now describe response patterns. Unsupported personality strengths, clinical/state predispositions and state likelihoods removed from result interpretation. State-reference visuals are labelled illustrative, not self-report. |
+| S1-EXP-01.5; S3-PR6-02 | Spotlight writes removed. All app-owned legacy entries purged on launch, not merely left stale. Handoff carries a session ID only and is not eligible for search. |
+| S1-EXP-01.6 and children; S3-PR6-03 | All five products remain disabled regardless of legacy entitlements. Loading, purchasing and delivery cannot enable features. Restoring does not contact StoreKit or unlock features. App Store Connect delisting remains external. |
+| S1-EXP-01.7 | API metadata parser accepts only Boolean release flags and fails closed. Paid products remain hard-disabled in this release even if a flag is true; no scientific validation gate can be bypassed by a flag. Server-side flag semantics remain undefined. |
+| S1-EXP-02.1–02.5 | `Result<APGIProfile, ScoringError>` contains an explicit error for incomplete, unknown-ID or out-of-range inputs. No numeric fallback. Exactly the item-ID set 1–35 is required. Invented reliability, CIs, nonlinear boosts and cross-subscale adjustments removed. No response-pattern heuristic rejects valid uniform answers or changes scores. |
+| S1-EXP-02.6 | Local scorer explicitly rejects a research request. This release has no research questionnaire route. |
+| S1-EXP-03.1–03.3; S3-EXP-01.8 | Item value, prior value, sequence and monotonic latency persist per local session in Core Data `QuizSession.jsonData`; resumable draft remains local. Timing uses `ContinuousClock`, resets on item presentation and resume. Placeholder timing confidence and unused reliability machinery retired. |
+| S1-EXP-03.4 | Stored aggregates are rendered directly, never expanded into invented answers. New saved aggregates match displayed summaries to integer rounding. Legacy totals cannot be reconstructed into valid individual responses. |
+| S1-EXP-03.5 | Option notes and interpretive tooltips are absent from the questionnaire. Emerging-score feedback removed during administration. |
+| S1-EXP-03.6 | Items 7 and 9 remain required and journalled as nominal selections, excluded from ordinal numeric averages. |
+| S1-EXP-03.7; S3-PR6-05 | Reproducible generated public metadata/version Swift operations from the pinned live OpenAPI snapshot. This is a deliberately limited public surface, not a complete research SDK. |
+| S1-EXP-04 | Removed blanket Downloads/Pictures and photo-library write entitlements. User-selected read/write and outbound network access remain. |
+| S1-EXP-05; S3-EXP-01.1 | Personal snapshots identify `apgi-explorer-35`, `analysis_mode=exploratory`, excluded from norms. No research export/personal import conversion occurs. |
+| S3-EXP-01, .2–.7, .9–.12; S3-PR6-04, -06, -09 | Research release not shipped: consent, pinned bank, `PendingEvent`, authenticated background upload/backoff, verified acknowledgements, server-score allow-list and end-to-end offline acceptance remain dependent on the server/consent contracts above. No research tokens are collected or persisted. Privacy manifests remain unchanged because research data collection is not enabled. |
+| S3-PR6-10 | Appendix/framework fixture parity is external to this repository and requires the qualified mathematical reference contract. No simulator parity claim is made. |
+| XC-CI-08 and children | Native Xcode build/test workflows replace nonexistent SwiftPM/UI-test invocations. Offline gates check generated client drift, canonical identifiers, approved labels, local instrument-source fingerprint and privacy-manifest fingerprints. XCTest covers invalid inputs, independent subscales, nominal choices, local journal persistence, API failures and export correctness. A canonical server bank hash, full research-contract tests and branch-protection requirements remain external. |
+
+## Personal scoring contract
+
+Complete valid personal responses use equal-weight item averages on the existing
+12.5, 37.5, 62.5, 87.5 display scale. Items 7 and 9 do not enter an ordinal mean.
+The seven groups are independent. There are no empirically estimated reliability
+weights, sigmoid transformations, interaction-derived boosts, confidence
+intervals or normative interpretations. These changes alter older scores; old
+aggregate-only data is displayed as recorded and cannot be retroactively rescored.
+
+New results and local reports identify their exploratory limits. The report's
+invented normative anchor at 50 and unvalidated analytics forecasts are removed.
+
+## Additional defects corrected
+
+- Export UI assigned a specialised export URL to a shadowed local variable,
+  causing sharing to fail after successful file creation. The URL now reaches
+  the share sheet.
+- Text R scripts were labelled binary `.RData`; they now export as `.R` source
+  with an explicit script description.
+- Incomplete SPSS/Stata writers produced misleading files. Both formats now
+  reject export and are removed from selectable statistical formats.
+- All specialised `ProfileManager` exports use the same writer as the export
+  UI; duplicate CSV-as-XLSX and CSV-as-statistical-file implementations are gone.
+- Export filenames cannot contain path separators or traversal segments.
+- CSV and XML escape names correctly, and descriptive exports no longer relabel
+  questionnaire dimensions as autonomy, purposefulness, self-acceptance or growth.
+- The basic PDF export now emits real PDF bytes rather than plain text with a `.pdf` extension.
+- The saved-result confirmation retains the actual name after clearing the field.
+- README and store metadata no longer claim validation, cloud sync or an unrelated
+  “Adult Psychological Growth Inventory.” Metadata copy is English until reviewed
+  translations are supplied.
+
+## Verification and remaining limits
+
+Final validation passed on the local macOS arm64 host: 87 XCTest cases, zero failures,
+plus one Swift Testing case. The basic PDF regression confirmed a `%PDF-` header.
+Generated-client drift checks, Explorer static contract gates and `git diff --check`
+also passed. The last live metadata check still returned HTTP 500.
+
+```sh
+python3 scripts/generate_api_client.py --check
+python3 scripts/check_explorer_contracts.py
+xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /tmp/APGI-Explorer-build CODE_SIGNING_ALLOWED=NO \
+  -parallel-testing-enabled NO -test-timeouts-enabled YES \
+  -default-test-execution-time-allowance 30 \
+  -maximum-test-execution-time-allowance 60
+```
+
+Result bundle: `/tmp/APGI-Explorer-build/Logs/Test/Test-APGI-Explorer-2026.10.27_19-24-55--0400.xcresult`.
+The AppIntents metadata extraction notice and Excel export subprocess QoS diagnostic
+are non-failing toolchain/runtime notices; neither is presented as a visual QA pass.
+
+Live UI inspection timed out, so no visual or interactive end-to-end UI pass is
+claimed. The project has a macOS unit-test target; its UI-test source directory is
+not registered as a target. CI does not pretend that nonexistent target ran.
+
+The existing distribution workflow and account-side release settings are not a
+verified App Store deployment. No release, purchase, research enrollment, data
+upload, repository transfer, Pages deletion or branch-protection change was made.
+
+## Runtime follow-up
+
+The subsequent console-log review found that the target had not attached the
+entitlements file. The original unsigned unit-test run did not verify effective
+sandbox permissions. Both build configurations now attach the file and enable
+outgoing networking. A signed build and bundled sandboxed API probe verified the
+fix. See `RUNTIME_VERIFICATION.md` for details and the updated 88-case test result.

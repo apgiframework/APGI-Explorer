@@ -89,9 +89,9 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertNotNil(csvString)
 
     // Verify CSV headers
-    XCTAssertTrue(csvString?.contains("Metric,Value,Category,Description") ?? false)
-    XCTAssertTrue(csvString?.contains("APGI_Total") ?? false)
-    XCTAssertTrue(csvString?.contains("APGI_Autonomy") ?? false)
+    XCTAssertTrue(csvString?.contains("\"Metric\",\"Value\",\"Category\",\"Description\"") ?? false)
+    XCTAssertTrue(csvString?.contains("Reported reactivity to the unexpected") ?? false)
+    XCTAssertTrue(csvString?.contains("Reported information prioritisation") ?? false)
     XCTAssertTrue(csvString?.contains("Profile_Name") ?? false)
   }
 
@@ -112,22 +112,13 @@ final class ResearchExportTests: XCTestCase {
     XCTAssertTrue(xmlString?.contains("<APGIScores>") ?? false)
   }
 
-  func testSPSSExport() throws {
+  func testUnimplementedBinaryFormatsAreRejected() throws {
     let manager = try getManager()
     let profile = try getProfile()
-    let exportData = try manager.exportProfile(profile, format: .spss)
-
-    XCTAssertFalse(exportData.isEmpty)
-    XCTAssertGreaterThanOrEqual(exportData.count, 100)  // SPSS files have binary headers
-  }
-
-  func testStataExport() throws {
-    let manager = try getManager()
-    let profile = try getProfile()
-    let exportData = try manager.exportProfile(profile, format: .stata)
-
-    XCTAssertFalse(exportData.isEmpty)
-    XCTAssertGreaterThanOrEqual(exportData.count, 100)  // Stata files have binary headers
+    XCTAssertThrowsError(try manager.exportProfile(profile, format: .spss))
+    XCTAssertThrowsError(try manager.exportProfile(profile, format: .stata))
+    XCTAssertFalse(ExportCategory.statistical.formats.contains(.spss))
+    XCTAssertFalse(ExportCategory.statistical.formats.contains(.stata))
   }
 
   func testRDataExport() throws {
@@ -145,7 +136,7 @@ final class ResearchExportTests: XCTestCase {
     // Verify R script content
     XCTAssertTrue(rScript.contains("# APGI Profile Data Export"))
     XCTAssertTrue(rScript.contains("apgi_data <- data.frame("))
-    XCTAssertTrue(rScript.contains("save(apgi_data)"))
+    XCTAssertTrue(rScript.contains("save(apgi_data, file = \"apgi_profile.RData\")"))
   }
 
   func testExcelExport() throws {
@@ -256,6 +247,7 @@ final class ResearchExportTests: XCTestCase {
 
     let tempDir = ExportUtilities.getTemporaryDirectory()
     XCTAssertNotNil(tempDir)
-    XCTAssertTrue(tempDir.lastPathComponent == "tmp")
+    XCTAssertTrue(tempDir.isFileURL)
+    XCTAssertTrue(FileManager.default.isWritableFile(atPath: tempDir.path))
   }
 }

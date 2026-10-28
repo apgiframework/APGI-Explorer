@@ -17,6 +17,7 @@ struct GeneralSettingsView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
+        ExplorerAPIStatusView()
         // Profile Section
         VStack(alignment: .leading, spacing: 12) {
           Text("Profile")

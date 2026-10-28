@@ -22,13 +22,19 @@ struct PrivacyPolicyView: View {
               .fontWeight(.bold)
               .foregroundColor(AppColors.primaryText)
 
-            Text("Last updated: \(Date(), style: .date)")
+            Text("Last updated: October 27, 2026")
               .font(.caption)
               .foregroundColor(AppColors.secondaryText)
           }
           .padding(.bottom)
 
           // Privacy Policy Content
+          Text(
+            "Personal questionnaire answers, answer changes and response timing are stored locally. "
+              + "The app requests public release metadata from api.apgiframework.com without sending questionnaire answers. "
+              + "Research participation and paid products are unavailable in this release."
+          )
+            .font(.body)
           self.privacyPolicyContent
 
           // Data Collection Section

@@ -14,22 +14,18 @@ struct LiveScoreTracker: View {
   @ObservedObject var quizModel: QuizModel
 
   private let trackedParameters: [TrackedParameter] = [
-    TrackedParameter(key: "epsilon", label: "ε", description: "Prediction Error"),
-    TrackedParameter(key: "precision", label: "π", description: "Precision"),
-    TrackedParameter(key: "threshold", label: "θₜ", description: "Threshold"),
-    TrackedParameter(key: "somatic", label: "β", description: "Somatic Bias")
+    TrackedParameter(key: "epsilon", label: "Reported reactivity to the unexpected", description: "Reported reactivity to the unexpected"),
+    TrackedParameter(key: "precision", label: "Reported information prioritisation", description: "Reported information prioritisation"),
+    TrackedParameter(key: "threshold", label: "Reported attentional threshold", description: "Reported attentional threshold"),
+    TrackedParameter(key: "somatic", label: "Reported body-signal attention", description: "Reported body-signal attention")
   ]
 
   var body: some View {
     VStack(spacing: 4) {
-      Text("Your Emerging Profile")
+      Text("Questionnaire progress")
         .font(.caption)
         .fontWeight(.semibold)
         .foregroundColor(.secondary)
-
-      SmallRadarChart(profile: self.quizModel.calculatePartialScore())
-        .frame(height: 80)
-        .padding(.horizontal, 10)
 
       VStack(spacing: 4) {
         ForEach(self.trackedParameters, id: \.key) { parameter in
@@ -42,11 +38,11 @@ struct LiveScoreTracker: View {
       }
 
       if let remaining = quizModel.questionsNeededForConfidence() {
-        Text("Answer \(remaining) more question\(remaining == 1 ? "" : "s") for high confidence")
+        Text("Answer \(remaining) more question\(remaining == 1 ? "" : "s") to complete the questionnaire")
           .font(.caption2)
           .foregroundColor(.secondary)
       } else {
-        Text("Confidence target reached")
+        Text("All items answered")
           .font(.caption2)
           .foregroundColor(.green)
       }
@@ -71,10 +67,10 @@ struct ConfidenceBar: View {
 
   private var barColor: Color {
     switch self.parameter {
-    case "ε": .orange
-    case "π": .green
-    case "θₜ": .purple
-    case "β": .blue
+    case "Reported reactivity to the unexpected": .orange
+    case "Reported information prioritisation": .green
+    case "Reported attentional threshold": .purple
+    case "Reported body-signal attention": .blue
     default: .gray
     }
   }

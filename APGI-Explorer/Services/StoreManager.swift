@@ -12,15 +12,7 @@ class StoreManager: ObservableObject {
   @Published var isLoading = false
   @Published var errorMessage: String?
 
-  private var updateListenerTask: Task<Void, Error>?
-
-  private init() {
-    self.updateListenerTask = self.listenForTransactions()
-  }
-
-  deinit {
-    updateListenerTask?.cancel()
-  }
+  private init() {}
 
   // MARK: - Product Definitions
 
@@ -80,269 +72,36 @@ class StoreManager: ObservableObject {
   // MARK: - Store Operations
 
   func loadProducts() async {
-    self.isLoading = true
-    self.errorMessage = nil
-
-    do {
-      let storeProducts = try await Product.products(for: ProductID.allCases.map(\.rawValue))
-
-      DispatchQueue.main.async {
-        self.products = storeProducts.sorted { (product1: Product, product2: Product) -> Bool in
-          if product1.type == .autoRenewable, product2.type != .autoRenewable {
-            return true
-          } else if product1.type != .autoRenewable, product2.type == .autoRenewable {
-            return false
-          } else {
-            return product1.price < product2.price
-          }
-        }
-        self.isLoading = false
-      }
-    } catch {
-      DispatchQueue.main.async {
-        self.errorMessage = error.localizedDescription
-        self.isLoading = false
-      }
-    }
+    self.products = []
+    self.isLoading = false
   }
 
   func purchase(_ product: Product) async throws -> StoreKit.Transaction? {
-    self.isLoading = true
-    self.errorMessage = nil
-
-    defer {
-      DispatchQueue.main.async {
-        self.isLoading = false
-      }
-    }
-
-    do {
-      let result = try await product.purchase()
-
-      switch result {
-      case .success(let verification):
-        let transaction = try checkVerified(verification)
-
-        await deliverProduct(transaction)
-        await finishTransaction(transaction)
-
-        DispatchQueue.main.async {
-          self.purchasedProductIDs.insert(transaction.productID)
-        }
-
-        return transaction
-
-      case .userCancelled:
-        return nil
-
-      case .pending:
-        throw StoreError.paymentPending
-
-      @unknown default:
-        throw StoreError.unknown
-      }
-    } catch {
-      DispatchQueue.main.async {
-        self.errorMessage = error.localizedDescription
-      }
-      throw error
-    }
+    throw StoreError.productsDisabled
   }
 
   func restorePurchases() async {
-    self.isLoading = true
-    self.errorMessage = nil
-
-    defer {
-      DispatchQueue.main.async {
-        self.isLoading = false
-      }
-    }
-
-    do {
-      try await AppStore.sync()
-      await self.updatePurchasedProducts()
-    } catch {
-      DispatchQueue.main.async {
-        self.errorMessage = error.localizedDescription
-      }
-    }
+    // Keep existing purchases untouched in the store; no entitlement enables this release.
+    isLoading = false
+    errorMessage = nil
   }
 
-  // MARK: - Transaction Management
+  func updatePurchasedProducts() async { purchasedProductIDs = [] }
 
-  private func listenForTransactions() -> Task<Void, Error> {
-    Task.detached {
-      for await result in Transaction.updates {
-        do {
-          let transaction = try await MainActor.run { try self.checkVerified(result) }
+  var hasPremiumFeatures: Bool { false }
+  var hasProfessionalFeatures: Bool { false }
+  var hasResearchFeatures: Bool { false }
+  var hasUnlimitedProfiles: Bool { false }
 
-          await self.deliverProduct(transaction)
-          await self.finishTransaction(transaction)
+  func getSubscriptionStatus(for productID: String) async -> Product.SubscriptionInfo.Status? { nil }
+  func isSubscriptionActive(for productID: String) async -> Bool { false }
 
-          _ = await MainActor.run {
-            self.purchasedProductIDs.insert(transaction.productID)
-          }
-        } catch {
-          os_log("Transaction verification failed: %@", error.localizedDescription)
-        }
-      }
-    }
-  }
-
-  private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-    switch result {
-    case .unverified:
-      throw StoreError.verificationFailed
-    case .verified(let safe):
-      return safe
-    }
-  }
-
-  private func deliverProduct(_ transaction: StoreKit.Transaction) async {
-    guard let productID = ProductID(rawValue: transaction.productID) else { return }
-
-    switch productID {
-    case .premiumMonthly, .premiumYearly:
-      await self.enablePremiumFeatures()
-    case .professionalFeatures:
-      await self.enableProfessionalFeatures()
-    case .researchPack:
-      await self.enableResearchFeatures()
-    case .unlimitedProfiles:
-      await self.enableUnlimitedProfiles()
-    }
-  }
-
-  private func finishTransaction(_ transaction: StoreKit.Transaction) async {
-    await transaction.finish()
-  }
-
-  func updatePurchasedProducts() async {
-    var purchasedIDs: Set<String> = []
-
-    for await result in StoreKit.Transaction.currentEntitlements {
-      do {
-        let transaction = try await MainActor.run { try self.checkVerified(result) }
-        purchasedIDs.insert(transaction.productID)
-      } catch {
-        os_log("Failed to verify transaction: %@", error.localizedDescription)
-      }
-    }
-
-    DispatchQueue.main.async {
-      self.purchasedProductIDs = purchasedIDs
-    }
-  }
-
-  // MARK: - Feature Enablement
-
-  private func enablePremiumFeatures() async {
-    do {
-      try KeychainManager.shared.storeCodable(true, forKey: "premium_features_enabled")
-    } catch {
-      os_log(
-        "Failed to store premium features: %@", log: OSLog.default, type: .error,
-        error.localizedDescription)
-    }
-  }
-
-  private func enableProfessionalFeatures() async {
-    do {
-      try KeychainManager.shared.storeCodable(true, forKey: "professional_features_enabled")
-    } catch {
-      os_log(
-        "Failed to store professional features: %@", log: OSLog.default, type: .error,
-        error.localizedDescription)
-    }
-  }
-
-  private func enableResearchFeatures() async {
-    do {
-      try KeychainManager.shared.storeCodable(true, forKey: "research_features_enabled")
-    } catch {
-      os_log(
-        "Failed to store research features: %@", log: OSLog.default, type: .error,
-        error.localizedDescription)
-    }
-  }
-
-  private func enableUnlimitedProfiles() async {
-    do {
-      try KeychainManager.shared.storeCodable(true, forKey: "unlimited_profiles_enabled")
-    } catch {
-      os_log(
-        "Failed to store unlimited profiles: %@", log: OSLog.default, type: .error,
-        error.localizedDescription)
-    }
-  }
-
-  // MARK: - Feature Access
-
-  var hasPremiumFeatures: Bool {
-    self.purchasedProductIDs.contains(ProductID.premiumMonthly.rawValue)
-      || self.purchasedProductIDs.contains(ProductID.premiumYearly.rawValue)
-  }
-
-  var hasProfessionalFeatures: Bool {
-    self.purchasedProductIDs.contains(ProductID.professionalFeatures.rawValue)
-      || self.hasPremiumFeatures
-  }
-
-  var hasResearchFeatures: Bool {
-    self.purchasedProductIDs.contains(ProductID.researchPack.rawValue) || self.hasPremiumFeatures
-  }
-
-  var hasUnlimitedProfiles: Bool {
-    self.purchasedProductIDs.contains(ProductID.unlimitedProfiles.rawValue)
-      || self.hasPremiumFeatures
-  }
-
-  // MARK: - Subscription Management
-
-  func getSubscriptionStatus(for productID: String) async -> Product.SubscriptionInfo.Status? {
-    guard let product = products.first(where: { $0.id == productID }),
-      product.type == .autoRenewable
-    else {
-      return nil
-    }
-
-    guard let subscription = product.subscription else { return nil }
-
-    do {
-      let statuses = try await subscription.status
-      return statuses.first
-    } catch {
-      os_log("Failed to get subscription status: %@", error.localizedDescription)
-      return nil
-    }
-  }
-
-  func isSubscriptionActive(for productID: String) async -> Bool {
-    guard self.purchasedProductIDs.contains(productID) else { return false }
-
-    guard let subscriptionStatus = await getSubscriptionStatus(for: productID) else { return false }
-
-    switch subscriptionStatus.state {
-    case .expired:
-      return false
-    case .inBillingRetryPeriod:
-      return false
-    case .inGracePeriod:
-      return true
-    case .revoked:
-      return false
-    case .subscribed:
-      return true
-    default:
-      return false
-    }
-  }
 }
 
 // MARK: - Store Errors
 
 enum StoreError: Error, LocalizedError {
+  case productsDisabled
   case paymentPending
   case verificationFailed
   case productNotFound
@@ -351,6 +110,8 @@ enum StoreError: Error, LocalizedError {
 
   var errorDescription: String? {
     switch self {
+    case .productsDisabled:
+      "Paid products are unavailable pending validation."
     case .paymentPending:
       NSLocalizedString("Payment is pending approval", comment: "Store error")
     case .verificationFailed:
@@ -378,6 +139,8 @@ struct StoreSettingsView: View {
   var body: some View {
     NavigationView {
       List {
+        Text("Paid products are unavailable pending validation.")
+          .foregroundStyle(.secondary)
         ProductsSection(storeManager: self.storeManager)
 
         Section {

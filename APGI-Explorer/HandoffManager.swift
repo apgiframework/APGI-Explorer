@@ -12,46 +12,16 @@ enum HandoffActivity {
         activity.isEligibleForSearch = true
         activity.isEligibleForPublicIndexing = false
 
-        // Add state information
-        activity.userInfo = [
-            "questionIndex": currentQuestionIndex,
-            "answers": quizModel.answers,
-            "timestamp": Date().timeIntervalSince1970
-        ]
-
-        // Add content attributes for search
-        if #available(iOS 14.0, *) {
-            let attributes = CSSearchableItemAttributeSet()
-            attributes.title = "Continue APGI Quiz"
-            attributes.contentDescription = "Continue your APGI personality assessment"
-            activity.contentAttributeSet = attributes
-        }
+        activity.userInfo = ["sessionID": quizModel.sessionID.uuidString]
+        activity.isEligibleForSearch = false
 
         return activity
     }
 
     static func restoreUserActivity(_ activity: NSUserActivity, currentQuestionIndex: Binding<Int>)
         -> [Int: Int]? {
-        guard activity.activityType == self.activityType,
-              let userInfo = activity.userInfo,
-              let answers = userInfo["answers"] as? [Int: Int],
-              let questionIndex = userInfo["questionIndex"] as? Int,
-              let timestamp = userInfo["timestamp"] as? TimeInterval
-        else {
-            return nil
-        }
-
-        // Don't restore if the activity is too old (older than 7 days)
-        let activityDate = Date(timeIntervalSince1970: timestamp)
-        if abs(activityDate.timeIntervalSinceNow) > 60 * 60 * 24 * 7 {
-            return nil
-        }
-
-        // Restore the question index
-        currentQuestionIndex.wrappedValue = questionIndex
-
-        // Return the restored answers
-        return answers
+        // Personal data is local-only. Remote session resolution requires research mode.
+        return nil
     }
 }
 

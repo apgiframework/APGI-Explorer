@@ -21,7 +21,12 @@ struct MenuBarView: View {
           name: "New Profile",
           dateCreated: Date(),
           dateModified: Date(),
-          results: ["ε": 50, "π": 50, "θₜ": 50, "β": 50]
+          results: [
+            "epsilon": 50,
+            "precision": 50,
+            "threshold": 50,
+            "somatic": 50
+          ]
         )
         try? await PersistenceController.shared.saveProfile(starterProfile)
       }

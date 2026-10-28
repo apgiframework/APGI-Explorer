@@ -413,130 +413,28 @@ class ProfileManager: ObservableObject {
 
         return """
         **Profile Type:** \(profileType.rawValue)
-        **Prediction Error (ε):** \(epsilon)
-        **Precision (π):** \(precision)
-        **Threshold (θₜ):** \(threshold)
-        **Somatic Bias (β):** \(somatic)
+        **Reported reactivity to the unexpected:** \(epsilon)
+        **Reported information prioritisation:** \(precision)
+        **Reported attentional threshold:** \(threshold)
+        **Reported body-signal attention:** \(somatic)
         **Last Modified:** \(profile.dateModified.formatted())
         """
     }
 
-    /// Enhanced profile calculation using APGIScorer
+    /// Stored aggregates remain unchanged; raw responses cannot be recovered from means.
     func enhancedProfile(from results: [String: Int]) async -> APGIProfile {
-        // Validate input results
-        guard !results.isEmpty else {
-            os_log("Empty results dictionary provided to enhancedProfile", type: .error)
-            return APGIProfile(
-                epsilon: 50.0,
-                precision: 50.0,
-                threshold: 50.0,
-                somaticBias: 50.0,
-                interactionScore: 0,
-                temporalStability: 0,
-                environmentalFit: 0
-            )
-        }
-
-        // Convert [String: Int] results to [Int: Int] for the scorer
-        let answerMapping: [String: Int] = [
-            "epsilon": 1, "precision": 2, "threshold": 3, "somatic": 4,
-            "interactions": 5, "temporal": 6, "environment": 7
-        ]
-
-        var answers: [Int: Int] = [:]
-        for (parameter, value) in results {
-            guard answerMapping[parameter] != nil,
-                  value >= 0, value <= 100
-            else {
-                os_log("Invalid parameter '%s' or value '%d' in results", type: .error, parameter, value)
-                continue
-            }
-
-            // Map the parameter value to question IDs
-            let questionIds = self.getQuestionIdsForParameter(parameter)
-            for questionId in questionIds {
-                // Distribute the parameter value across related questions
-                // This is a simplified approach - in practice, you'd want actual individual answers
-                answers[questionId] = value
-            }
-        }
-
-        // Ensure we have enough data for scoring
-        guard !answers.isEmpty else {
-            os_log("No valid answers could be mapped from results", type: .error)
-            return APGIProfile(
-                epsilon: 50.0,
-                precision: 50.0,
-                threshold: 50.0,
-                somaticBias: 50.0,
-                interactionScore: 0,
-                temporalStability: 0,
-                environmentalFit: 0
-            )
-        }
-
-        return self.scorer.calculateRobustScore(answers: answers)
+        QuizModel.calculateAPGIProfile(from: results)
     }
 
-    private func getQuestionIdsForParameter(_ parameter: String) -> [Int] {
-        switch parameter {
-        case "epsilon":
-            [1, 2, 3, 4, 5]
-        case "precision":
-            [6, 7, 8, 9, 10]
-        case "threshold":
-            [11, 12, 13, 14, 15]
-        case "somatic":
-            [16, 17, 18, 19, 20]
-        case "interactions":
-            [21, 22, 23, 24, 25]
-        case "temporal":
-            [26, 27, 28, 29, 30]
-        case "environment":
-            [31, 32, 33, 34, 35]
-        default:
-            []
-        }
-    }
-
-    /// Generates a PDF report for the profile
+    /// Generate PDF bytes using the descriptive report writer.
     private func generatePDFReport(for profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .pdf)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        let apgiProfile = await self.enhancedProfile(from: profile.results)
-        let profileType = self.determineProfileType(for: apgiProfile)
-
-        let pdfContent = """
-        APGI Profile Report
-        =================
-
-        Profile Name: \(profile.name)
-        Created: \(profile.dateCreated.formatted())
-        Modified: \(profile.dateModified.formatted())
-        Profile Type: \(profileType.rawValue)
-
-        APGI Scores:
-        - Epsilon (Prediction Error): \(String(format: "%.2f", apgiProfile.epsilon))
-        - Precision: \(String(format: "%.2f", apgiProfile.precision))
-        - Threshold: \(String(format: "%.2f", apgiProfile.threshold))
-        - Somatic Bias: \(String(format: "%.2f", apgiProfile.somaticBias))
-        - Interaction Score: \(String(format: "%.2f", apgiProfile.interactionScore))
-        - Temporal Stability: \(String(format: "%.2f", apgiProfile.temporalStability))
-        - Environmental Fit: \(String(format: "%.2f", apgiProfile.environmentalFit))
-
-        Generated by APGI Explorer
-        """
-
         do {
-            try pdfContent.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
+            let scores = await enhancedProfile(from: profile.results)
+            let export = ProfileExport(version: "2.0", timestamp: Date(), profile: profile, apgiScores: scores)
+            let data = try ResearchExportManager.shared.exportProfile(export, format: .apa)
+            return await writeExportData(data, for: profile, format: .pdf)
         } catch {
-            os_log(
-                "Failed to write PDF report: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
+            self.error = error
             return nil
         }
     }
@@ -547,6 +445,9 @@ class ProfileManager: ObservableObject {
         let profileType = self.determineProfileType(for: apgiProfile)
 
         let exportData: [String: Any] = [
+            "instrument_id": APGIIdentifiers.instrument,
+            "analysis_mode": APGIIdentifiers.analysisMode,
+            "excluded_from_norms": true,
             "profile": [
                 "id": profile.id.uuidString,
                 "name": profile.name,
@@ -577,31 +478,11 @@ class ProfileManager: ObservableObject {
         }
     }
 
-    /// Exports profile to CSV format
+    /// Export descriptive scores with escaped fields and instrument provenance.
     private func exportToCSV(profile: QuizProfile) async -> Data? {
-        let apgiProfile = await self.enhancedProfile(from: profile.results)
-        let profileType = self.determineProfileType(for: apgiProfile)
-
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-
-        let header = "Name,Created,Profile Type,Epsilon,Precision,Threshold,Somatic Bias,Interaction Score,Temporal Stability,Environmental Fit"
-        let dataRow = [
-            "\"\(profile.name)\"",
-            "\"\(formatter.string(from: profile.dateCreated))\"",
-            "\"\(profileType.rawValue)\"",
-            String(format: "%.2f", apgiProfile.epsilon),
-            String(format: "%.2f", apgiProfile.precision),
-            String(format: "%.2f", apgiProfile.threshold),
-            String(format: "%.2f", apgiProfile.somaticBias),
-            String(format: "%.2f", apgiProfile.interactionScore),
-            String(format: "%.2f", apgiProfile.temporalStability),
-            String(format: "%.2f", apgiProfile.environmentalFit)
-        ].joined(separator: ",")
-
-        let csvContent = header + "\n" + dataRow
-        return csvContent.data(using: .utf8)
+        let scores = await enhancedProfile(from: profile.results)
+        let export = ProfileExport(version: "2.0", timestamp: Date(), profile: profile, apgiScores: scores)
+        return try? ResearchExportManager.shared.exportProfile(export, format: .csv)
     }
 
     /// Returns a URL for the exported profile that can be shared
@@ -617,24 +498,18 @@ class ProfileManager: ObservableObject {
         case .png:
             let apgiScores = await self.enhancedProfile(from: profile.results)
             return exportProfileAsPNG(profile: profile, apgiScores: apgiScores)
-        case .spss:
-            return await exportToSPSS(profile: profile)
-        case .stata:
-            return await exportToStata(profile: profile)
-        case .rData:
-            return await exportToRData(profile: profile)
-        case .excel:
-            return await exportToExcel(profile: profile)
-        case .xml:
-            return await exportToXML(profile: profile)
-        case .bibTeX:
-            return await exportToBibTeX(profile: profile)
-        case .endNote:
-            return await exportToEndNote(profile: profile)
-        case .apa:
-            return await exportToAPAReport(profile: profile)
-        case .mla:
-            return await exportToMLAReport(profile: profile)
+        case .spss, .stata:
+            return nil
+        case .rData, .excel, .xml, .bibTeX, .endNote, .apa, .mla:
+            do {
+                let scores = await enhancedProfile(from: profile.results)
+                let export = ProfileExport(version: "2.0", timestamp: Date(), profile: profile, apgiScores: scores)
+                let data = try ResearchExportManager.shared.exportProfile(export, format: format)
+                return await writeExportData(data, for: profile, format: format)
+            } catch {
+                self.error = error
+                return nil
+            }
         }
     }
 
@@ -680,66 +555,8 @@ class ProfileManager: ObservableObject {
 // MARK: - Profile Analysis Extensions
 
 extension ProfileManager {
-    /// Returns states ranked by accessibility for this profile
-    func rankedStatesForProfile(_ profile: APGIProfile) -> [StateAccessibility] {
-        let states = StateModel().states
-
-        return states.map { state in
-            let accessibility = self.calculateAccessibility(state: state, profile: profile)
-            return StateAccessibility(
-                state: state, score: accessibility.score, explanation: accessibility.explanation
-            )
-        }
-        .sorted { $0.score > $1.score }
-    }
-
-    private func calculateAccessibility(state: PsychologicalState, profile: APGIProfile) -> (
-        score: Double, explanation: String
-    ) {
-        // Parse state parameters
-        let stateParams = self.parseStateParameters(state)
-
-        var score = 0.0
-        var factors: [String] = []
-
-        // Epsilon matching (Prediction Error)
-        if let stateEpsilon = stateParams.epsilon {
-            let epsilonMatch = 1.0 - abs(profile.epsilon - stateEpsilon) / 100.0
-            score += epsilonMatch * 0.3
-            if epsilonMatch > 0.7 {
-                factors.append("Your ε aligns with this state's prediction error profile")
-            }
-        }
-
-        // Threshold matching
-        if let stateThreshold = stateParams.threshold {
-            let thresholdMatch = 1.0 - abs(profile.threshold - stateThreshold) / 100.0
-            score += thresholdMatch * 0.3
-            if thresholdMatch > 0.7 {
-                factors.append("Your θₜ makes this state highly accessible")
-            }
-        }
-
-        // Somatic bias matching
-        if let stateSomatic = stateParams.somaticBias {
-            let somaticMatch = 1.0 - abs(profile.somaticBias - stateSomatic) / 100.0
-            score += somaticMatch * 0.25
-            if somaticMatch > 0.7 {
-                factors.append("Your β level predisposes you to this state")
-            }
-        }
-
-        // Precision matching
-        if let statePrecision = stateParams.precision {
-            let precisionMatch = 1.0 - abs(profile.precision - statePrecision) / 100.0
-            score += precisionMatch * 0.15
-        }
-
-        let explanation =
-            factors.isEmpty ? "Moderate match to your profile" : factors.joined(separator: "; ")
-
-        return (score, explanation)
-    }
+    /// State accessibility cannot be inferred from this unvalidated questionnaire.
+    func rankedStatesForProfile(_ profile: APGIProfile) -> [StateAccessibility] { [] }
 
     private func parseStateParameters(_ state: PsychologicalState) -> StateParameters {
         StateParameters(
@@ -840,10 +657,10 @@ struct ProfileChartView: View {
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: 10) {
-                ParameterRow(name: "Epsilon (ε)", value: self.apgiScores.epsilon, color: .blue)
-                ParameterRow(name: "Precision (π)", value: self.apgiScores.precision, color: .green)
-                ParameterRow(name: "Threshold (θₜ)", value: self.apgiScores.threshold, color: .orange)
-                ParameterRow(name: "Somatic Bias (β)", value: self.apgiScores.somaticBias, color: .red)
+                ParameterRow(name: "Reported reactivity to the unexpected", value: self.apgiScores.epsilon, color: .blue)
+                ParameterRow(name: "Reported information prioritisation", value: self.apgiScores.precision, color: .green)
+                ParameterRow(name: "Reported attentional threshold", value: self.apgiScores.threshold, color: .orange)
+                ParameterRow(name: "Reported body-signal attention", value: self.apgiScores.somaticBias, color: .red)
             }
             .padding(.horizontal)
 
@@ -918,7 +735,7 @@ struct QuizProfile: Identifiable, Codable, Equatable, Sendable {
         """
         ε: \(self.results["epsilon"] ?? 0)
         π: \(self.results["precision"] ?? 0)
-        θₜ: \(self.results["threshold"] ?? 0)
+        Reported attentional threshold: \(self.results["threshold"] ?? 0)
         β: \(self.results["somatic"] ?? 0)
         """
     }
@@ -957,252 +774,5 @@ struct QuizProfile: Identifiable, Codable, Equatable, Sendable {
 
     var occupation: String {
         ""
-    }
-}
-
-// MARK: - Additional Export Formats
-
-extension ProfileManager {
-    /// Exports profile to SPSS .sav format
-    private func exportToSPSS(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .spss)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Create a basic SPSS-compatible file structure
-        // Note: This is a simplified implementation - real SPSS files require complex binary formatting
-        let csvData = await self.exportToCSV(profile: profile)
-        do {
-            try csvData?.write(to: fileURL)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write SPSS export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to Stata .dta format
-    private func exportToStata(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .stata)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Create a basic Stata-compatible file structure
-        // Note: This is a simplified implementation - real Stata files require complex binary formatting
-        let csvData = await self.exportToCSV(profile: profile)
-        do {
-            try csvData?.write(to: fileURL)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write Stata export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to R Data format
-    private func exportToRData(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .rData)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Compute APGI profile on background thread
-        let signpostID = OSSignpostID(log: self.log)
-        os_signpost(.begin, log: self.log, name: "Score Calculation", signpostID: signpostID)
-        let apgiProfile = await self.enhancedProfile(from: profile.results)
-        os_signpost(.end, log: self.log, name: "Score Calculation", signpostID: signpostID)
-
-        let rScript = """
-        # APGI Profile Data
-        # Generated on \(Date())
-
-        # Profile metadata
-        profile_name <- "\(profile.name)"
-        profile_date <- as.POSIXct("\(profile.dateCreated)")
-
-        # APGI scores
-        epsilon <- \(apgiProfile.epsilon)
-        precision <- \(apgiProfile.precision)
-        threshold <- \(apgiProfile.threshold)
-        somatic_bias <- \(apgiProfile.somaticBias)
-
-        # Create data frame
-        apgi_data <- data.frame(
-            parameter = c("epsilon", "precision", "threshold", "somatic_bias"),
-            value = c(epsilon, precision, threshold, somatic_bias)
-        )
-
-        # Save workspace
-        save(profile_name, profile_date, apgi_data, file = "\(filename)")
-        """
-
-        do {
-            try rScript.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write R Data export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to Excel format
-    private func exportToExcel(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .excel)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Create CSV content (Excel can open CSV files directly)
-        // Note: For true .xlsx format, a library like ExcelKit would be needed
-        let csvData = await self.exportToCSV(profile: profile)
-        do {
-            try csvData?.write(to: fileURL)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write Excel export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to XML format
-    private func exportToXML(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .xml)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Compute APGI profile on background thread
-        let apgiProfile = await self.enhancedProfile(from: profile.results)
-        let profileType = self.determineProfileType(for: apgiProfile)
-
-        let xmlContent = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <apgi_profile>
-            <metadata>
-                <name>\(profile.name.replacingOccurrences(of: "&", with: "&amp;"))</name>
-                <date_created>\(ISO8601DateFormatter().string(from: profile.dateCreated))</date_created>
-                <profile_type>\(profileType.rawValue)</profile_type>
-            </metadata>
-            <scores>
-                <epsilon>\(apgiProfile.epsilon)</epsilon>
-                <precision>\(apgiProfile.precision)</precision>
-                <threshold>\(apgiProfile.threshold)</threshold>
-                <somatic_bias>\(apgiProfile.somaticBias)</somatic_bias>
-            </scores>
-            <responses>
-        """
-
-        let xmlEnd = """
-            </responses>
-        </apgi_profile>
-        """
-
-        let fullXML =
-            xmlContent
-                + profile.results.map { response in
-                    "        <response id=\"\(response.key)\" value=\"\(response.value)\"/>"
-                }.joined(separator: "\n") + xmlEnd
-
-        do {
-            try fullXML.write(to: fileURL, atomically: true, encoding: String.Encoding.utf8)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write XML export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to BibTeX format
-    private func exportToBibTeX(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .bibTeX)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Compute APGI profile on background thread
-        let apgiProfile = await self.enhancedProfile(from: profile.results)
-        let profileType = self.determineProfileType(for: apgiProfile)
-
-        // Create a unique citation key
-        let citationKey =
-            "\(profile.name.replacingOccurrences(of: " ", with: "_"))_\(Date().timeIntervalSince1970)"
-
-        let bibtexContent = """
-        @misc{\(citationKey),
-            author = {APGI Explorer},
-            title = {Psychological Profile: \(profile.name)},
-            year = {\(Calendar.current.component(.year, from: profile.dateCreated))},
-            month = {\(Calendar.current.monthSymbols[Calendar.current.component(.month, from: profile.dateCreated) - 1])},
-            note = {Profile Type: \(profileType.rawValue), Epsilon: \(apgiProfile.epsilon), Precision: \(apgiProfile.precision), Threshold: \(apgiProfile.threshold), Somatic Bias: \(apgiProfile.somaticBias)},
-            howpublished = {APGI Explorer Application}
-        }
-        """
-
-        do {
-            try bibtexContent.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write BibTeX export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to EndNote format
-    private func exportToEndNote(profile: QuizProfile) async -> URL? {
-        let filename = ExportUtilities.generateExportFilename(profile: profile, format: .endNote)
-        let tempDir = ExportUtilities.getTemporaryDirectory()
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        // Compute APGI profile on background thread
-        let apgiProfile = await self.enhancedProfile(from: profile.results)
-        let profileType = self.determineProfileType(for: apgiProfile)
-
-        let endNoteContent = """
-        %0 Generic
-        %T Psychological Profile: \(profile.name)
-        %A APGI Explorer
-        %D \(Calendar.current.component(.year, from: profile.dateCreated))
-        %\(Calendar.current.component(.month, from: profile.dateCreated)) \(Calendar.current.monthSymbols[Calendar.current.component(.month, from: profile.dateCreated) - 1])
-        %X Profile Type: \(profileType.rawValue). APGI scores: Epsilon=\(apgiProfile.epsilon), Precision=\(apgiProfile.precision), Threshold=\(apgiProfile.threshold), Somatic Bias=\(apgiProfile.somaticBias).
-        %9 APGI Explorer Application
-        %@
-        """
-
-        do {
-            try endNoteContent.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
-        } catch {
-            os_log(
-                "Failed to write EndNote export file: %{public}@", log: self.log, type: .error,
-                error.localizedDescription
-            )
-            return nil
-        }
-    }
-
-    /// Exports profile to APA-formatted report (PDF)
-    private func exportToAPAReport(profile: QuizProfile) async -> URL? {
-        // For now, reuse the PDF generation but format it according to APA style
-        await self.generatePDFReport(for: profile)
-    }
-
-    /// Exports profile to MLA-formatted report (PDF)
-    private func exportToMLAReport(profile: QuizProfile) async -> URL? {
-        // For now, reuse the PDF generation but format it according to MLA style
-        await self.generatePDFReport(for: profile)
     }
 }

@@ -11,14 +11,14 @@ struct StateComparisonRadar: View {
 
   private func valueForState(_ state: PsychologicalState, parameter: String) -> Double {
     switch parameter {
-    case "Prediction Error": return Double(state.parameters.predictionError.accuracy.min) / 100.0
-    case "Precision":
+    case "Illustrative reactivity": return Double(state.parameters.predictionError.accuracy.min) / 100.0
+    case "Illustrative information prioritisation":
       if case .veryHigh(let value) = state.parameters.precision.task {
         return value / 5.0
       }
       return 0.5
-    case "Threshold": return abs(state.parameters.threshold.adjustment) / 100.0
-    case "Somatic Bias": return state.parameters.somaticBias.max / 3.0
+    case "Illustrative attention": return abs(state.parameters.threshold.adjustment) / 100.0
+    case "Illustrative body-signal attention": return state.parameters.somaticBias.max / 3.0
     default: return 0.5
     }
   }
@@ -30,7 +30,12 @@ struct StateComparisonRadar: View {
 
       Chart {
         ForEach(self.allStates) { state in
-          ForEach(["Prediction Error", "Precision", "Threshold", "Somatic Bias"], id: \.self) { parameter in LineMark(
+          ForEach(
+            ["Illustrative reactivity", "Illustrative information prioritisation",
+             "Illustrative attention", "Illustrative body-signal attention"],
+            id: \.self
+          ) { parameter in
+            LineMark(
               x: .value("Parameter", parameter),
               y: .value("Value", self.valueForState(state, parameter: parameter))
             )

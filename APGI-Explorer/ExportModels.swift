@@ -34,7 +34,7 @@ enum ExportFormat: String, CaseIterable {
   case png = "PNG"
   case spss = "SPSS"
   case stata = "Stata"
-  case rData = "R Data"
+  case rData = "R Script"
   case excel = "Excel"
   case xml = "XML"
   case bibTeX = "BibTeX"
@@ -50,7 +50,7 @@ enum ExportFormat: String, CaseIterable {
     case .png: "png"
     case .spss: "sav"
     case .stata: "dta"
-    case .rData: "RData"
+    case .rData: "R"
     case .excel: "xlsx"
     case .xml: "xml"
     case .bibTeX: "bib"
@@ -68,7 +68,7 @@ enum ExportFormat: String, CaseIterable {
     case .png: "image/png"
     case .spss: "application/octet-stream"
     case .stata: "application/octet-stream"
-    case .rData: "application/octet-stream"
+    case .rData: "text/plain"
     case .excel: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     case .xml: "application/xml"
     case .bibTeX: "application/x-bibtex"
@@ -86,7 +86,7 @@ enum ExportFormat: String, CaseIterable {
     case .png: "PNG image of profile visualization"
     case .spss: "SPSS .sav file for statistical analysis"
     case .stata: "Stata .dta file for econometric analysis"
-    case .rData: "R data frame for statistical computing"
+    case .rData: "R source script that creates local descriptive data files"
     case .excel: "Excel spreadsheet with multiple worksheets"
     case .xml: "XML format for structured data exchange"
     case .bibTeX: "BibTeX bibliography format for academic papers"
@@ -126,7 +126,7 @@ enum ExportCategory: String, CaseIterable {
     case .visual:
       [.pdf, .png]
     case .statistical:
-      [.spss, .stata, .rData, .excel]
+      [.rData, .excel]
     case .bibliography:
       [.bibTeX, .endNote]
     case .academic:
@@ -160,8 +160,11 @@ enum ExportUtilities {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyyMMdd_HHmmss"
     let timestamp = formatter.string(from: Date())
-    return
-      "\(profile.name.replacingOccurrences(of: " ", with: "_"))_\(timestamp).\(format.fileExtension)"
+    let safeName = profile.name.map { character -> Character in
+      character.isLetter || character.isNumber || character == "-" || character == "_" ? character : "_"
+    }
+    let basename = String(safeName.prefix(100))
+    return "\(basename.isEmpty ? "Profile" : basename)_\(timestamp).\(format.fileExtension)"
   }
 
   static func getTemporaryDirectory() -> URL {

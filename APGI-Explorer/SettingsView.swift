@@ -95,6 +95,8 @@ enum SettingsTab: CaseIterable {
 // MARK: - Missing Settings Views (Placeholders)
 
 struct NotificationsSettingsView: View {
+  @State private var authorizationMessage = "Checking notification permission…"
+  @State private var isRequestingAuthorization = false
   @AppStorage("enableProfileUpdates") private var enableProfileUpdates = true
   @AppStorage("enableSystemAlerts") private var enableSystemAlerts = true
 
@@ -117,9 +119,15 @@ struct NotificationsSettingsView: View {
           }
 
           Section {
-            Text(
-              "Notifications are managed by macOS System Settings. Enable notifications for APGI Explorer in System Settings > Notifications."
-            )
+            Text(authorizationMessage)
+            Button(isRequestingAuthorization ? "Requesting…" : "Enable Notifications") {
+              isRequestingAuthorization = true
+              Task {
+                authorizationMessage = await NotificationManager.shared.requestAuthorizationIfNeeded()
+                isRequestingAuthorization = false
+              }
+            }.disabled(isRequestingAuthorization)
+            Text("You can change notification permission in System Settings → Notifications.")
             .font(.caption)
             .foregroundColor(.secondary)
           }
@@ -128,6 +136,7 @@ struct NotificationsSettingsView: View {
       .padding()
     }
     .navigationTitle("Notifications")
+    .task { authorizationMessage = await NotificationManager.shared.authorizationSummary() }
   }
 }
 

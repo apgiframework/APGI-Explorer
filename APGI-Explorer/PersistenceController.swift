@@ -259,3 +259,27 @@ enum ProfileSortOption: String, CaseIterable {
   case epsilon
   case precision
 }
+
+extension PersistenceController {
+  /// Preserve each personal session's item history locally, including completed sessions.
+  /// This journal is never enqueued for research upload.
+  func savePersonalSession(_ snapshot: QuizModel.Snapshot) throws {
+    let data = try JSONEncoder().encode(snapshot)
+    let context = container.viewContext
+    try context.performAndWait {
+      let request = QuizSession.fetchRequest()
+      request.predicate = NSPredicate(format: "id == %@", snapshot.sessionID as CVarArg)
+      let session = try context.fetch(request).first ?? QuizSession(context: context)
+      if session.isInserted {
+        session.id = snapshot.sessionID
+        session.createdAt = Date()
+      }
+      session.jsonData = data
+      session.progress = Int32(snapshot.answers.count * 100 / 35)
+      session.isCompleted = Set(snapshot.answers.keys) == APGIScorer.requiredItemIDs
+        && snapshot.answers.values.allSatisfy { (1...4).contains($0) }
+      if session.isCompleted && session.completedAt == nil { session.completedAt = Date() }
+      try context.save()
+    }
+  }
+}

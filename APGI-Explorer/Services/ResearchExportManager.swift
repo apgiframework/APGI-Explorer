@@ -22,10 +22,8 @@ class ResearchExportManager: ObservableObject {
       return try self.exportCSV(profile)
     case .xml:
       return try self.exportXML(profile)
-    case .spss:
-      return try self.exportSPSS(profile)
-    case .stata:
-      return try self.exportStata(profile)
+    case .spss, .stata:
+      throw ExportError.unsupportedFormat
     case .rData:
       return try self.exportRData(profile)
     case .excel:
@@ -47,186 +45,63 @@ class ResearchExportManager: ObservableObject {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
     encoder.outputFormatting = .prettyPrinted
-    return try encoder.encode(profile)
+    let data = try encoder.encode(profile)
+    var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+    object["instrument_id"] = APGIIdentifiers.instrument
+    object["analysis_mode"] = APGIIdentifiers.analysisMode
+    object["excluded_from_norms"] = true
+    return try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+  }
+
+  private func scoreRows(_ profile: ProfileExport) -> [[String]] {
+    let scores = profile.apgiScores
+    return [
+      ["Metric", "Value", "Category", "Description"],
+      ["epsilon", String(scores.epsilon), "Self-report", "Reported reactivity to the unexpected"],
+      ["precision", String(scores.precision), "Self-report", "Reported information prioritisation"],
+      ["threshold", String(scores.threshold), "Self-report", "Reported attentional threshold"],
+      ["somatic", String(scores.somaticBias), "Self-report", "Reported body-signal attention"],
+      ["Profile_Name", profile.profile.name, "Local", "Profile name"],
+      ["instrument_id", APGIIdentifiers.instrument, "Metadata", "Exploratory instrument"],
+      ["analysis_mode", APGIIdentifiers.analysisMode, "Metadata", "Excluded from norms"],
+      ["Export_Date", ISO8601DateFormatter().string(from: profile.timestamp), "Metadata", "Export timestamp"]
+    ]
   }
 
   private func exportCSV(_ profile: ProfileExport) throws -> Data {
-    var csvContent = "Metric,Value,Category,Description\n"
+    let text = scoreRows(profile).map { row in
+      row.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }.joined(separator: ",")
+    }.joined(separator: "\n")
+    return Data(text.utf8)
+  }
 
-    let apgiScores = profile.apgiScores
-    csvContent += "APGI_Total,\(apgiScores.overall),Overall,Total APGI Score\n"
-    csvContent += "APGI_Autonomy,\(apgiScores.autonomy),Autonomy,Level of autonomous functioning\n"
-    csvContent +=
-      "APGI_Purposefulness,\(apgiScores.purposefulness),Purposefulness,Sense of purpose and direction\n"
-    csvContent +=
-      "APGI_SelfAcceptance,\(apgiScores.selfAcceptance),Self-Acceptance,Level of self-acceptance\n"
-    csvContent +=
-      "APGI_PersonalGrowth,\(apgiScores.personalGrowth),Personal Growth,Orientation toward growth\n"
-
-    let quizProfile = profile.profile
-    csvContent += "Profile_Name,\(quizProfile.name),Demographic,Profile identifier\n"
-    csvContent += "Profile_Age,\(quizProfile.age),Demographic,Participant age\n"
-    csvContent += "Profile_Gender,\(quizProfile.gender),Demographic,Participant gender\n"
-    csvContent += "Profile_Education,\(quizProfile.education),Demographic,Education level\n"
-    csvContent += "Profile_Occupation,\(quizProfile.occupation),Demographic,Occupation\n"
-
-    csvContent +=
-      "Export_Date,\(ISO8601DateFormatter().string(from: profile.timestamp)),Metadata,Export timestamp\n"
-    csvContent += "Export_Version,\(profile.version),Metadata,Export format version\n"
-    csvContent += "Profile_Type,\(profile.profileType),Metadata,APGI profile classification\n"
-
-    return csvContent.data(using: String.Encoding.utf8) ?? Data()
+  private func xmlEscape(_ value: String) -> String {
+    value.replacingOccurrences(of: "&", with: "&amp;")
+      .replacingOccurrences(of: "<", with: "&lt;")
+      .replacingOccurrences(of: ">", with: "&gt;")
+      .replacingOccurrences(of: "\"", with: "&quot;")
+      .replacingOccurrences(of: "'", with: "&apos;")
   }
 
   private func exportXML(_ profile: ProfileExport) throws -> Data {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-
-    let xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <APGIProfileExport>
-          <Metadata>
-              <Version>\(profile.version)</Version>
-              <ExportDate>\(formatter.string(from: profile.timestamp))</ExportDate>
-              <ProfileType>\(profile.profileType)</ProfileType>
-          </Metadata>
-          <Demographics>
-              <Name>\(profile.profile.name)</Name>
-              <Age>\(profile.profile.age)</Age>
-              <Gender>\(profile.profile.gender)</Gender>
-              <Education>\(profile.profile.education)</Education>
-              <Occupation>\(profile.profile.occupation)</Occupation>
-          </Demographics>
-          <APGIScores>
-              <Overall>\(profile.apgiScores.overall)</Overall>
-              <Autonomy>\(profile.apgiScores.autonomy)</Autonomy>
-              <Purposefulness>\(profile.apgiScores.purposefulness)</Purposefulness>
-              <SelfAcceptance>\(profile.apgiScores.selfAcceptance)</SelfAcceptance>
-              <PersonalGrowth>\(profile.apgiScores.personalGrowth)</PersonalGrowth>
-          </APGIScores>
-      </APGIProfileExport>
-      """
-
-    return xml.data(using: String.Encoding.utf8) ?? Data()
-  }
-
-  private func exportSPSS(_ profile: ProfileExport) throws -> Data {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-    let dateString = dateFormatter.string(from: Date())
-    var portable = "SPSSPORT APGI_Profile \(dateString)\n"
-
-    let variables = [
-      ("APGI_Total", "Total APGI Score"),
-      ("APGI_Autonomy", "Autonomy"),
-      ("APGI_Purposefulness", "Purposefulness"),
-      ("APGI_SelfAcceptance", "Self-Acceptance"),
-      ("APGI_PersonalGrowth", "Personal Growth"),
-      ("Age", "Participant Age"),
-      ("Export_Date", "Export Timestamp")
-    ]
-
-    for (name, label) in variables {
-      portable += "\(name) 0 8 \"\(label)\"\n"
-    }
-
-    portable += "*\n"
-
-    let values = [
-      profile.apgiScores.overall,
-      profile.apgiScores.autonomy,
-      profile.apgiScores.purposefulness,
-      profile.apgiScores.selfAcceptance,
-      profile.apgiScores.personalGrowth,
-      Double(profile.profile.age),
-      profile.timestamp.timeIntervalSince1970
-    ]
-
-    let valueStrings = values.map { String(format: "%.2f", $0) }
-    portable += valueStrings.joined(separator: " ") + "\n"
-
-    return portable.data(using: .ascii) ?? Data()
-  }
-
-  private func exportStata(_ profile: ProfileExport) throws -> Data {
-    var data = Data()
-    // Byte order: little endian
-    data.append(0x01)
-    data.append(0x01)
-    // File type: data
-    data.append(0x01)
-    // Unused
-    data.append(0x00)
-    // Number of variables: 7
-    data.append(contentsOf: withUnsafeBytes(of: UInt16(7).littleEndian) { Data($0) })
-    // Number of observations: 1
-    data.append(contentsOf: withUnsafeBytes(of: UInt32(1).littleEndian) { Data($0) })
-    // Data label: empty
-    data.append(0x00)
-    // Time stamp: empty
-    data.append(0x00)
-    // Variable names
-    let names = [
-      "apgi_total", "apgi_autonomy", "apgi_purpose", "apgi_selfacc", "apgi_growth", "age",
-      "export_date"
-    ]
-    for name in names {
-      guard let nameData = name.data(using: .ascii) else {
-        throw ExportError.invalidData
-      }
-      data.append(contentsOf: nameData)
-      data.append(0x00)
-    }
-    // Data
-    let values: [Double] = [
-      profile.apgiScores.overall,
-      profile.apgiScores.autonomy,
-      profile.apgiScores.purposefulness,
-      profile.apgiScores.selfAcceptance,
-      profile.apgiScores.personalGrowth,
-      Double(profile.profile.age),
-      profile.timestamp.timeIntervalSince1970
-    ]
-    for value in values {
-      data.append(contentsOf: withUnsafeBytes(of: value.bitPattern.littleEndian) { Data($0) })
-    }
-    return data
+    let rows = scoreRows(profile).dropFirst().map {
+      "<Metric name=\"\(xmlEscape($0[0]))\" label=\"\(xmlEscape($0[3]))\">\(xmlEscape($0[1]))</Metric>"
+    }.joined()
+    return Data("<?xml version=\"1.0\" encoding=\"UTF-8\"?><APGIProfileExport><Metadata><Instrument>apgi-explorer-35</Instrument><AnalysisMode>exploratory</AnalysisMode><ExcludedFromNorms>true</ExcludedFromNorms></Metadata><APGIScores>\(rows)</APGIScores></APGIProfileExport>".utf8)
   }
 
   private func exportRData(_ profile: ProfileExport) throws -> Data {
-    // Generate R script that creates and saves the data
-    let dateFormatter = ISO8601DateFormatter()
-    let dateString = dateFormatter.string(from: profile.timestamp)
-
-    let rScript = """
-      # APGI Profile Data Export
-      # Generated by APGI Explorer
-      # Export Date: \(dateString)
-
-      # Create data frame with APGI profile data
-      apgi_data <- data.frame(
-        apgi_total = \(profile.apgiScores.overall),
-        apgi_autonomy = \(profile.apgiScores.autonomy),
-        apgi_purposefulness = \(profile.apgiScores.purposefulness),
-        apgi_self_acceptance = \(profile.apgiScores.selfAcceptance),
-        apgi_personal_growth = \(profile.apgiScores.personalGrowth),
-        age = \(profile.profile.age),
-        gender = "\(profile.profile.gender)",
-        education = "\(profile.profile.education)",
-        occupation = "\(profile.profile.occupation)",
-        profile_type = "\(profile.profileType)",
-        export_date = "\(dateString)",
-        stringsAsFactors = FALSE
-      )
-
-      # Save to RDS file
-      saveRDS(apgi_data, file = "apgi_profile.rds")
-
-      # Also save as RData workspace
-      save(apgi_data, file = "apgi_profile.RData")
-      """
-
-    return rScript.data(using: .utf8) ?? Data()
+    // An executable R source file, explicitly exported with .R rather than .RData.
+    let rows = scoreRows(profile).dropFirst().prefix(4)
+    let keys = rows.map { "\"\($0[0])\"" }.joined(separator: ", ")
+    let values = rows.map { $0[1] }.joined(separator: ", ")
+    return Data("""
+    # APGI Profile Data Export
+    # Exploratory self-report; excluded from norms. No validated trait interpretation.
+    apgi_data <- data.frame(metric = c(\(keys)), value = c(\(values)))
+    saveRDS(apgi_data, file = "apgi_profile.rds")
+    save(apgi_data, file = "apgi_profile.RData")
+    """.utf8)
   }
 
   private func exportExcel(_ profile: ProfileExport) throws -> Data {
@@ -297,37 +172,7 @@ class ResearchExportManager: ObservableObject {
       <sheetData>
       """
 
-    let rows: [[String]] = [
-      ["Metric", "Value", "Category", "Description"],
-      ["APGI_Total", String(profile.apgiScores.overall), "Overall", "Total APGI Score"],
-      [
-        "APGI_Autonomy", String(profile.apgiScores.autonomy), "Autonomy",
-        "Level of autonomous functioning"
-      ],
-      [
-        "APGI_Purposefulness", String(profile.apgiScores.purposefulness), "Purposefulness",
-        "Sense of purpose and direction"
-      ],
-      [
-        "APGI_SelfAcceptance", String(profile.apgiScores.selfAcceptance), "Self-Acceptance",
-        "Level of self-acceptance"
-      ],
-      [
-        "APGI_PersonalGrowth", String(profile.apgiScores.personalGrowth), "Personal Growth",
-        "Orientation toward growth"
-      ],
-      ["Profile_Name", profile.profile.name, "Demographic", "Profile identifier"],
-      ["Profile_Age", String(profile.profile.age), "Demographic", "Participant age"],
-      ["Profile_Gender", profile.profile.gender, "Demographic", "Participant gender"],
-      ["Profile_Education", profile.profile.education, "Demographic", "Education level"],
-      ["Profile_Occupation", profile.profile.occupation, "Demographic", "Occupation"],
-      [
-        "Export_Date", ISO8601DateFormatter().string(from: profile.timestamp), "Metadata",
-        "Export timestamp"
-      ],
-      ["Export_Version", profile.version, "Metadata", "Export format version"],
-      ["Profile_Type", profile.profileType, "Metadata", "APGI profile classification"]
-    ]
+    let rows = scoreRows(profile)
 
     for (index, row) in rows.enumerated() {
       let rowNum = index + 1
@@ -378,40 +223,28 @@ class ResearchExportManager: ObservableObject {
   }
 
   private func exportBibTeX(_ profile: ProfileExport) throws -> Data {
-    let bibtex = """
-      @misc{apgi_profile_\(profile.profile.name.replacingOccurrences(of: " ", with: "_").lowercased()),
-          title = {APGI Psychological Profile: \\(profile.profile.name)},
-          author = {APGI Explorer},
-          year = {\(Calendar.current.component(.year, from: profile.timestamp))},
-          month = {\(Calendar.current.monthSymbols[Calendar.current.component(.month, from: profile.timestamp) - 1])},
-          note = {APGI Total Score: \\(profile.apgiScores.overall); Profile Type: \\(profile.profileType)},
-          type = {Psychological Assessment},
-          howpublished = {APGI Explorer Application}
-      }
-      """
-
-    return bibtex.data(using: .utf8) ?? Data()
+    let citation = """
+    @misc{apgi_exploratory_profile,
+      title = {APGI Explorer exploratory self-report},
+      author = {APGI Explorer},
+      year = {\(Calendar.current.component(.year, from: profile.timestamp))},
+      note = {Instrument apgi-explorer-35; exploratory; excluded from norms},
+      howpublished = {APGI Explorer Application}
+    }
+    """
+    return Data(citation.utf8)
   }
 
   private func exportEndNote(_ profile: ProfileExport) throws -> Data {
-    let endNote = """
-      %0 Generic
-      %T APGI Psychological Profile: \(profile.profile.name)
-      %A APGI Explorer
-      %D \(Calendar.current.component(.year, from: profile.timestamp))
-      %8 \(Calendar.current.monthSymbols[Calendar.current.component(.month, from: profile.timestamp) - 1])
-      %X APGI Total Score: \(profile.apgiScores.overall)
-      %X Profile Type: \(profile.profileType)
-      %X Autonomy: \(profile.apgiScores.autonomy)
-      %X Purposefulness: \(profile.apgiScores.purposefulness)
-      %X Self-Acceptance: \(profile.apgiScores.selfAcceptance)
-      %X Personal Growth: \(profile.apgiScores.personalGrowth)
-      %9 Psychological Assessment
-      %Z Generated by APGI Explorer Application
-      %@ APGI Explorer
-      """
-
-    return endNote.data(using: String.Encoding.utf8) ?? Data()
+    let citation = """
+    %0 Generic
+    %T APGI Explorer exploratory self-report
+    %A APGI Explorer
+    %D \(Calendar.current.component(.year, from: profile.timestamp))
+    %X Instrument apgi-explorer-35; exploratory; excluded from norms
+    %9 Local self-report summary
+    """
+    return Data(citation.utf8)
   }
 
   private func exportAPAReport(_ profile: ProfileExport) throws -> Data {
@@ -425,144 +258,25 @@ class ResearchExportManager: ObservableObject {
   }
 
   private func generateAPAReport(profile: ProfileExport) -> String {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .long
-
+    let rows = scoreRows(profile).dropFirst().map { "\($0[3]): \($0[1])" }.joined(separator: "\n")
     return """
-      APGI Psychological Assessment Report
-      ====================================
+    APGI Explorer — Exploratory Self-Report
 
-      Client Information
-      -----------------
-      Name: \(profile.profile.name)
-      Age: \(profile.profile.age)
-      Gender: \(profile.profile.gender)
-      Education: \(profile.profile.education)
-      Occupation: \(profile.profile.occupation)
+    \(rows)
 
-      Assessment Information
-      ---------------------
-      Date of Assessment: \(formatter.string(from: profile.timestamp))
-      Assessment Instrument: Adult Psychological Growth Inventory (APGI)
-      Profile Type: \(profile.profileType)
+    These local item averages describe responses to the apgi-explorer-35 questionnaire.
+    They are not validated psychological measures, diagnoses, predictions or population norms.
+    No reliability estimate or confidence interval is available. Items 7 and 9 are nominal
+    choices and are excluded from numeric averages. All 35 valid responses are required.
 
-      Assessment Results
-      -----------------
-
-      Total APGI Score: \(profile.apgiScores.overall)
-
-      Subscale Scores:
-      - Autonomy: \(profile.apgiScores.autonomy)
-      - Purposefulness: \(profile.apgiScores.purposefulness)
-      - Self-Acceptance: \(profile.apgiScores.selfAcceptance)
-      - Personal Growth: \(profile.apgiScores.personalGrowth)
-
-      Interpretation
-      -------------
-      \(self.generateInterpretation(profile: profile))
-
-      Recommendations
-      ---------------
-      \(self.generateRecommendations(profile: profile))
-
-      Report Generated: \(formatter.string(from: Date()))
-      Generated by: APGI Explorer v\(profile.version)
-
-      References
-      ----------
-      APGI Explorer. (2025). Adult Psychological Growth Inventory [Computer software].
-      Retrieved from https://github.com/lesoto/APGI-Explorer
-      """
+    Reflect on how recent context may have influenced your answers. This report does not
+    infer strengths, weaknesses, mental states, or recommendations from these summaries.
+    Personal questionnaire answers remain on your device and are excluded from research norms.
+    """
   }
 
   private func generateMLAReport(profile: ProfileExport) -> String {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .long
-
-    return """
-      \(profile.profile.name) - APGI Assessment Report
-
-      Client Information
-      Name: \(profile.profile.name)
-      Age: \(profile.profile.age)
-      Gender: \(profile.profile.gender)
-      Education: \(profile.profile.education)
-      Occupation: \(profile.profile.occupation)
-
-      Assessment Details
-      Date: \(formatter.string(from: profile.timestamp))
-      Instrument: Adult Psychological Growth Inventory (APGI)
-      Classification: \(profile.profileType)
-
-      Results Summary
-      Total Score: \(profile.apgiScores.overall)
-
-      Detailed Scores:
-      Autonomy: \(profile.apgiScores.autonomy)
-      Purposefulness: \(profile.apgiScores.purposefulness)
-      Self-Acceptance: \(profile.apgiScores.selfAcceptance)
-      Personal Growth: \(profile.apgiScores.personalGrowth)
-
-      Analysis
-      \(self.generateInterpretation(profile: profile))
-
-      Suggestions
-      \(self.generateRecommendations(profile: profile))
-
-      Works Cited
-      APGI Explorer. "Adult Psychological Growth Inventory." 2025. Computer software.
-      """
-  }
-
-  private func generateInterpretation(profile: ProfileExport) -> String {
-    let scores = profile.apgiScores
-
-    var interpretation = "The APGI assessment reveals "
-
-    if scores.overall >= 80 {
-      interpretation += "high levels of psychological growth across all domains. "
-    } else if scores.overall >= 60 {
-      interpretation += "moderate levels of psychological growth with room for development. "
-    } else {
-      interpretation += "areas for potential growth and development. "
-    }
-
-    if scores.autonomy > scores.personalGrowth {
-      interpretation +=
-        "The individual shows stronger autonomy compared to personal growth orientation. "
-    } else {
-      interpretation += "Personal growth orientation appears more developed than autonomy. "
-    }
-
-    return interpretation
-  }
-
-  private func generateRecommendations(profile: ProfileExport) -> String {
-    let scores = profile.apgiScores
-    var recommendations = ""
-
-    if scores.autonomy < 60 {
-      recommendations += "• Focus on developing independent decision-making skills\n"
-    }
-
-    if scores.purposefulness < 60 {
-      recommendations += "• Explore personal values and life goals\n"
-    }
-
-    if scores.selfAcceptance < 60 {
-      recommendations += "• Practice self-compassion and acceptance exercises\n"
-    }
-
-    if scores.personalGrowth < 60 {
-      recommendations += "• Engage in new learning experiences and challenges\n"
-    }
-
-    if recommendations.isEmpty {
-      recommendations =
-        "Continue current growth practices and consider advanced development opportunities."
-    }
-
-    return recommendations
+    generateAPAReport(profile: profile)
   }
 
   private func generatePDFReport(content: String, title: String) throws -> Data {

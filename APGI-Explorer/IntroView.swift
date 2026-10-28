@@ -22,63 +22,63 @@ struct IntroView: View {
               .background(Circle().fill(Color.blue.opacity(0.1)))
               .padding(.top, 20)
 
-            Text(NSLocalizedString("intro_title", comment: ""))
+            Text("APGI Explorer")
               .font(.largeTitle)
               .fontWeight(.bold)
 
-            Text(NSLocalizedString("intro_subtitle", comment: ""))
+            Text("Exploratory self-report")
               .font(.title2)
               .foregroundColor(.secondary)
           }
 
           // Introduction section
           VStack(alignment: .leading, spacing: 16) {
-            Text(NSLocalizedString("intro_welcome_title", comment: ""))
+            Text("Reflect on your recent experiences")
               .font(.title2)
 
-            Text(NSLocalizedString("intro_welcome_description", comment: ""))
+            Text("This local questionnaire summarises your answers. It is not a validated psychological test or a diagnostic tool.")
               .font(.body)
           }
         }
 
         StandardCard {
           VStack(alignment: .leading, spacing: LayoutConstants.smallSpacing) {
-            Text(NSLocalizedString("intro_assessment_title", comment: ""))
+            Text("35 questions")
               .font(.title2.bold())
-            Text(NSLocalizedString("intro_assessment_description", comment: ""))
+            Text("Choose the answer that fits your experience. All items are required. Your answers and changes stay on this device.")
               .font(.body)
-            Text(NSLocalizedString("intro_assessment_time", comment: ""))
+            Text("You can pause and resume your local session.")
               .font(.subheadline)
               .foregroundColor(.secondary)
           }
         }
 
         // APGI Parameters Overview
-        InfoCard(title: NSLocalizedString("intro_discover_title", comment: "")) {
+        InfoCard(title: "What the questionnaire covers") {
           VStack(spacing: LayoutConstants.smallSpacing) {
             ParameterCard(
               symbol: "bolt.fill",
               color: .orange,
-              title: NSLocalizedString("intro_prediction_error_title", comment: ""),
-              description: NSLocalizedString("intro_prediction_error_description", comment: "")
+              title: "Reported reactivity to the unexpected",
+              description: "Your descriptions of responses to unexpected experiences."
             )
             ParameterCard(
               symbol: "scale.3d",
               color: .green,
-              title: NSLocalizedString("intro_precision_title", comment: ""),
-              description: NSLocalizedString("intro_precision_description", comment: "")
+              title: "Reported information prioritisation",
+              description: "Your descriptions of how you prioritise information."
             )
             ParameterCard(
               symbol: "target",
               color: .purple,
-              title: NSLocalizedString("intro_threshold_title", comment: ""),
-              description: NSLocalizedString("intro_threshold_description", comment: "")
+              title: "Reported attentional threshold",
+              description: "Your descriptions of attention in everyday situations."
             )
             ParameterCard(
               symbol: "figure.walk",
               color: .blue,
-              title: NSLocalizedString("intro_somatic_title", comment: ""),
-              description: NSLocalizedString("intro_somatic_description", comment: "")
+              title: "Reported body-signal attention",
+              description: "Your descriptions of attention to bodily signals."
             )
           }
         }

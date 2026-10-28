@@ -107,10 +107,10 @@ struct InteractiveStateView: View {
 
       // Parameter summary
       VStack(alignment: .leading, spacing: 4) {
-        self.parameterSummaryRow("Prediction Error", self.state.predictionError)
-        self.parameterSummaryRow("Precision", self.state.precision)
-        self.parameterSummaryRow("Threshold", self.state.threshold)
-        self.parameterSummaryRow("Somatic Bias", self.state.somaticBias)
+        self.parameterSummaryRow("Illustrative reactivity", self.state.predictionError)
+        self.parameterSummaryRow("Illustrative information prioritisation", self.state.precision)
+        self.parameterSummaryRow("Illustrative attention", self.state.threshold)
+        self.parameterSummaryRow("Illustrative body-signal attention", self.state.somaticBias)
       }
       .font(.caption)
       .foregroundColor(AppColors.secondaryText)

@@ -3,6 +3,8 @@ import Cocoa
 class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_: Notification) {
     self.checkForUpdatesIfConfigured()
+    Task { await SpotlightManager.shared.purgeLegacyIndex() }
+    Task { @MainActor in await ExplorerAPIStatus.shared.refresh() }
   }
 
   func applicationWillTerminate(_: Notification) {
@@ -50,7 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: "Later")
 
         if alert.runModal() == .alertFirstButtonReturn,
-          let websiteURL = URL(string: "https://lesoto.github.io/APGI-Explorer") {
+          let websiteURL = Optional(APGIIdentifiers.website) {
           NSWorkspace.shared.open(websiteURL)
         }
       }

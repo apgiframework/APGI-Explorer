@@ -74,7 +74,12 @@ class AdvancedAnalyticsManager: ObservableObject {
     let parameters: [KeyPath<QuizProfile, Double>] = [
       \.epsilon, \.precision, \.threshold, \.somaticBias
     ]
-    let parameterNames = ["Epsilon", "Precision", "Threshold", "Somatic Bias"]
+    let parameterNames = [
+      "Reported reactivity to the unexpected",
+      "Reported information prioritisation",
+      "Reported attentional threshold",
+      "Reported body-signal attention"
+    ]
 
     for (index, parameter) in parameters.enumerated() {
       let trend = self.calculateTrend(for: parameter, in: profiles, historical: historical)
@@ -209,69 +214,10 @@ class AdvancedAnalyticsManager: ObservableObject {
   }
 
   private func generatePredictions(from trends: [TrendDataPoint]) -> [PredictionResult] {
-    trends.map { trend in
-      let prediction = self.predictFutureValue(for: trend)
-      return PredictionResult(
-        parameter: trend.parameter,
-        currentValue: trend.currentValue,
-        predictedValue: prediction.predictedValue,
-        confidence: prediction.confidence,
-        timeframe: "3 months",
-        factors: prediction.factors
-      )
-    }
+    // No validated forecasting model exists for these local descriptive summaries.
+    []
   }
 
-  private func predictFutureValue(
-    for trend: TrendDataPoint
-  ) -> PredictionData {
-    // Simple linear regression for prediction
-    let dataPoints = trend.dataPoints.suffix(20)
-    let count = Double(dataPoints.count)
-
-    let xValues = Array(0..<dataPoints.count).map(Double.init)
-    let yValues = Array(dataPoints)
-
-    let sumX = xValues.reduce(0, +)
-    let sumY = yValues.reduce(0, +)
-    let sumXY = zip(xValues, yValues).map(*).reduce(0, +)
-    let sumX2 = xValues.map { $0 * $0 }.reduce(0, +)
-
-    let slope = (count * sumXY - sumX * sumY) / (count * sumX2 - sumX * sumX)
-    let intercept = (sumY - slope * sumX) / count
-
-    // Predict future value (10 time units ahead)
-    let futureX = Double(dataPoints.count) + 10
-    let predictedValue = slope * futureX + intercept
-
-    // Calculate confidence based on trend strength and data consistency
-    let confidence = max(0.3, min(0.95, 1.0 - (trend.standardDeviation / trend.mean) * 0.5))
-
-    // Identify influencing factors
-    var factors: [String] = []
-
-    if trend.trendStrength > 0.15 {
-      factors.append("Strong historical trend")
-    }
-
-    if trend.standardDeviation < trend.mean * 0.1 {
-      factors.append("Consistent patterns")
-    } else {
-      factors.append("High variability in data")
-    }
-
-    if dataPoints.count > 15 {
-      factors.append("Sufficient historical data")
-    } else {
-      factors.append("Limited historical data")
-    }
-
-    return PredictionData(
-      predictedValue: predictedValue,
-      confidence: confidence,
-      factors: factors
-    )
-  }
 }
 
 // MARK: - Data Models

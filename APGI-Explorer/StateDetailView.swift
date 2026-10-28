@@ -10,7 +10,13 @@ struct StateDetailView: View {
   let state: PsychologicalState
   @StateObject private var profileManager = ProfileManager()
   @State private var showSavedAlert = false
-  @State private var selectedProfileName = ""
+  @State private var selectedProfileID: UUID?
+  private var selectedProfile: QuizProfile? {
+    profileManager.profiles.first { $0.id == selectedProfileID }
+  }
+  private var profileSelection: Binding<UUID?> {
+    Binding(get: { selectedProfile?.id }, set: { selectedProfileID = $0 })
+  }
 
   var body: some View {
     ScrollView {
@@ -34,13 +40,13 @@ struct StateDetailView: View {
             .font(.headline)
 
           StateParameterRow(
-            label: "Prediction Error (ε)",
+            label: "Illustrative reactivity",
             value: self.state.parameters.predictionError.formattedAccuracy
           )
-          StateParameterRow(label: "Precision (π)", value: "\(self.state.parameters.precision)")
-          StateParameterRow(label: "Threshold (θₜ)", value: "\(self.state.parameters.threshold)")
+          StateParameterRow(label: "Illustrative information prioritisation", value: "\(self.state.parameters.precision)")
+          StateParameterRow(label: "Illustrative attention", value: "\(self.state.parameters.threshold)")
           StateParameterRow(
-            label: "Somatic Bias (β)", value: "\(self.state.parameters.somaticBias)")
+            label: "Illustrative body-signal attention", value: "\(self.state.parameters.somaticBias)")
         }
         .padding()
         .background(Color(.windowBackgroundColor))
@@ -54,9 +60,10 @@ struct StateDetailView: View {
             Text("Associate with Profile")
               .font(.headline)
 
-            Picker("Select Profile", selection: self.$selectedProfileName) {
+            Picker("Select Profile", selection: profileSelection) {
+              Text("Choose a profile").tag(Optional<UUID>.none)
               ForEach(self.profileManager.profiles, id: \.id) { profile in
-                Text(profile.name).tag(profile.name)
+                Text(profile.name).tag(Optional(profile.id))
               }
             }
             .pickerStyle(MenuPickerStyle())
@@ -70,10 +77,10 @@ struct StateDetailView: View {
                 Spacer()
               }
               .padding()
-              .background(self.selectedProfileName.isEmpty ? Color.gray : Color.blue)
+              .background(self.selectedProfile == nil ? Color.gray : Color.blue)
               .cornerRadius(8)
             }
-            .disabled(self.selectedProfileName.isEmpty)
+            .disabled(self.selectedProfile == nil)
           }
           .padding()
           .background(Color(.windowBackgroundColor))
@@ -89,18 +96,12 @@ struct StateDetailView: View {
       Button("OK", role: .cancel) {
       }
     } message: {
-      Text("This state has been associated with '\(self.selectedProfileName)'.")
-    }
-    .onAppear {
-      if !self.profileManager.profiles.isEmpty {
-        self.selectedProfileName = self.profileManager.profiles[0].name
-      }
+      Text("This state has been associated with '\(self.selectedProfile?.name ?? "")'.")
     }
   }
 
   private func saveStateToProfile() {
-    // In a real app, you would update the profile to include this state
-    // For example: profileManager.addStateToProfile(state, profileName: selectedProfileName)
+    guard selectedProfile != nil else { return }
     self.showSavedAlert = true
   }
 }

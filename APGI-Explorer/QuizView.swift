@@ -12,17 +12,24 @@ struct QuizView: View {
   @State private var isNavigatingToResults = false
   @State private var handoffActivity: NSUserActivity?
   @State private var isPaused = false
+  @State private var draftSaveError: String?
 
   private let savedQuizKey = "savedQuizState"
 
   var body: some View {
     self.mainContent
       .navigationBarBackButtonHidden(true)
+      .alert("Session could not be saved", isPresented: Binding(
+        get: { draftSaveError != nil }, set: { if !$0 { draftSaveError = nil } })) {
+        Button("OK", role: .cancel) {}
+      } message: { Text(draftSaveError ?? "") }
       .onAppear {
         self.loadQuizState()
+        self.quizModel.presentQuestion(at: self.currentQuestionIndex)
         self.setupHandoffActivity()
       }
       .onDisappear {
+        self.saveQuizState()
         self.handoffActivity?.invalidate()
         self.handoffActivity = nil
       }
@@ -36,11 +43,14 @@ struct QuizView: View {
         // HIGH-001 Fix: Prevent rapid navigation issues
         guard newValue != oldValue else { return }
         guard newValue >= 0, newValue < self.quizModel.questions.count else { return }
+        self.quizModel.presentQuestion(at: newValue)
+        self.saveQuizState()
         self.updateHandoffActivity()
       }
       .onChange(of: self.quizModel.answers) { oldValue, newValue in
         // HIGH-001 Fix: Debounce rapid answer changes
         guard newValue != oldValue else { return }
+        self.saveQuizState()
         self.updateHandoffActivity()
       }
       .onContinueUserActivity(HandoffActivity.activityType) { userActivity in
@@ -53,6 +63,8 @@ struct QuizView: View {
         }
       }
       .userActivity(HandoffActivity.activityType) { activity in
+        activity.isEligibleForSearch = false
+        activity.isEligibleForPublicIndexing = false
         // This ensures the activity is updated in the system
         if let handoffActivity {
           activity.userInfo = handoffActivity.userInfo
@@ -73,7 +85,7 @@ struct QuizView: View {
     VStack(spacing: 0) {
       self.progressBarSection
       self.progressTextSection
-      self.liveScoreSection
+
       if self.currentQuestionIndex < self.quizModel.questions.count {
         self.currentSectionSection
         self.questionSection
@@ -222,40 +234,32 @@ struct QuizView: View {
   }
 
   private func resumeQuiz() {
+    self.quizModel.presentQuestion(at: self.currentQuestionIndex)
     self.isPaused = false
   }
 
-  private struct SavedQuizState: Codable {
-    let currentQuestionIndex: Int
-    let answers: [Int: Int]
-  }
-
   private func saveQuizState() {
-    let state = SavedQuizState(
-      currentQuestionIndex: currentQuestionIndex, answers: quizModel.answers)
     do {
+      let state = quizModel.snapshot(at: currentQuestionIndex)
       let data = try JSONEncoder().encode(state)
-      UserDefaults.standard.set(data, forKey: self.savedQuizKey)
+      try PersistenceController.shared.savePersonalSession(state)
+      if quizModel.isComplete && isNavigatingToResults { clearQuizState() } else { UserDefaults.standard.set(data, forKey: self.savedQuizKey) }
     } catch {
-      os_log(
-        "Failed to save quiz state: %{public}@", log: OSLog.default, type: .error,
-        error.localizedDescription)
+      draftSaveError = error.localizedDescription
+      os_log("Could not save local session: %{public}@", error.localizedDescription)
     }
   }
 
   private func loadQuizState() {
     guard let data = UserDefaults.standard.data(forKey: savedQuizKey) else { return }
     do {
-      let state = try JSONDecoder().decode(SavedQuizState.self, from: data)
-      self.currentQuestionIndex = state.currentQuestionIndex
-      self.quizModel.restoreAnswers(state.answers)
+      let state = try JSONDecoder().decode(QuizModel.Snapshot.self, from: data)
+      quizModel.restore(state)
+      currentQuestionIndex = quizModel.currentQuestionIndex
     } catch {
-      os_log(
-        "Failed to load quiz state: %{public}@", log: OSLog.default, type: .error,
-        error.localizedDescription)
+      // Legacy drafts lack item-event provenance and are not research sessions.
+      clearQuizState()
     }
-    // Clear after loading to prevent reloading on future appears
-    self.clearQuizState()
   }
 
   private func clearQuizState() {
@@ -264,10 +268,10 @@ struct QuizView: View {
 
   private func sectionName(for question: QuizQuestion) -> String {
     switch question.parameter {
-    case "epsilon": "Prediction Error Sensitivity"
-    case "precision": "Precision Allocation"
-    case "threshold": "Ignition Threshold"
-    case "somatic": "Somatic Bias"
+    case "epsilon": "Reported reactivity to the unexpected"
+    case "precision": "Reported information prioritisation"
+    case "threshold": "Reported attentional threshold"
+    case "somatic": "Reported body-signal attention"
     case "interactions": "Parameter Interactions"
     case "temporal": "Temporal Stability"
     case "environment": "Environmental Fit"
@@ -291,61 +295,20 @@ private struct QuestionOptionRow: View {
   let onSelect: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Button(action: self.onSelect) {
-        HStack(alignment: .top, spacing: 12) {
-          Image(systemName: self.isSelected ? "circle.fill" : "circle")
-            .foregroundColor(self.isSelected ? .blue : .gray)
-            .font(.title3)
-
-          VStack(alignment: .leading, spacing: 4) {
-            Text(self.option.text)
-              .foregroundColor(.primary)
-              .fixedSize(horizontal: false, vertical: true)
-            Text(self.option.note)
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-
-          Spacer()
-
-          Button(action: self.toggleTooltip) {
-            Image(systemName: "info.circle")
-              .font(.title3)
-              .foregroundColor(.blue.opacity(0.7))
-          }
-          .buttonStyle(AppPlainButtonStyle())
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(
-          RoundedRectangle(cornerRadius: 10)
-            .fill(self.isSelected ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
-        )
-        .overlay(
-          RoundedRectangle(cornerRadius: 10)
-            .stroke(self.isSelected ? Color.blue : Color.clear, lineWidth: 1)
-        )
+    Button(action: onSelect) {
+      HStack(alignment: .top, spacing: 12) {
+        Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+          .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+        Text(option.text).foregroundStyle(.primary)
+          .fixedSize(horizontal: false, vertical: true)
+        Spacer()
       }
-      .focusable()
-      .buttonStyle(AppPlainButtonStyle())
-
-      if self.tooltipOptionID == self.option.id {
-        Text(self.option.tooltip)
-          .font(.caption2)
-          .foregroundColor(.secondary)
-          .padding(.horizontal, 12)
-          .padding(.bottom, 8)
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .fill(toolTipBackground)
-          )
-      }
+      .padding(12)
+      .background(RoundedRectangle(cornerRadius: 10)
+        .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.gray.opacity(0.05)))
     }
-  }
-
-  private func toggleTooltip() {
-    self.tooltipOptionID = self.tooltipOptionID == self.option.id ? nil : self.option.id
+    .buttonStyle(AppPlainButtonStyle())
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 }
 

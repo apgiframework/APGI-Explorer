@@ -35,10 +35,10 @@ struct ExportView: View {
 
         // Show a preview of the scores
         VStack(alignment: .leading, spacing: 4) {
-          ScoreRow(parameter: "ε (Epsilon)", value: self.apgiProfile.epsilon)
-          ScoreRow(parameter: "π (Precision)", value: self.apgiProfile.precision)
-          ScoreRow(parameter: "θₜ (Threshold)", value: self.apgiProfile.threshold)
-          ScoreRow(parameter: "β (Somatic Bias)", value: self.apgiProfile.somaticBias)
+          ScoreRow(parameter: "Reported reactivity to the unexpected", value: self.apgiProfile.epsilon)
+          ScoreRow(parameter: "Reported information prioritisation", value: self.apgiProfile.precision)
+          ScoreRow(parameter: "Reported attentional threshold", value: self.apgiProfile.threshold)
+          ScoreRow(parameter: "Reported body-signal attention", value: self.apgiProfile.somaticBias)
           ScoreRow(parameter: "ι (Interaction Score)", value: self.apgiProfile.interactionScore)
           ScoreRow(parameter: "τ (Temporal Stability)", value: self.apgiProfile.temporalStability)
           ScoreRow(parameter: "φ (Environmental Fit)", value: self.apgiProfile.environmentalFit)
@@ -121,9 +121,9 @@ struct ExportView: View {
           let filename = ExportUtilities.generateExportFilename(
             profile: self.profile, format: self.exportFormat)
           let tempDir = ExportUtilities.getTemporaryDirectory()
-          let url = tempDir.appendingPathComponent(filename)
-
-          try exportData.write(to: url)
+          let exportedURL = tempDir.appendingPathComponent(filename)
+          try exportData.write(to: exportedURL, options: .atomic)
+          url = exportedURL
         } else {
           // Use existing ProfileManager for basic formats
           url = await self.profileManager.getExportURL(for: self.profile, format: self.exportFormat)

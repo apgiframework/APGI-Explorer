@@ -1,50 +1,51 @@
-name: Xcode CI
+name: Explorer release gates
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
-    name: Build and Test
-    runs-on: macos-latest
-    
+  contracts:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.0'
-    
-    - name: Show Xcode Version
-      run: xcodebuild -version
-      
-    - name: Show Swift Version
-      run: swift --version
-      
-    - name: List Available Simulators
-      run: xcrun simctl list devices
-      
-    - name: Build Project
-      run: xcodebuild -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -quiet
-      
-    - name: Run Unit Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerTests -quiet
-      
-    - name: Run UI Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests -quiet
-      
-    - name: Run Performance Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerTests/PerformanceTests -quiet
-      
-    - name: Run Window Management Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests/testWindowManagement -quiet
-      
-    - name: Run Stress Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests/testRapidProfileCreation -quiet
-      
-    - name: Run Crash Recovery Tests
-      run: xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer -destination 'platform=macOS' -configuration Debug -only-testing:APGI_ExplorerUITests/testCrashRecovery -quiet
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Verify generated Swift client against pinned OpenAPI
+        run: python3 scripts/generate_api_client.py --check
+      - name: Check labels, identifiers, instrument and privacy artifacts
+        run: python3 scripts/check_explorer_contracts.py
+
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Build signed sandbox configuration
+        run: >-
+          xcodebuild build -project APGI-Explorer.xcodeproj -scheme APGI-Explorer
+          -destination 'platform=macOS' -configuration Debug -derivedDataPath SignedDerivedData
+          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+      - name: Verify effective app entitlements
+        run: python3 scripts/verify_app_entitlements.py SignedDerivedData/Build/Products/Debug/APGI-Explorer.app
+      - name: Run macOS unit and contract tests
+        run: >-
+          xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer
+          -destination 'platform=macOS' -configuration Debug
+          -derivedDataPath DerivedData -parallel-testing-enabled NO
+          -test-timeouts-enabled YES -default-test-execution-time-allowance 30
+          -maximum-test-execution-time-allowance 60
+          -resultBundlePath TestResults.xcresult CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: explorer-test-results
+          path: TestResults.xcresult

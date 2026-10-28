@@ -1,0 +1,15 @@
+{
+  "website": "https://apgiframework.com",
+  "api": "https://api.apgiframework.com",
+  "source": "https://github.com/apgiframework/APGI-Explorer",
+  "support": "https://github.com/apgiframework/APGI-Explorer/issues",
+  "instrument_id": "apgi-explorer-35",
+  "analysis_mode": "exploratory",
+  "excluded_from_norms": true,
+  "score_labels": [
+    "Reported reactivity to the unexpected",
+    "Reported information prioritisation",
+    "Reported attentional threshold",
+    "Reported body-signal attention"
+  ]
+}

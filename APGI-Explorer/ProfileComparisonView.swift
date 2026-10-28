@@ -12,6 +12,7 @@ struct ProfileComparisonView: View {
   @State private var selectedProfile2: QuizProfile?
   @AppStorage("defaultComparisonMode") private var comparisonModeRaw: String = ComparisonMode.radar.rawValue
   @State private var isLoading = false
+  @State private var lastComparedProfiles: [QuizProfile] = []
 
   private var safeComparisonMode: Binding<ComparisonMode> {
     Binding(
@@ -177,7 +178,7 @@ struct ProfileComparisonView: View {
               switch data.mode {
               case .radar:
                 RadarComparisonChart(profile1: profile1, profile2: profile2)
-                  .frame(height: 350)
+                  .frame(height: 420)
               case .bar:
                 BarComparisonChart(profile1: profile1, profile2: profile2)
                   .frame(height: 350)
@@ -297,28 +298,28 @@ struct ProfileComparisonView: View {
             let apgiProfile2 = QuizModel.calculateAPGIProfile(from: profile2.results)
 
             self.differenceItem(
-              title: "Epsilon (Prediction Error)",
+              title: "Reported reactivity to the unexpected",
               value1: Int(apgiProfile1.epsilon),
               value2: Int(apgiProfile2.epsilon),
               isHigherBetter: false
             )
 
             self.differenceItem(
-              title: "Precision",
+              title: "Reported information prioritisation",
               value1: Int(apgiProfile1.precision),
               value2: Int(apgiProfile2.precision),
               isHigherBetter: true
             )
 
             self.differenceItem(
-              title: "Threshold",
+              title: "Reported attentional threshold",
               value1: Int(apgiProfile1.threshold),
               value2: Int(apgiProfile2.threshold),
               isHigherBetter: true
             )
 
             self.differenceItem(
-              title: "Somatic Bias",
+              title: "Reported body-signal attention",
               value1: Int(apgiProfile1.somaticBias),
               value2: Int(apgiProfile2.somaticBias),
               isHigherBetter: false
@@ -471,24 +472,15 @@ struct ProfileComparisonView: View {
   }
 
   private func performComparison() {
-    // Reset state
-    self.isLoading = true
-    self.error = nil
-
-    // Simulate network/database call
-    let workItem = DispatchWorkItem {
-      self.isLoading = false
-
-      // Log analytics if profiles are selected
-      if let profile1 = self.selectedProfile1, let profile2 = self.selectedProfile2 {
-        let profileType1 = APGIProfileType(rawValue: profile1.name) ?? .openExplorer
-        let profileType2 = APGIProfileType(rawValue: profile2.name) ?? .openExplorer
-
-        self.dependencies.getAnalyticsService().track(
-          event: .comparisonStarted(profileTypes: [profileType1, profileType2]))
-      }
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+    guard let profile1 = selectedProfile1, let profile2 = selectedProfile2 else { return }
+    let profiles = [profile1, profile2]
+    guard profiles != lastComparedProfiles else { return }
+    lastComparedProfiles = profiles
+    isLoading = false
+    error = nil
+    let type1 = profileManager.determineProfileType(for: QuizModel.calculateAPGIProfile(from: profile1.results))
+    let type2 = profileManager.determineProfileType(for: QuizModel.calculateAPGIProfile(from: profile2.results))
+    dependencies.getAnalyticsService().track(event: .comparisonStarted(profileTypes: [type1, type2]))
   }
 
   private func exportComparison() {

@@ -57,10 +57,10 @@ class ReportGenerator {
       self.sortedTimeline = timelineEntries.sorted(by: { $0.date < $1.date })
 
       self.parameterData = [
-        ParameterData(label: "ε (Epsilon)", value: apgiProfile.epsilon, descriptor: apgiProfile.epsilonCategory.rawValue),
-        ParameterData(label: "π (Precision)", value: apgiProfile.precision, descriptor: apgiProfile.precisionCategory.rawValue),
-        ParameterData(label: "θₜ (Threshold)", value: apgiProfile.threshold, descriptor: apgiProfile.thresholdCategory.rawValue),
-        ParameterData(label: "β (Somatic Bias)", value: apgiProfile.somaticBias, descriptor: apgiProfile.somaticCategory.rawValue)
+        ParameterData(label: "Reported reactivity to the unexpected", value: apgiProfile.epsilon, descriptor: apgiProfile.epsilonCategory.rawValue),
+        ParameterData(label: "Reported information prioritisation", value: apgiProfile.precision, descriptor: apgiProfile.precisionCategory.rawValue),
+        ParameterData(label: "Reported attentional threshold", value: apgiProfile.threshold, descriptor: apgiProfile.thresholdCategory.rawValue),
+        ParameterData(label: "Reported body-signal attention", value: apgiProfile.somaticBias, descriptor: apgiProfile.somaticCategory.rawValue)
       ]
     }
 
@@ -167,47 +167,11 @@ class ReportGenerator {
   }
 
   private static func buildStatesSection(profileType: APGIProfileType) -> String {
-    let statesHTML = profileType.likelyStates.map {
-      """
-      <div class="state-card">
-          <div class="state-name">#\($0.stateId) — \($0.likelihood.rawValue)</div>
-          <p>\(escape($0.reason))</p>
-      </div>
-      """
-    }.joined()
-
-    return """
-    <section class="section-card">
-        <h2>Likely States in Action</h2>
-        <div class="state-grid">
-            \(statesHTML)
-        </div>
-    </section>
-    """
+    ""
   }
 
   private static func buildNormsSection(parameterData: [ParameterData]) -> String {
-    let normsHTML = parameterData.map { item -> String in
-      let delta = Int(item.value - 50)
-      let direction = delta > 0 ? "above" : delta < 0 ? "below" : "on par with"
-      let displayDelta = delta == 0 ? "on par with" : "\(abs(delta)) pts \(direction) the normative anchor (50)"
-      return """
-        <li>
-            <span class="norm-label">\(escape(item.label))</span>
-            <span class="norm-value">\(String(format: "%.0f", item.value))</span>
-            <span class="norm-detail">\(displayDelta)</span>
-        </li>
-        """
-    }.joined()
-
-    return """
-    <section class="section-card">
-        <h2>Comparison to Norms</h2>
-        <ul class="norm-list">
-            \(normsHTML)
-        </ul>
-    </section>
-    """
+    "<section class=\"section-card\"><h2>Interpretation limits</h2><p>No validated norms or population comparisons are available.</p></section>"
   }
 
   private static func buildTrajectorySection(sortedTimeline: [ReportSnapshot]) -> String {
@@ -216,7 +180,7 @@ class ReportGenerator {
       historyHTML = "<p class=\"hint\">No saved snapshots yet. Your current profile will populate once you store it.</p>"
     } else {
       historyHTML = sortedTimeline.map { entry in
-        let summary = "ε: \(Int(entry.apgiProfile.epsilon)), π: \(Int(entry.apgiProfile.precision)), θₜ: \(Int(entry.apgiProfile.threshold)), β: \(Int(entry.apgiProfile.somaticBias))"
+        let summary = "Reported reactivity to the unexpected: \(Int(entry.apgiProfile.epsilon)), Reported information prioritisation: \(Int(entry.apgiProfile.precision)), Reported attentional threshold: \(Int(entry.apgiProfile.threshold)), Reported body-signal attention: \(Int(entry.apgiProfile.somaticBias))"
         return """
           <div class="history-card">
               <div class="history-header">
@@ -470,7 +434,7 @@ class ReportGenerator {
   private static let resourceRecommendations: [(title: String, subtitle: String)] = [
     (
       "APGI Primer",
-      "Review the science behind ε, π, θₜ and β so you can reference the report confidently."
+      "Review the questionnaire and its exploratory interpretation limits."
     ),
     (
       "State Explorer Toolkit",
@@ -485,23 +449,7 @@ class ReportGenerator {
 
 extension APGIProfileType {
   fileprivate var scientificBackground: String {
-    switch self {
-    case .sensitiveIntegrator:
-      "Sensitive Integrators combine heightened ε and β with a lower θₜ so that subtle prediction errors are felt and acted upon immediately."
-    case .analyticalGuard:
-      "Analytical Guards blend low ε with high π and θₜ, preserving tight models that resist noise while defending against uncertainty."
-    case .adaptiveBalancer:
-      "Adaptive Balancers smoothly allocate ε, π, θₜ and β, shifting between exploration and grounded focus."
-    case .openExplorer:
-      "Open Explorers keep ε high and θₜ loose, allowing novelty to enter freely while curiosity sustains ongoing shifts."
-    case .contemplativeAnchor:
-      "Contemplative Anchors stabilize with lower ε and elevated π/θₜ, supporting calm reflection even when surprises arise."
-    case .somaticNavigator:
-      "Somatic Navigators keep the body central—high β and steady π help translate interoception into adaptive decisions."
-    case .cognitiveArchitect:
-      "Cognitive Architects pair high π and θₜ with moderate ε so that models remain precise and protected from distraction."
-    case .dynamicResponder:
-      "Dynamic Responders flex ε, β and θₜ so that emotional salience can trigger rapid, yet calibrated, mobilization."
-    }
+    "These exploratory self-report summaries have not been validated as measures of cognitive or psychological traits. "
+      + "No diagnostic, predictive, reliability or normative interpretation is available."
   }
 }

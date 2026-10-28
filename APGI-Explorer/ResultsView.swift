@@ -10,10 +10,25 @@ import SwiftUI
 #endif
 
 struct ResultsView: View {
+  @ObservedObject var quizModel: QuizModel
+  var body: some View {
+    if let profile = quizModel.calculateScore().profile {
+      PersonalResultsView(quizModel: quizModel, apgiProfile: profile)
+    } else {
+      VStack(spacing: 12) {
+        Text("Result unavailable").font(.title2)
+        Text("Answer all 35 questions with valid options before viewing or saving a result.")
+      }.padding()
+    }
+  }
+}
+
+private struct PersonalResultsView: View {
   @EnvironmentObject private var profileManager: ProfileManager
   @ObservedObject var quizModel: QuizModel
   @State private var profileName = ""
   @State private var showSavedAlert = false
+  @State private var savedProfileName = ""
   @State private var toast: ToastMessage?
   @State private var selectedTab = 0
   @StateObject private var stateModel = StateModel()
@@ -23,9 +38,7 @@ struct ResultsView: View {
     self.dependencies.getAnalyticsService()
   }
 
-  private var apgiProfile: APGIProfile {
-    self.quizModel.calculateScore().profile
-  }
+  let apgiProfile: APGIProfile
 
   private var profileType: APGIProfileType {
     self.profileManager.determineProfileType(for: self.apgiProfile)
@@ -49,13 +62,16 @@ struct ResultsView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: APGISpacing.lg) {
+        Text("Exploratory self-report · Local to this device")
+          .font(.subheadline).foregroundStyle(.secondary)
+        Text("These summaries describe your answers. They have not been validated as measures of cognitive or psychological traits.")
+          .font(.caption).foregroundStyle(.secondary)
         self.profileHeaderView
 
         Picker("View", selection: self.$selectedTab) {
           Text("Overview").tag(0)
           Text("Details").tag(1)
-          Text("States").tag(2)
-          Text("Strategies").tag(3)
+          Text("Reflection").tag(3)
         }
         .pickerStyle(.segmented)
         .padding(.horizontal, APGISpacing.md)
@@ -103,7 +119,7 @@ struct ResultsView: View {
       Button("OK", role: .cancel) {
       }
     } message: {
-      Text("Your results have been saved to '\(self.profileName)'.")
+      Text("Your results have been saved to '\(self.savedProfileName)'.")
     }
     .toast(self.$toast)
     .onAppear {
@@ -141,28 +157,28 @@ struct ResultsView: View {
   private var overviewTab: some View {
     VStack(alignment: .leading, spacing: APGISpacing.md) {
       ParameterCardView(
-        name: "Prediction Error Sensitivity (ε)",
+        name: "Reported reactivity to the unexpected",
         value: self.apgiProfile.epsilon,
         interpretation: self.interpretEpsilon(self.apgiProfile.epsilon),
         color: .precisionRed
       )
 
       ParameterCardView(
-        name: "Precision Allocation (π)",
+        name: "Reported information prioritisation",
         value: self.apgiProfile.precision,
         interpretation: self.interpretPrecision(self.apgiProfile.precision),
         color: .neuromodGreen
       )
 
       ParameterCardView(
-        name: "Ignition Threshold (θₜ)",
+        name: "Reported attentional threshold",
         value: self.apgiProfile.threshold,
         interpretation: self.interpretThreshold(self.apgiProfile.threshold),
         color: .thresholdBlue
       )
 
       ParameterCardView(
-        name: "Somatic Bias (β)",
+        name: "Reported body-signal attention",
         value: self.apgiProfile.somaticBias,
         interpretation: self.interpretSomaticBias(self.apgiProfile.somaticBias),
         color: .workspacePurple
@@ -185,24 +201,8 @@ struct ResultsView: View {
   }
 
   private var statesTab: some View {
-    VStack(alignment: .leading, spacing: APGISpacing.md) {
-      Text("Psychological States for Your Profile")
-        .font(APGITypography.h3)
-
-      Text("Based on your APGI parameters, here are the states you're most likely to experience:")
-        .font(APGITypography.body)
-        .foregroundColor(.secondary)
-
-      ForEach(self.profileType.likelyStates, id: \.stateId) { match in
-        if let state = findState(id: match.stateId) {
-          StateLikelihoodCard(
-            state: state,
-            likelihood: match.likelihood,
-            reason: match.reason
-          )
-        }
-      }
-    }
+    Text("State predictions are unavailable for exploratory self-report results.")
+      .foregroundStyle(.secondary)
   }
 
   private var strategiesTab: some View {
@@ -242,19 +242,19 @@ struct ResultsView: View {
   }
 
   private func interpretEpsilon(_: Double) -> String {
-    self.apgiProfile.epsilonCategory.rawValue
+    "Descriptive item average; no population comparison."
   }
 
   private func interpretPrecision(_: Double) -> String {
-    self.apgiProfile.precisionCategory.rawValue
+    "Items 7 and 9 are categorical and excluded from this average."
   }
 
   private func interpretThreshold(_: Double) -> String {
-    self.apgiProfile.thresholdCategory.rawValue
+    "Descriptive item average; no population comparison."
   }
 
   private func interpretSomaticBias(_: Double) -> String {
-    self.apgiProfile.somaticCategory.rawValue
+    "Descriptive item average; no population comparison."
   }
 
   private func findState(id: Int) -> PsychologicalState? {
@@ -289,6 +289,7 @@ struct ResultsView: View {
           StoreKit.requestReview()
         #endif
         await MainActor.run {
+          self.savedProfileName = trimmedProfileName
           self.showSavedAlert = true
           self.profileName = ""
         }
@@ -539,10 +540,10 @@ struct APGIRadarChart: View {
         radarShape
           .stroke(Color.blue, lineWidth: 2)
 
-        Text("ε").position(x: center.x, y: 15)
-        Text("π").position(x: geometry.size.width - 15, y: center.y)
-        Text("θₜ").position(x: center.x, y: geometry.size.height - 15)
-        Text("β").position(x: 15, y: center.y)
+        Text("Reported reactivity to the unexpected").position(x: center.x, y: 15)
+        Text("Reported information prioritisation").position(x: geometry.size.width - 15, y: center.y)
+        Text("Reported attentional threshold").position(x: center.x, y: geometry.size.height - 15)
+        Text("Reported body-signal attention").position(x: 15, y: center.y)
       }
     }
     .aspectRatio(1, contentMode: .fit)

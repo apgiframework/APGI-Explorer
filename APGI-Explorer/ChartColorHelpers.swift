@@ -5,10 +5,10 @@ import SwiftUI
 extension Color {
   static func baseColorForParameter(_ parameter: String) -> Color {
     switch parameter {
-    case "ε (Epsilon)": .blue
-    case "π (Precision)": .green
-    case "θₜ (Threshold)": .orange
-    case "β (Somatic Bias)": .purple
+    case "Reported reactivity to the unexpected": .blue
+    case "Reported information prioritisation": .green
+    case "Reported attentional threshold": .orange
+    case "Reported body-signal attention": .purple
     default: .gray
     }
   }
