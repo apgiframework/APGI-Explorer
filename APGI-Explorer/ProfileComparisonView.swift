@@ -298,28 +298,28 @@ struct ProfileComparisonView: View {
             let apgiProfile2 = QuizModel.calculateAPGIProfile(from: profile2.results)
 
             self.differenceItem(
-              title: "Reported reactivity to the unexpected",
+              title: ScoreLabels.reactivity,
               value1: Int(apgiProfile1.epsilon),
               value2: Int(apgiProfile2.epsilon),
               isHigherBetter: false
             )
 
             self.differenceItem(
-              title: "Reported information prioritisation",
+              title: ScoreLabels.prioritisation,
               value1: Int(apgiProfile1.precision),
               value2: Int(apgiProfile2.precision),
               isHigherBetter: true
             )
 
             self.differenceItem(
-              title: "Reported attentional threshold",
+              title: ScoreLabels.threshold,
               value1: Int(apgiProfile1.threshold),
               value2: Int(apgiProfile2.threshold),
               isHigherBetter: true
             )
 
             self.differenceItem(
-              title: "Reported body-signal attention",
+              title: ScoreLabels.bodySignal,
               value1: Int(apgiProfile1.somaticBias),
               value2: Int(apgiProfile2.somaticBias),
               isHigherBetter: false

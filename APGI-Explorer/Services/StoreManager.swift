@@ -69,32 +69,91 @@ class StoreManager: ObservableObject {
     }
   }
 
+  // MARK: - Eligibility gate
+
+  /// Every StoreKit entry point checks this first. Products need BOTH the remote Boolean
+  /// `validation_results` and explicit approval compiled into the build
+  /// (`ExplorerBuildApproval.paidProductsApproved`, false in this release). Legacy purchases
+  /// and remote flags alone can never enable anything.
+  var eligibility: ProductEligibility {
+    ProductEligibility.current(remoteValidationResults: ExplorerAPIStatus.shared.policy?.validationResults)
+  }
+
   // MARK: - Store Operations
 
   func loadProducts() async {
-    self.products = []
-    self.isLoading = false
+    isLoading = false
+    guard eligibility.isEligible else {
+      products = []
+      return
+    }
+    isLoading = true
+    defer { isLoading = false }
+    do {
+      products = try await Product.products(for: ProductID.allCases.map(\.rawValue))
+    } catch {
+      products = []
+      errorMessage = error.localizedDescription
+    }
   }
 
   func purchase(_ product: Product) async throws -> StoreKit.Transaction? {
-    throw StoreError.productsDisabled
+    guard eligibility.isEligible else { throw StoreError.productsDisabled }
+    switch try await product.purchase() {
+    case .success(.verified(let transaction)):
+      await transaction.finish()
+      await updatePurchasedProducts()
+      return transaction
+    case .success(.unverified): throw StoreError.verificationFailed
+    case .pending: throw StoreError.paymentPending
+    case .userCancelled: return nil
+    @unknown default: throw StoreError.unknown
+    }
   }
 
   func restorePurchases() async {
-    // Keep existing purchases untouched in the store; no entitlement enables this release.
-    isLoading = false
     errorMessage = nil
+    guard eligibility.isEligible else {
+      isLoading = false
+      purchasedProductIDs = []
+      return
+    }
+    try? await AppStore.sync()
+    await updatePurchasedProducts()
   }
 
-  func updatePurchasedProducts() async { purchasedProductIDs = [] }
+  func updatePurchasedProducts() async {
+    guard eligibility.isEligible else {
+      purchasedProductIDs = []
+      return
+    }
+    var owned: Set<String> = []
+    for await result in StoreKit.Transaction.currentEntitlements {
+      if case .verified(let transaction) = result, transaction.revocationDate == nil {
+        owned.insert(transaction.productID)
+      }
+    }
+    purchasedProductIDs = owned
+  }
 
-  var hasPremiumFeatures: Bool { false }
-  var hasProfessionalFeatures: Bool { false }
-  var hasResearchFeatures: Bool { false }
-  var hasUnlimitedProfiles: Bool { false }
+  private func owns(_ id: ProductID) -> Bool {
+    eligibility.isEligible && purchasedProductIDs.contains(id.rawValue)
+  }
 
-  func getSubscriptionStatus(for productID: String) async -> Product.SubscriptionInfo.Status? { nil }
-  func isSubscriptionActive(for productID: String) async -> Bool { false }
+  var hasPremiumFeatures: Bool { owns(.premiumMonthly) || owns(.premiumYearly) }
+  var hasProfessionalFeatures: Bool { owns(.professionalFeatures) }
+  var hasResearchFeatures: Bool { owns(.researchPack) }
+  var hasUnlimitedProfiles: Bool { owns(.unlimitedProfiles) }
+
+  func getSubscriptionStatus(for productID: String) async -> Product.SubscriptionInfo.Status? {
+    guard eligibility.isEligible, let product = products.first(where: { $0.id == productID }) else { return nil }
+    return try? await product.subscription?.status.first
+  }
+
+  func isSubscriptionActive(for productID: String) async -> Bool {
+    guard let status = await getSubscriptionStatus(for: productID) else { return false }
+    return status.state == .subscribed
+  }
 
 }
 

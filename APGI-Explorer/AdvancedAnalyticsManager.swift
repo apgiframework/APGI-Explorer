@@ -75,10 +75,10 @@ class AdvancedAnalyticsManager: ObservableObject {
       \.epsilon, \.precision, \.threshold, \.somaticBias
     ]
     let parameterNames = [
-      "Reported reactivity to the unexpected",
-      "Reported information prioritisation",
-      "Reported attentional threshold",
-      "Reported body-signal attention"
+      ScoreLabels.reactivity,
+      ScoreLabels.prioritisation,
+      ScoreLabels.threshold,
+      ScoreLabels.bodySignal
     ]
 
     for (index, parameter) in parameters.enumerated() {

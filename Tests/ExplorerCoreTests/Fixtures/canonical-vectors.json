@@ -1,0 +1,40 @@
+[
+ {
+  "payload": {
+   "item_id": 1,
+   "value": 2,
+   "latency_us": 1500000,
+   "instrument_sha256": "8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0"
+  },
+  "canonical": "{\"instrument_sha256\":\"8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0\",\"item_id\":1,\"latency_us\":1500000,\"value\":2}",
+  "sha256": "fbfaf60da24d32924829083feeb64eb560b467e51e29600f52f0089430119d72"
+ },
+ {
+  "payload": {
+   "item_id": 7,
+   "value": 4,
+   "previous_value": 1,
+   "latency_us": 0,
+   "instrument_sha256": "8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0"
+  },
+  "canonical": "{\"instrument_sha256\":\"8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0\",\"item_id\":7,\"latency_us\":0,\"previous_value\":1,\"value\":4}",
+  "sha256": "43eee2959fb2bef6a3dfcef799037be2b0f20c2f138cdcaa3f096b91f67a1527"
+ },
+ {
+  "payload": {
+   "k": "quote\" slash/ back\\ tab\t nl\n é ✓ \u0001",
+   "b": true,
+   "n": null,
+   "z": [
+    3,
+    {
+     "y": 1,
+     "a": 2
+    }
+   ],
+   "neg": -5
+  },
+  "canonical": "{\"b\":true,\"k\":\"quote\\\" slash/ back\\\\ tab\\t nl\\n é ✓ \\u0001\",\"n\":null,\"neg\":-5,\"z\":[3,{\"a\":2,\"y\":1}]}",
+  "sha256": "b81367708d92a487edeb6f3713fe086ff9133a18dabe276c5a6d05ca53e66f5c"
+ }
+]

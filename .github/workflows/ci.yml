@@ -11,19 +11,60 @@ permissions:
 
 jobs:
   contracts:
+    name: contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - name: Verify generated Swift client against pinned OpenAPI
+      - name: Verify generated API catalogs against pinned OpenAPI
         run: python3 scripts/generate_api_client.py --check
-      - name: Check labels, identifiers, instrument and privacy artifacts
+      - name: Generator and language-policy tests
+        working-directory: scripts
+        run: python3 -m unittest test_api_generation test_language_policy
+      - name: Check labels, identifiers, instrument, privacy and research gates
         run: python3 scripts/check_explorer_contracts.py
 
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install checksum-pinned Gitleaks
+        run: echo "GITLEAKS=$(scripts/install_gitleaks.sh "$RUNNER_TEMP/gitleaks")" >> "$GITHUB_ENV"
+      - name: Secret-scan regression tests (keychain identifiers pass, synthetic credential detected)
+        run: python3 scripts/test_secret_scan.py
+      - name: Scan working tree (findings are redacted)
+        run: python3 scripts/run_secret_scan.py --gitleaks "$GITLEAKS"
+
+  portable-swift:
+    name: portable-swift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-pinned Swift toolchain
+        run: |
+          set -euo pipefail
+          url="https://download.swift.org/swift-6.2-release/ubuntu2404/swift-6.2-RELEASE/swift-6.2-RELEASE-ubuntu24.04.tar.gz"
+          curl -fsSL "$url" -o "$RUNNER_TEMP/swift.tar.gz"
+          echo "8e3d63a3371caad495e694414b9b9a22c5f68c6473077406c7296472a41bc077  $RUNNER_TEMP/swift.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/swift.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/swift-6.2-RELEASE-ubuntu24.04/usr/bin" >> "$GITHUB_PATH"
+      - name: Portable transport, hashing, outbox and credential tests
+        run: swift test
+      - name: Build with MainActor default isolation (as the app target does)
+        run: swift build -Xswiftc -default-isolation -Xswiftc MainActor
+
   build-and-test:
+    name: build-and-test
     runs-on: macos-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -36,14 +77,24 @@ jobs:
           CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
       - name: Verify effective app entitlements
         run: python3 scripts/verify_app_entitlements.py SignedDerivedData/Build/Products/Debug/APGI-Explorer.app
-      - name: Run macOS unit and contract tests
+      - name: Run macOS unit and contract tests (includes native Core Data and Keychain tests)
         run: >-
           xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer
           -destination 'platform=macOS' -configuration Debug
           -derivedDataPath DerivedData -parallel-testing-enabled NO
+          -enableCodeCoverage YES
           -test-timeouts-enabled YES -default-test-execution-time-allowance 30
           -maximum-test-execution-time-allowance 60
           -resultBundlePath TestResults.xcresult CODE_SIGNING_ALLOWED=NO
+      - name: Coverage report from this run's result bundle
+        if: always()
+        run: xcrun xccov view --report --json TestResults.xcresult > coverage.json
+      - uses: codecov/codecov-action@v5
+        if: always() && github.event.pull_request.head.repo.fork != true
+        with:
+          files: ./coverage.json
+          use_oidc: true
+          fail_ci_if_error: false
       - uses: actions/upload-artifact@v4
         if: always()
         with:

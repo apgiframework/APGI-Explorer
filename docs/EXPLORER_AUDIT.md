@@ -129,3 +129,45 @@ entitlements file. The original unsigned unit-test run did not verify effective
 sandbox permissions. Both build configurations now attach the file and enable
 outgoing networking. A signed build and bundled sandboxed API probe verified the
 fix. See `RUNTIME_VERIFICATION.md` for details and the updated 88-case test result.
+
+## Update — October 28, 2026 (portable core, outbox and server contract)
+
+This update adds the research-mode foundations **behind a disabled capability**. It does
+not ship research, enable products, or change privacy manifests.
+
+### What exists now
+
+| Register items | Result / evidence |
+| --- | --- |
+| S1-EXP-03.7; S3-PR6-05 | `scripts/generate_api_client.py` generates all 121 operations of `contracts/openapi-v1.json` into `Core/APIOperationCatalog+Generated.swift` (methods, routes, parameters, body requirement, authentication, success statuses). Lossless `APIJSONValue`; not a typed schema SDK. Authentication explicit; redirects refused (`RedirectRejectingDelegate`). `CatalogTests` compares the catalog with the pinned spec operation by operation. |
+| S1-EXP-01.7 | `ProductEligibility` needs the remote `validation_results` Boolean **and** `ExplorerBuildApproval.paidProductsApproved` (false). Every `StoreManager` entry point (load, purchase, restore, entitlements, feature flags) enforces it. A positive flow exists in code but cannot run in this build and has never been exercised. |
+| S3-EXP-01.4; S3-PR6-04 | `PendingEvent` entity in new model version `APGISignature 2` (original version untouched, `.xccurrentversion` selects the new one, lightweight migration). Personal journals (`QuizSession`) are never read into the outbox. |
+| S3-EXP-01.5/.6 | `UploadCoordinator` (ordering within a session, exponential backoff persisted in the store, relaunch recovery, redirects rejected, payload retained on offline/HTTP/invalid ack). Only an acknowledgement matching event key, sequence and payload digest with `server_verified` clears the payload; a verified tombstone blocks re-enqueue. `BackgroundUploadSession` (Darwin-only) sends file-backed uploads on a background configuration. Transport retries still depend on the server being idempotent. |
+| S3-EXP-01.7 | `ResearchKeychainCredentialStore` (device-local, `ThisDeviceOnly`, no preference-store fallback); `ResearchCredentialManager` handles expiry, refresh-token rotation, coalesced concurrent refresh and sign-out cancellation. No live auth adapter is provided; the server refresh response does not currently rotate refresh tokens. Handoff still carries only a session ID. |
+| S3-EXP-01.2/.3/.9/.10 foundations | `ResearchBankValidator` (canonical-byte hash, 35 items, four options), `ResearchConsentValidator` (four purposes, locale, version, approval, text hash), `ResearchRecorder` (monotonic, bank items only, provenance), `ScoreAllowlist` (unknown fields, unapproved labels, nonnumeric and nonfinite values rejected). Not wired to any enrollment UI or live API. |
+| XC-CI-08.1/.3/.4 | Generator coverage test; `ScoreLabels` centralises approved labels across result, export, chart and report surfaces; `scripts/language_policy.py` rejects retired labels and unapproved `Reported …` literals in all runtime sources. This is a lexical scan, not visual QA or a scientific-language audit. |
+| XC-CI-08 | Release workflow uses checksum-pinned Gitleaks (redacted findings) instead of the keyword grep; exceptions are exact truncated OpenAPI example values only. Retired action versions upgraded; coverage uses OIDC and the current run's named result bundle; nightly now uses the same signing-free test command as CI. `.github/required-checks.json` records desired required checks; it does not apply branch protection. |
+
+### Server side (`apgi-api`, branch `claude/optimistic-bell-rpswal`)
+
+Pinned item bank with canonical hash, four consent purposes with server-served versioned
+text, idempotent journal upload with a `server_verified` acknowledgement echoing the
+payload digest, and an allow-listed score read-back. Consent texts are **drafts**
+awaiting S1-PRV-06 review; `research_enabled` stays false until they are approved and
+`EXPLORER_RESEARCH_ENABLED=true`. None of this is deployed.
+
+### Verified here, and what was not
+
+Run on Linux with Swift 6.2: `swift test` (35 portable tests), a build with MainActor
+default isolation, the Python generator, language-policy and secret-scan tests, the
+contract gates, and the Gitleaks working-tree scan. Not run: the macOS app build, the
+native `ResearchNativeTests` (Core Data persistence and migration, Keychain, StoreKit
+gate), `BackgroundUploadSession`, background relaunch delivery, live upload, visual QA,
+or hosted CI. Run the Xcode command in `.github/workflows/ci.yml` on macOS before merging.
+
+### Still external
+
+S0-IDN-10.1/.2 (disable the old Pages site; archive or transfer the personal repository),
+App Store Connect delisting, branch-protection enforcement, consent text approval
+(S1-PRV-06), qualified framework fixtures for S3-PR6-10, and a reviewed authentication
+adapter.

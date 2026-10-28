@@ -5,10 +5,10 @@ import SwiftUI
 extension Color {
   static func baseColorForParameter(_ parameter: String) -> Color {
     switch parameter {
-    case "Reported reactivity to the unexpected": .blue
-    case "Reported information prioritisation": .green
-    case "Reported attentional threshold": .orange
-    case "Reported body-signal attention": .purple
+    case ScoreLabels.reactivity: .blue
+    case ScoreLabels.prioritisation: .green
+    case ScoreLabels.threshold: .orange
+    case ScoreLabels.bodySignal: .purple
     default: .gray
     }
   }

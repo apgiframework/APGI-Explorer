@@ -1,0 +1,29 @@
+title = "APGI Explorer secret scan"
+
+[extend]
+useDefault = true
+
+# Exceptions are matched by exact VALUE, never by path: Gitleaks skips whole files for path
+# allow-lists, which would hide a real credential added to an excluded file.
+
+# Exact, truncated example values documented in the pinned OpenAPI contracts. These are the
+# only credential-value exceptions; any other value is still reported wherever it appears.
+[[allowlists]]
+description = "Truncated documentation examples from the pinned OpenAPI contracts"
+regexTarget = "match"
+regexes = [
+  '''(access_token|refresh_token)"?:\s*"?eyJ(hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9|0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9)\.\.\."?''',
+  '''key"?:\s*"?apgi_abc123def456\.\.\."?''',
+  '''password"?:\s*"?secure_password"?''',
+  '''key_id"?:\s*"?key_abc123"?''',
+]
+
+[[allowlists]]
+description = "Content hashes recorded in generated-file headers are not credentials"
+regexTarget = "match"
+regexes = ['''OpenAPI SHA-256:\s*[0-9a-f]{64}''']
+
+[[allowlists]]
+description = "Synthetic missing-key fixture in the localisation test"
+regexTarget = "match"
+regexes = ['''Key\s*=\s*"nonexistent_key_12345"''']

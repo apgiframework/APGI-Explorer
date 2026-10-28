@@ -57,10 +57,10 @@ class ResearchExportManager: ObservableObject {
     let scores = profile.apgiScores
     return [
       ["Metric", "Value", "Category", "Description"],
-      ["epsilon", String(scores.epsilon), "Self-report", "Reported reactivity to the unexpected"],
-      ["precision", String(scores.precision), "Self-report", "Reported information prioritisation"],
-      ["threshold", String(scores.threshold), "Self-report", "Reported attentional threshold"],
-      ["somatic", String(scores.somaticBias), "Self-report", "Reported body-signal attention"],
+      ["epsilon", String(scores.epsilon), "Self-report", ScoreLabels.reactivity],
+      ["precision", String(scores.precision), "Self-report", ScoreLabels.prioritisation],
+      ["threshold", String(scores.threshold), "Self-report", ScoreLabels.threshold],
+      ["somatic", String(scores.somaticBias), "Self-report", ScoreLabels.bodySignal],
       ["Profile_Name", profile.profile.name, "Local", "Profile name"],
       ["instrument_id", APGIIdentifiers.instrument, "Metadata", "Exploratory instrument"],
       ["analysis_mode", APGIIdentifiers.analysisMode, "Metadata", "Excluded from norms"],

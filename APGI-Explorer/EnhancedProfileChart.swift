@@ -92,16 +92,16 @@ struct EnhancedProfileChart: View {
 
     let data = [
       ChartDataPoint(
-        parameter: "Reported reactivity to the unexpected", value: profile.epsilon,
+        parameter: ScoreLabels.reactivity, value: profile.epsilon,
         profileName: String(describing: self.profile.epsilonCategory).capitalized),
       ChartDataPoint(
-        parameter: "Reported information prioritisation", value: self.profile.precision,
+        parameter: ScoreLabels.prioritisation, value: self.profile.precision,
         profileName: String(describing: self.profile.precisionCategory).capitalized),
       ChartDataPoint(
-        parameter: "Reported attentional threshold", value: self.profile.threshold,
+        parameter: ScoreLabels.threshold, value: self.profile.threshold,
         profileName: String(describing: self.profile.thresholdCategory).capitalized),
       ChartDataPoint(
-        parameter: "Reported body-signal attention", value: self.profile.somaticBias,
+        parameter: ScoreLabels.bodySignal, value: self.profile.somaticBias,
         profileName: String(describing: self.profile.somaticCategory).capitalized)
     ]
 
@@ -121,13 +121,13 @@ struct EnhancedProfileChart: View {
       // Add main profile data
       data.append(contentsOf: [
         ChartDataPoint(
-          parameter: "Reported reactivity to the unexpected", value: self.profile.epsilon, profileName: "Current"),
+          parameter: ScoreLabels.reactivity, value: self.profile.epsilon, profileName: "Current"),
         ChartDataPoint(
-          parameter: "Reported information prioritisation", value: self.profile.precision, profileName: "Current"),
+          parameter: ScoreLabels.prioritisation, value: self.profile.precision, profileName: "Current"),
         ChartDataPoint(
-          parameter: "Reported attentional threshold", value: self.profile.threshold, profileName: "Current"),
+          parameter: ScoreLabels.threshold, value: self.profile.threshold, profileName: "Current"),
         ChartDataPoint(
-          parameter: "Reported body-signal attention", value: self.profile.somaticBias, profileName: "Current")
+          parameter: ScoreLabels.bodySignal, value: self.profile.somaticBias, profileName: "Current")
       ])
 
       // Limit comparisons based on performance mode
@@ -138,13 +138,13 @@ struct EnhancedProfileChart: View {
         let profileName = "Comparison \(index + 1)"
         data.append(contentsOf: [
           ChartDataPoint(
-            parameter: "Reported reactivity to the unexpected", value: compProfile.epsilon, profileName: profileName),
+            parameter: ScoreLabels.reactivity, value: compProfile.epsilon, profileName: profileName),
           ChartDataPoint(
-            parameter: "Reported information prioritisation", value: compProfile.precision, profileName: profileName),
+            parameter: ScoreLabels.prioritisation, value: compProfile.precision, profileName: profileName),
           ChartDataPoint(
-            parameter: "Reported attentional threshold", value: compProfile.threshold, profileName: profileName),
+            parameter: ScoreLabels.threshold, value: compProfile.threshold, profileName: profileName),
           ChartDataPoint(
-            parameter: "Reported body-signal attention", value: compProfile.somaticBias, profileName: profileName)
+            parameter: ScoreLabels.bodySignal, value: compProfile.somaticBias, profileName: profileName)
         ])
       }
 
@@ -411,8 +411,8 @@ struct EnhancedProfileChart: View {
       .padding()
 
       HStack(spacing: 20) {
-        LegendItem(color: .blue, label: "Reported reactivity to the unexpected")
-        LegendItem(color: .green, label: "Reported information prioritisation")
+        LegendItem(color: .blue, label: ScoreLabels.reactivity)
+        LegendItem(color: .green, label: ScoreLabels.prioritisation)
       }
       .padding()
     }

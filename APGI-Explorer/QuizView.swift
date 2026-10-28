@@ -268,10 +268,10 @@ struct QuizView: View {
 
   private func sectionName(for question: QuizQuestion) -> String {
     switch question.parameter {
-    case "epsilon": "Reported reactivity to the unexpected"
-    case "precision": "Reported information prioritisation"
-    case "threshold": "Reported attentional threshold"
-    case "somatic": "Reported body-signal attention"
+    case "epsilon": ScoreLabels.reactivity
+    case "precision": ScoreLabels.prioritisation
+    case "threshold": ScoreLabels.threshold
+    case "somatic": ScoreLabels.bodySignal
     case "interactions": "Parameter Interactions"
     case "temporal": "Temporal Stability"
     case "environment": "Environmental Fit"

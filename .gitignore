@@ -84,3 +84,7 @@ fastlane/test_output
 .swiftpm/
 xcuserdata/
 *.simulator/
+
+# SwiftPM (portable core)
+.build/
+.swiftpm/

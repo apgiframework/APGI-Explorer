@@ -53,10 +53,10 @@ struct RadarComparisonChart: View {
   /// Real data from profiles
   private var data: [RadarData] {
     let categories = [
-      "Reported reactivity to the unexpected",
-      "Reported information prioritisation",
-      "Reported attentional threshold",
-      "Reported body-signal attention"
+      ScoreLabels.reactivity,
+      ScoreLabels.prioritisation,
+      ScoreLabels.threshold,
+      ScoreLabels.bodySignal
     ]
 
     return categories.enumerated().map { index, category in
@@ -73,7 +73,7 @@ struct RadarComparisonChart: View {
       case 2:  // Threshold
         value1 = self.apgiProfile1.threshold
         value2 = self.apgiProfile2.threshold
-      case 3:  // Reported body-signal attention
+      case 3:  // score group
         value1 = self.apgiProfile1.somaticBias
         value2 = self.apgiProfile2.somaticBias
       default:
@@ -179,10 +179,10 @@ struct BarComparisonChart: View {
   /// Real data from profiles
   private var data: [BarData] {
     [
-      ("Reported reactivity to the unexpected", Int(self.apgiProfile1.epsilon), Int(self.apgiProfile2.epsilon)),
-      ("Reported information prioritisation", Int(self.apgiProfile1.precision), Int(self.apgiProfile2.precision)),
-      ("Reported attentional threshold", Int(self.apgiProfile1.threshold), Int(self.apgiProfile2.threshold)),
-      ("Reported body-signal attention", Int(self.apgiProfile1.somaticBias), Int(self.apgiProfile2.somaticBias))
+      (ScoreLabels.reactivity, Int(self.apgiProfile1.epsilon), Int(self.apgiProfile2.epsilon)),
+      (ScoreLabels.prioritisation, Int(self.apgiProfile1.precision), Int(self.apgiProfile2.precision)),
+      (ScoreLabels.threshold, Int(self.apgiProfile1.threshold), Int(self.apgiProfile2.threshold)),
+      (ScoreLabels.bodySignal, Int(self.apgiProfile1.somaticBias), Int(self.apgiProfile2.somaticBias))
     ].map { BarData(category: $0.0, value1: $0.1, value2: $0.2) }
   }
 
@@ -258,10 +258,10 @@ struct LineComparisonChart: View {
   /// Real data from profiles - showing parameter progression
   private var data: [LineData] {
     let parameters = [
-      "Reported reactivity to the unexpected",
-      "Reported information prioritisation",
-      "Reported attentional threshold",
-      "Reported body-signal attention"
+      ScoreLabels.reactivity,
+      ScoreLabels.prioritisation,
+      ScoreLabels.threshold,
+      ScoreLabels.bodySignal
     ]
     let values1 = [
       apgiProfile1.epsilon, self.apgiProfile1.precision, self.apgiProfile1.threshold,
@@ -362,19 +362,19 @@ struct ComparisonTableView: View {
     [
       ["Parameter", self.profile1.name, self.profile2.name],
       [
-        "Reported reactivity to the unexpected", String(format: "%.2f", self.apgiProfile1.epsilon),
+        ScoreLabels.reactivity, String(format: "%.2f", self.apgiProfile1.epsilon),
         String(format: "%.2f", self.apgiProfile2.epsilon)
       ],
       [
-        "Reported information prioritisation", String(format: "%.2f", self.apgiProfile1.precision),
+        ScoreLabels.prioritisation, String(format: "%.2f", self.apgiProfile1.precision),
         String(format: "%.2f", self.apgiProfile2.precision)
       ],
       [
-        "Reported attentional threshold", String(format: "%.2f", self.apgiProfile1.threshold),
+        ScoreLabels.threshold, String(format: "%.2f", self.apgiProfile1.threshold),
         String(format: "%.2f", self.apgiProfile2.threshold)
       ],
       [
-        "Reported body-signal attention", String(format: "%.2f", self.apgiProfile1.somaticBias),
+        ScoreLabels.bodySignal, String(format: "%.2f", self.apgiProfile1.somaticBias),
         String(format: "%.2f", self.apgiProfile2.somaticBias)
       ]
     ]
