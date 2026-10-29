@@ -2,7 +2,7 @@ import Foundation
 
 /// Descriptive scoring key for the exploratory local instrument, not a scientific model.
 /// Equal-weight item means on a 0–100 display scale; no reliability or norm claims.
-final class APGIScorer {
+nonisolated final class APGIScorer {
   enum ScoringError: Error, Equatable {
     case researchRequiresServer
     case unknownItems

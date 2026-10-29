@@ -31,7 +31,7 @@ for file in ['ResultsView.swift', 'QuizView.swift', 'ExportView.swift', 'Enhance
     text = (app / file).read_text()
     assert 'ScoreLabels.' in text, f'{file} must take score labels from ScoreLabels'
     assert 'option.note' not in text and 'option.tooltip' not in text
-for file in [app / 'APGIScorer.swift', app / 'QuizModel.swift']:
+for file in [app / 'Core/APGIScorer.swift', app / 'QuizModel.swift']:
     text = file.read_text()
     for forbidden in ['baseReliabilities', 'flaggedProfile', 'performCrossValidation', '1.96']:
         assert forbidden not in text
@@ -69,7 +69,7 @@ unsigned = {k: v for k, v in fixture.items() if k != 'sha256'}
 assert hashlib.sha256(_canonical(unsigned).encode()).hexdigest() == fixture['sha256'] == pin['sha256'], 'Pinned server bank hash differs from the verified fixture bank'
 assert pin['instrument_id'] == ids['instrument_id'] and pin['item_count'] == 35
 matrix = (root / 'docs/COMPATIBILITY_MATRIX_ENTRY.md').read_text()
-assert 'Instrument scoring key' in matrix and 'not a scientific model' in (app / 'APGIScorer.swift').read_text()
+assert 'Instrument scoring key' in matrix and 'not a scientific model' in (app / 'Core/APGIScorer.swift').read_text()
 for personal in ['FileStorageManager.swift', 'HandoffManager.swift', 'ProfileManager.swift', 'QuizModel.swift', 'SettingsView.swift', 'MenuCommands.swift']:
     text = (app / personal).read_text()
     for research in ['ResearchWorkflow', 'ResearchRecorder', 'UploadCoordinator', 'PendingEvent', 'ResearchModel']:

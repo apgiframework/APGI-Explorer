@@ -4,24 +4,6 @@ import SwiftUI
   import AppKit
 #endif
 
-enum ParameterLevel: String, CaseIterable {
-  case veryLow = "Very Low"
-  case low = "Low"
-  case moderate = "Moderate"
-  case high = "High"
-  case veryHigh = "Very High"
-
-  var rawValue: String {
-    switch self {
-    case .veryLow: "Very Low"
-    case .low: "Low"
-    case .moderate: "Moderate"
-    case .high: "High"
-    case .veryHigh: "Very High"
-    }
-  }
-}
-
 // MARK: - Color Scheme Contrast
 
 enum ColorSchemeContrast {

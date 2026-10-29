@@ -188,3 +188,11 @@ adapter.
 | S1-CMP-01.4 | Classification recorded in `docs/COMPATIBILITY_MATRIX_ENTRY.md` and verified by CI. The parent matrix is not in this repository and still needs the entry copied in. |
 | XC-CI-08 nightly | Root cause from the run logs (runs 40466735640 and 40653460966): `No signing certificate "Mac Development" found` on the hosted runner. The workflow now builds with `CODE_SIGNING_ALLOWED=NO`. Not yet confirmed green; the next scheduled run will show it. |
 | XC-CI-08 required checks | Checked via the GitHub API: neither `main` nor any branch is protected, so **no check is required**. `.github/required-checks.json` records the intent only. |
+
+## Update — October 29, 2026 (scorer verified on Linux; corrections)
+
+- **S1-EXP-02.1–.6, XC-CI-08.6/.7:** `APGIScorer`, `APGIProfile` and `ParameterLevel` moved into `APGI-Explorer/Core` (same module, no behaviour change). 11 new portable tests (`ScorerTests`) run the scorer's invalid-input, completeness-by-item-set, unknown-ID, out-of-range (including nominal items 7 and 9), research-refusal, uniform-answer, subscale-independence and no-invented-reliability checks on Linux in CI. The native `ExplorerContractTests` still need a macOS run.
+- **Correction:** earlier text said the server refresh response does not rotate refresh tokens. The pinned `TokenRefreshResponse` requires a new `refresh_token`, so rotation is supported; `ResearchAccountClient` implements it (not exercised against a live server).
+- **GitHub account references:** the only remaining `lesoto` GitHub reference was in `apgi-api` docs and is replaced with `apgiframework`. `com.lesoto…` bundle, keychain-service and StoreKit product identifiers are not GitHub accounts and were left unchanged, because changing them alters app identity, entitlements and purchases.
+- **Branch protection:** still not enforced (verified via the GitHub API: `main` and the working branch are unprotected). It cannot be applied from this repository or session.
+- **Hosted CI:** runs for `daf69fc` remained queued for over 40 minutes, so the macOS build and native tests are still unverified.
