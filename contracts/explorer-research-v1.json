@@ -369,6 +369,17 @@
       },
       "ExplorerConfigResponse": {
         "properties": {
+          "battery_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Battery Id"
+          },
           "consent_purposes": {
             "items": {
               "$ref": "#/components/schemas/ConsentPurposeInfo"
@@ -387,6 +398,17 @@
           "research_enabled": {
             "title": "Research Enabled",
             "type": "boolean"
+          },
+          "study_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Study Id"
           },
           "validation_results": {
             "default": false,

@@ -13,6 +13,13 @@ nonisolated enum ResearchContractError: Error, Equatable {
   case bankMismatch
   case scoreField(String)
   case scoreMapping(String)
+  case unavailable(String)
+  case requiredConsentMissing(String)
+  case uploadsPending(Int)
+  case notEnrolled
+  case incomplete
+  case legacyImportBlocked
+  case account(String)
 }
 
 // MARK: - Item bank
@@ -39,11 +46,21 @@ nonisolated struct ResearchBank: Equatable, Sendable {
 nonisolated enum ResearchBankValidator {
   /// Verifies the server-pinned bank: canonical-byte hash, instrument, 35 contiguous items,
   /// four ordered options each. Throws instead of repairing anything.
-  static func validate(_ data: Data, expectedInstrumentID: String, expectedItemCount: Int = 35) throws -> ResearchBank {
-    guard let root = (try? JSONDecoder().decode(APIJSONValue.self, from: data))?.object else {
-      throw ResearchContractError.malformed("bank is not a JSON object")
+  static func validate(_ data: Data, expectedInstrumentID: String, pinnedSHA256: String,
+                       expectedItemCount: Int = 35) throws -> ResearchBank {
+    guard let value = try? JSONDecoder().decode(APIJSONValue.self, from: data) else {
+      throw ResearchContractError.malformed("bank is not JSON")
     }
+    return try validate(value, expectedInstrumentID: expectedInstrumentID, pinnedSHA256: pinnedSHA256,
+                        expectedItemCount: expectedItemCount)
+  }
+
+  /// The hash must match both the bank's own canonical bytes and the hash pinned in this build.
+  static func validate(_ value: APIJSONValue, expectedInstrumentID: String, pinnedSHA256: String,
+                       expectedItemCount: Int = 35) throws -> ResearchBank {
+    guard let root = value.object else { throw ResearchContractError.malformed("bank is not a JSON object") }
     guard let claimed = root["sha256"]?.string, claimed.count == 64 else { throw ResearchContractError.hashMismatch }
+    guard claimed == pinnedSHA256 else { throw ResearchContractError.hashMismatch }
     var unsigned = root
     unsigned.removeValue(forKey: "sha256")
     let actual: String
@@ -154,10 +171,16 @@ actor ResearchRecorder {
   private var answers: [Int: Int] = [:]
   private var presentedAt: [Int: Int64] = [:]
 
-  init(bank: ResearchBank, clock: MonotonicMicrosecondClock = ContinuousMicrosecondClock()) {
+  init(bank: ResearchBank, clock: MonotonicMicrosecondClock = ContinuousMicrosecondClock(),
+       resumeSeqNo: Int = 0, resumeAnswers: [Int: Int] = [:]) {
     self.bank = bank
     self.clock = clock
+    self.nextSeq = resumeSeqNo
+    self.answers = resumeAnswers.filter { bank.item($0.key)?.optionValues.contains($0.value) == true }
   }
+
+  var answered: [Int: Int] { answers }
+  var nextSequence: Int { nextSeq }
 
   func present(itemID: Int) throws {
     guard bank.item(itemID) != nil else { throw ResearchContractError.unknownItem(itemID) }

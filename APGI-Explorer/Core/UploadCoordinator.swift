@@ -78,6 +78,14 @@ actor UploadCoordinator {
     return try await store.insertIfAbsent(record)
   }
 
+  /// Events not yet verified for a session.
+  func pendingCount(sessionID: String) async throws -> Int {
+    try await store.openCount(sessionID: sessionID)
+  }
+
+  /// Withdrawal: drop everything queued for a session, including verified tombstones.
+  func discard(sessionID: String) async throws { try await store.purgeSession(sessionID) }
+
   /// Call at launch: resets interrupted uploads and returns sessions that still have work.
   func recover() async throws -> [String] {
     guard capability.isEnabled else { return [] }

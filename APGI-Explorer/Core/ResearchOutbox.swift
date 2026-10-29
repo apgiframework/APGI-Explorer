@@ -55,6 +55,9 @@ nonisolated protocol PendingEventStoring: Sendable {
   func resetInFlight() async throws
   func sessionsWithWork() async throws -> [String]
   func record(eventKey: String) async throws -> PendingEventRecord?
+  /// Withdrawal: remove every local record (including tombstones) for a session.
+  func purgeSession(_ sessionID: String) async throws
+  func openCount(sessionID: String) async throws -> Int
 }
 
 nonisolated enum EventKey {
@@ -134,4 +137,12 @@ actor InMemoryPendingEventStore: PendingEventStoring {
   }
 
   func record(eventKey: String) async throws -> PendingEventRecord? { records[eventKey] }
+
+  func openCount(sessionID: String) async throws -> Int {
+    records.values.filter { $0.sessionID == sessionID && $0.state != .verified }.count
+  }
+
+  func purgeSession(_ sessionID: String) async throws {
+    records = records.filter { $0.value.sessionID != sessionID }
+  }
 }

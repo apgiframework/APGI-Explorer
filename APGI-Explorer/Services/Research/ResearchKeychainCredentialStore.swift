@@ -1,16 +1,19 @@
 import Foundation
 import Security
 
-/// Research credentials live only in the device-local Keychain under their own service name.
-/// Unlike `KeychainManager` there is deliberately NO simulator or preference-store fallback, and the
-/// item is `ThisDeviceOnly`, so it never syncs or migrates to another device.
-nonisolated final class ResearchKeychainCredentialStore: ResearchCredentialStoring, @unchecked Sendable {
+/// Device-local Keychain storage for one Codable value under its own service and account.
+/// Unlike `KeychainManager` there is deliberately NO simulator or preference-store fallback, and
+/// the item is `ThisDeviceOnly` and non-synchronizable, so it never leaves this device.
+nonisolated final class ResearchKeychainBox<Value: Codable & Sendable>: @unchecked Sendable {
   enum StoreError: Error, Equatable { case osStatus(OSStatus), corrupt }
 
   private let service: String
-  private let account = "research-credentials"
+  private let account: String
 
-  init(service: String = "org.apgiframework.APGI-Explorer.research") { self.service = service }
+  init(service: String, account: String) {
+    self.service = service
+    self.account = account
+  }
 
   private var query: [String: Any] {
     [kSecClass as String: kSecClassGenericPassword,
@@ -18,7 +21,7 @@ nonisolated final class ResearchKeychainCredentialStore: ResearchCredentialStori
      kSecAttrAccount as String: account]
   }
 
-  func load() throws -> ResearchCredentials? {
+  func load() throws -> Value? {
     var request = query
     request[kSecReturnData as String] = true
     request[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -26,14 +29,14 @@ nonisolated final class ResearchKeychainCredentialStore: ResearchCredentialStori
     let status = SecItemCopyMatching(request as CFDictionary, &result)
     if status == errSecItemNotFound { return nil }
     guard status == errSecSuccess else { throw StoreError.osStatus(status) }
-    guard let data = result as? Data, let value = try? JSONDecoder().decode(ResearchCredentials.self, from: data) else {
+    guard let data = result as? Data, let value = try? JSONDecoder().decode(Value.self, from: data) else {
       throw StoreError.corrupt
     }
     return value
   }
 
-  func save(_ credentials: ResearchCredentials) throws {
-    let data = try JSONEncoder().encode(credentials)
+  func save(_ value: Value) throws {
+    let data = try JSONEncoder().encode(value)
     SecItemDelete(query as CFDictionary)
     var item = query
     item[kSecValueData as String] = data
@@ -47,4 +50,25 @@ nonisolated final class ResearchKeychainCredentialStore: ResearchCredentialStori
     let status = SecItemDelete(query as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else { throw StoreError.osStatus(status) }
   }
+}
+
+nonisolated final class ResearchKeychainCredentialStore: ResearchCredentialStoring, @unchecked Sendable {
+  typealias StoreError = ResearchKeychainBox<ResearchCredentials>.StoreError
+  private let box: ResearchKeychainBox<ResearchCredentials>
+  init(service: String = "org.apgiframework.APGI-Explorer.research") {
+    box = ResearchKeychainBox(service: service, account: "research-credentials")
+  }
+  func load() throws -> ResearchCredentials? { try box.load() }
+  func save(_ credentials: ResearchCredentials) throws { try box.save(credentials) }
+  func clear() throws { try box.clear() }
+}
+
+nonisolated final class ResearchKeychainProgressStore: ResearchProgressStoring, @unchecked Sendable {
+  private let box: ResearchKeychainBox<ResearchProgress>
+  init(service: String = "org.apgiframework.APGI-Explorer.research") {
+    box = ResearchKeychainBox(service: service, account: "research-progress")
+  }
+  func load() throws -> ResearchProgress? { try box.load() }
+  func save(_ progress: ResearchProgress) throws { try box.save(progress) }
+  func clear() throws { try box.clear() }
 }

@@ -18,6 +18,7 @@ struct GeneralSettingsView: View {
     ScrollView {
       VStack(spacing: 20) {
         ExplorerAPIStatusView()
+        ResearchEntryView()
         // Profile Section
         VStack(alignment: .leading, spacing: 12) {
           Text("Profile")

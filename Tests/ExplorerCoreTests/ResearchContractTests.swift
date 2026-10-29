@@ -5,7 +5,7 @@ final class ResearchContractTests: XCTestCase {
   private func bankData() throws -> Data { try Fixture.data("item-bank") }
 
   func testBankFromServerFixtureValidates() throws {
-    let bank = try ResearchBankValidator.validate(try bankData(), expectedInstrumentID: "apgi-explorer-35")
+    let bank = try ResearchBankValidator.validate(try bankData(), expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: ResearchPins.bankSHA256)
     XCTAssertEqual(bank.items.count, 35)
     XCTAssertEqual(bank.item(7)?.scoring, "nominal")
     XCTAssertEqual(bank.sha256.count, 64)
@@ -21,15 +21,15 @@ final class ResearchContractTests: XCTestCase {
     items[0] = .object(first)
     var tampered = root
     tampered["items"] = .array(items)
-    XCTAssertThrowsError(try ResearchBankValidator.validate(try encode(tampered), expectedInstrumentID: "apgi-explorer-35")) {
+    XCTAssertThrowsError(try ResearchBankValidator.validate(try encode(tampered), expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: ResearchPins.bankSHA256)) {
       XCTAssertEqual($0 as? ResearchContractError, .hashMismatch)
     }
-    XCTAssertThrowsError(try ResearchBankValidator.validate(try bankData(), expectedInstrumentID: "other")) {
+    XCTAssertThrowsError(try ResearchBankValidator.validate(try bankData(), expectedInstrumentID: "other", pinnedSHA256: ResearchPins.bankSHA256)) {
       XCTAssertEqual($0 as? ResearchContractError, .wrongInstrument)
     }
     root.removeValue(forKey: "sha256")
-    XCTAssertThrowsError(try ResearchBankValidator.validate(try encode(root), expectedInstrumentID: "apgi-explorer-35"))
-    XCTAssertThrowsError(try ResearchBankValidator.validate(Data("[]".utf8), expectedInstrumentID: "apgi-explorer-35"))
+    XCTAssertThrowsError(try ResearchBankValidator.validate(try encode(root), expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: ResearchPins.bankSHA256))
+    XCTAssertThrowsError(try ResearchBankValidator.validate(Data("[]".utf8), expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: ResearchPins.bankSHA256))
   }
 
   func testStructuralRulesWithRecomputedHash() throws {
@@ -38,8 +38,15 @@ final class ResearchContractTests: XCTestCase {
     var items = try XCTUnwrap(root["items"]?.array)
     items.removeLast()
     root["items"] = .array(items)
-    root["sha256"] = .string(try CanonicalJSON.sha256Hex(.object(root.filter { $0.key != "sha256" })))
-    XCTAssertThrowsError(try ResearchBankValidator.validate(try JSONEncoder().encode(APIJSONValue.object(root)), expectedInstrumentID: "apgi-explorer-35")) {
+    let rehashed = try CanonicalJSON.sha256Hex(.object(root.filter { $0.key != "sha256" }))
+    root["sha256"] = .string(rehashed)
+    let data = try JSONEncoder().encode(APIJSONValue.object(root))
+    // A self-consistent but different bank is still refused by the build's pin...
+    XCTAssertThrowsError(try ResearchBankValidator.validate(data, expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: ResearchPins.bankSHA256)) {
+      XCTAssertEqual($0 as? ResearchContractError, .hashMismatch)
+    }
+    // ...and, were it pinned, the structural rules would still apply.
+    XCTAssertThrowsError(try ResearchBankValidator.validate(data, expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: rehashed)) {
       guard case .invalidItems? = $0 as? ResearchContractError else { return XCTFail("\($0)") }
     }
   }
@@ -76,7 +83,7 @@ final class ResearchContractTests: XCTestCase {
   }
 
   func testRecorderUsesOnlyBankItemsAndIsMonotonic() async throws {
-    let bank = try ResearchBankValidator.validate(try bankData(), expectedInstrumentID: "apgi-explorer-35")
+    let bank = try ResearchBankValidator.validate(try bankData(), expectedInstrumentID: "apgi-explorer-35", pinnedSHA256: ResearchPins.bankSHA256)
     let recorder = ResearchRecorder(bank: bank, clock: FakeClock())
     do { try await recorder.present(itemID: 99); XCTFail() } catch { XCTAssertEqual(error as? ResearchContractError, .unknownItem(99)) }
     do { _ = try await recorder.record(itemID: 1, value: 2); XCTFail() } catch { XCTAssertEqual(error as? ResearchContractError, .itemNotPresented(1)) }

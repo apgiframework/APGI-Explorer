@@ -59,6 +59,29 @@ model_dir = app / 'APGIExplorer.xcdatamodeld'
 assert 'name="PendingEvent"' in (model_dir / 'APGISignature 2.xcdatamodel/contents').read_text()
 assert 'name="PendingEvent"' not in (model_dir / 'APGISignature.xcdatamodel/contents').read_text(), 'Original model version must stay unchanged'
 assert 'APGISignature 2.xcdatamodel' in (model_dir / '.xccurrentversion').read_text()
+import json as _json
+pin = _json.loads((root / 'contracts/explorer-instrument-pin.json').read_text())
+sys.path.insert(0, str(root / 'scripts'))
+def _canonical(value):
+    return _json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+fixture = _json.loads((root / 'Tests/ExplorerCoreTests/Fixtures/item-bank.json').read_text())
+unsigned = {k: v for k, v in fixture.items() if k != 'sha256'}
+assert hashlib.sha256(_canonical(unsigned).encode()).hexdigest() == fixture['sha256'] == pin['sha256'], 'Pinned server bank hash differs from the verified fixture bank'
+assert pin['instrument_id'] == ids['instrument_id'] and pin['item_count'] == 35
+matrix = (root / 'docs/COMPATIBILITY_MATRIX_ENTRY.md').read_text()
+assert 'Instrument scoring key' in matrix and 'not a scientific model' in (app / 'APGIScorer.swift').read_text()
+for personal in ['FileStorageManager.swift', 'HandoffManager.swift', 'ProfileManager.swift', 'QuizModel.swift', 'SettingsView.swift', 'MenuCommands.swift']:
+    text = (app / personal).read_text()
+    for research in ['ResearchWorkflow', 'ResearchRecorder', 'UploadCoordinator', 'PendingEvent', 'ResearchModel']:
+        assert research not in text, f'{personal} must not touch the research path ({research})'
+approval = (core / 'ScoreLabels.swift').read_text()
+assert 'static let researchApproved = false' in approval or (root / 'contracts/research-privacy-review.json').exists(), 'Research cannot be approved before the privacy manifest is reviewed (S3-EXP-01.12)'
+if 'static let researchApproved = true' in approval:
+    review = _json.loads((root / 'contracts/research-privacy-review.json').read_text())
+    manifest = (app / 'PrivacyInfo.xcprivacy').read_bytes()
+    assert review['privacy_manifest_sha256'] == hashlib.sha256(manifest).hexdigest(), 'Privacy manifest changed since its research review'
+    assert review['collected_data_types_declared'] is True
+assert 'ResearchModel.shared' in (app / 'SettingsViews/GeneralSettingsView.swift').read_text() or 'ResearchEntryView' in (app / 'SettingsViews/GeneralSettingsView.swift').read_text(), 'Research feature flag must be wired into the app'
 print('Explorer contract gates passed: identifiers, labels, instrument/privacy hashes, scorer, Spotlight, Handoff, sandbox.')
 # Source entitlements alone do not prove that Xcode embeds them in either configuration.
 project = (root / 'APGI-Explorer.xcodeproj/project.pbxproj').read_text()

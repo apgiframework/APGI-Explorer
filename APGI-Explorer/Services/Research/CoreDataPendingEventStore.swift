@@ -139,4 +139,20 @@ nonisolated final class CoreDataPendingEventStore: PendingEventStoring, @uncheck
       try Self.fetch(NSPredicate(format: "eventKey == %@", eventKey), in: context).first.flatMap(Self.record)
     }
   }
+
+  func openCount(sessionID: String) async throws -> Int {
+    let context = context()
+    return try await context.perform {
+      try Self.fetch(NSPredicate(format: "sessionID == %@ AND stateRaw != %@", sessionID,
+                                 PendingEventState.verified.rawValue), in: context).count
+    }
+  }
+
+  func purgeSession(_ sessionID: String) async throws {
+    let context = context()
+    try await context.perform {
+      for object in try Self.fetch(NSPredicate(format: "sessionID == %@", sessionID), in: context) { context.delete(object) }
+      if context.hasChanges { try context.save() }
+    }
+  }
 }

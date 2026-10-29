@@ -28,3 +28,26 @@ nonisolated struct ProductEligibility: Equatable, Sendable {
                        buildApproved: ExplorerBuildApproval.paidProductsApproved)
   }
 }
+
+/// Research is available only when this build approves it AND the server turns it on.
+/// `researchApproved` stays false until the privacy manifest has been reviewed for real research
+/// collection (S3-EXP-01.12); `scripts/check_explorer_contracts.py` enforces that ordering.
+nonisolated extension ExplorerBuildApproval {
+  static let researchApproved = false
+}
+
+nonisolated extension ResearchCapability {
+  static func current(serverResearchEnabled: Bool?) -> ResearchCapability {
+    ResearchCapability(isEnabled: ExplorerBuildApproval.researchApproved && serverResearchEnabled == true)
+  }
+}
+
+nonisolated enum ResearchImportSource: Equatable, Sendable {
+  case personalProfile, legacyBackup, serverBank
+}
+
+/// Only the verified server bank may feed a research session. Personal profiles and legacy
+/// (pre-research-mode) backups are never admitted.
+nonisolated enum ResearchImportGate {
+  static func admits(_ source: ResearchImportSource) -> Bool { source == .serverBank }
+}
