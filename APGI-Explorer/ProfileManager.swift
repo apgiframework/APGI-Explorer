@@ -413,10 +413,10 @@ class ProfileManager: ObservableObject {
 
         return """
         **Profile Type:** \(profileType.rawValue)
-        **Reported reactivity to the unexpected:** \(epsilon)
-        **Reported information prioritisation:** \(precision)
-        **Reported attentional threshold:** \(threshold)
-        **Reported body-signal attention:** \(somatic)
+        **\(ScoreLabels.reactivity):** \(epsilon)
+        **\(ScoreLabels.prioritisation):** \(precision)
+        **\(ScoreLabels.threshold):** \(threshold)
+        **\(ScoreLabels.bodySignal):** \(somatic)
         **Last Modified:** \(profile.dateModified.formatted())
         """
     }
@@ -657,10 +657,10 @@ struct ProfileChartView: View {
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: 10) {
-                ParameterRow(name: "Reported reactivity to the unexpected", value: self.apgiScores.epsilon, color: .blue)
-                ParameterRow(name: "Reported information prioritisation", value: self.apgiScores.precision, color: .green)
-                ParameterRow(name: "Reported attentional threshold", value: self.apgiScores.threshold, color: .orange)
-                ParameterRow(name: "Reported body-signal attention", value: self.apgiScores.somaticBias, color: .red)
+                ParameterRow(name: ScoreLabels.reactivity, value: self.apgiScores.epsilon, color: .blue)
+                ParameterRow(name: ScoreLabels.prioritisation, value: self.apgiScores.precision, color: .green)
+                ParameterRow(name: ScoreLabels.threshold, value: self.apgiScores.threshold, color: .orange)
+                ParameterRow(name: ScoreLabels.bodySignal, value: self.apgiScores.somaticBias, color: .red)
             }
             .padding(.horizontal)
 
@@ -735,7 +735,7 @@ struct QuizProfile: Identifiable, Codable, Equatable, Sendable {
         """
         ε: \(self.results["epsilon"] ?? 0)
         π: \(self.results["precision"] ?? 0)
-        Reported attentional threshold: \(self.results["threshold"] ?? 0)
+        \(ScoreLabels.threshold): \(self.results["threshold"] ?? 0)
         β: \(self.results["somatic"] ?? 0)
         """
     }

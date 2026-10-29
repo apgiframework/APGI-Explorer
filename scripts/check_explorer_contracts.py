@@ -20,13 +20,17 @@ assert ids['support'] in client
 model = (app / 'QuizModel.swift').read_text()
 assert ids['instrument_id'] in model and 'ContinuousClock' in model
 assert 'timeConsistencyScore' not in model
-for file in ['ResultsView.swift', 'QuizView.swift', 'ExportView.swift', 'EnhancedProfileChart.swift', 'ComparisonChartViews.swift']:
+import sys
+sys.path.insert(0, str(root / 'scripts'))
+import language_policy
+assert language_policy.central_labels_match(ids['score_labels']), 'ScoreLabels.swift differs from contracts/identifiers.json'
+problems = language_policy.violations(approved=ids['score_labels'])
+assert not problems, 'Language policy violations:\n' + '\n'.join(problems)
+for file in ['ResultsView.swift', 'QuizView.swift', 'ExportView.swift', 'EnhancedProfileChart.swift', 'ComparisonChartViews.swift',
+             'ReportGenerator.swift', 'Services/ResearchExportManager.swift']:
     text = (app / file).read_text()
-    for label in ids['score_labels']:
-        assert label in text, f'Missing allowed label in {file}: {label}'
+    assert 'ScoreLabels.' in text, f'{file} must take score labels from ScoreLabels'
     assert 'option.note' not in text and 'option.tooltip' not in text
-    for forbidden in ['Prediction Error Sensitivity', 'Precision Allocation', 'Ignition Threshold', 'Somatic Bias']:
-        assert forbidden not in text, f'Forbidden display label in {file}: {forbidden}'
 for file in [app / 'APGIScorer.swift', app / 'QuizModel.swift']:
     text = file.read_text()
     for forbidden in ['baseReliabilities', 'flaggedProfile', 'performCrossValidation', '1.96']:
@@ -41,6 +45,43 @@ assert not any(k in entitlements for k in ['com.apple.security.files.downloads.r
 for file in list(app.rglob('*.swift')) + [app / 'Info.plist', app / 'AppStoreMetadata.json']:
     text = file.read_text()
     assert 'lesoto.github.io/APGI-Explorer' not in text and 'github.com/lesoto/APGI-Explorer' not in text
+core = app / 'Core'
+assert 'static let paidProductsApproved = false' in (core / 'ScoreLabels.swift').read_text(), 'Paid products must stay unapproved in this build'
+assert 'static let shipped = ResearchCapability(isEnabled: false)' in (core / 'ResearchOutbox.swift').read_text(), 'Research capability must ship disabled'
+keychain = (app / 'Services/Research/ResearchKeychainCredentialStore.swift').read_text()
+assert 'UserDefaults' not in keychain and 'ThisDeviceOnly' in keychain, 'Research credentials: device-local Keychain only'
+assert 'UserDefaults' not in (core / 'ResearchCredentials.swift').read_text()
+store = (app / 'Services/StoreManager.swift').read_text()
+assert store.count('eligibility.isEligible') >= 6, 'Every StoreKit entry point must enforce the eligibility gate'
+assert 'RedirectRejectingDelegate()' in (core / 'APITransport.swift').read_text(), 'Production sessions must reject redirects'
+assert 'ResearchOutbox' not in (app / 'QuizModel.swift').read_text() and 'PendingEvent' not in (app / 'ProfileManager.swift').read_text(), 'Personal journals must never feed the research outbox'
+model_dir = app / 'APGIExplorer.xcdatamodeld'
+assert 'name="PendingEvent"' in (model_dir / 'APGISignature 2.xcdatamodel/contents').read_text()
+assert 'name="PendingEvent"' not in (model_dir / 'APGISignature.xcdatamodel/contents').read_text(), 'Original model version must stay unchanged'
+assert 'APGISignature 2.xcdatamodel' in (model_dir / '.xccurrentversion').read_text()
+import json as _json
+pin = _json.loads((root / 'contracts/explorer-instrument-pin.json').read_text())
+sys.path.insert(0, str(root / 'scripts'))
+def _canonical(value):
+    return _json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+fixture = _json.loads((root / 'Tests/ExplorerCoreTests/Fixtures/item-bank.json').read_text())
+unsigned = {k: v for k, v in fixture.items() if k != 'sha256'}
+assert hashlib.sha256(_canonical(unsigned).encode()).hexdigest() == fixture['sha256'] == pin['sha256'], 'Pinned server bank hash differs from the verified fixture bank'
+assert pin['instrument_id'] == ids['instrument_id'] and pin['item_count'] == 35
+matrix = (root / 'docs/COMPATIBILITY_MATRIX_ENTRY.md').read_text()
+assert 'Instrument scoring key' in matrix and 'not a scientific model' in (app / 'APGIScorer.swift').read_text()
+for personal in ['FileStorageManager.swift', 'HandoffManager.swift', 'ProfileManager.swift', 'QuizModel.swift', 'SettingsView.swift', 'MenuCommands.swift']:
+    text = (app / personal).read_text()
+    for research in ['ResearchWorkflow', 'ResearchRecorder', 'UploadCoordinator', 'PendingEvent', 'ResearchModel']:
+        assert research not in text, f'{personal} must not touch the research path ({research})'
+approval = (core / 'ScoreLabels.swift').read_text()
+assert 'static let researchApproved = false' in approval or (root / 'contracts/research-privacy-review.json').exists(), 'Research cannot be approved before the privacy manifest is reviewed (S3-EXP-01.12)'
+if 'static let researchApproved = true' in approval:
+    review = _json.loads((root / 'contracts/research-privacy-review.json').read_text())
+    manifest = (app / 'PrivacyInfo.xcprivacy').read_bytes()
+    assert review['privacy_manifest_sha256'] == hashlib.sha256(manifest).hexdigest(), 'Privacy manifest changed since its research review'
+    assert review['collected_data_types_declared'] is True
+assert 'ResearchModel.shared' in (app / 'SettingsViews/GeneralSettingsView.swift').read_text() or 'ResearchEntryView' in (app / 'SettingsViews/GeneralSettingsView.swift').read_text(), 'Research feature flag must be wired into the app'
 print('Explorer contract gates passed: identifiers, labels, instrument/privacy hashes, scorer, Spotlight, Handoff, sandbox.')
 # Source entitlements alone do not prove that Xcode embeds them in either configuration.
 project = (root / 'APGI-Explorer.xcodeproj/project.pbxproj').read_text()

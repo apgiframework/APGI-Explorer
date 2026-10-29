@@ -157,28 +157,28 @@ private struct PersonalResultsView: View {
   private var overviewTab: some View {
     VStack(alignment: .leading, spacing: APGISpacing.md) {
       ParameterCardView(
-        name: "Reported reactivity to the unexpected",
+        name: ScoreLabels.reactivity,
         value: self.apgiProfile.epsilon,
         interpretation: self.interpretEpsilon(self.apgiProfile.epsilon),
         color: .precisionRed
       )
 
       ParameterCardView(
-        name: "Reported information prioritisation",
+        name: ScoreLabels.prioritisation,
         value: self.apgiProfile.precision,
         interpretation: self.interpretPrecision(self.apgiProfile.precision),
         color: .neuromodGreen
       )
 
       ParameterCardView(
-        name: "Reported attentional threshold",
+        name: ScoreLabels.threshold,
         value: self.apgiProfile.threshold,
         interpretation: self.interpretThreshold(self.apgiProfile.threshold),
         color: .thresholdBlue
       )
 
       ParameterCardView(
-        name: "Reported body-signal attention",
+        name: ScoreLabels.bodySignal,
         value: self.apgiProfile.somaticBias,
         interpretation: self.interpretSomaticBias(self.apgiProfile.somaticBias),
         color: .workspacePurple
@@ -540,10 +540,10 @@ struct APGIRadarChart: View {
         radarShape
           .stroke(Color.blue, lineWidth: 2)
 
-        Text("Reported reactivity to the unexpected").position(x: center.x, y: 15)
-        Text("Reported information prioritisation").position(x: geometry.size.width - 15, y: center.y)
-        Text("Reported attentional threshold").position(x: center.x, y: geometry.size.height - 15)
-        Text("Reported body-signal attention").position(x: 15, y: center.y)
+        Text(ScoreLabels.reactivity).position(x: center.x, y: 15)
+        Text(ScoreLabels.prioritisation).position(x: geometry.size.width - 15, y: center.y)
+        Text(ScoreLabels.threshold).position(x: center.x, y: geometry.size.height - 15)
+        Text(ScoreLabels.bodySignal).position(x: 15, y: center.y)
       }
     }
     .aspectRatio(1, contentMode: .fit)

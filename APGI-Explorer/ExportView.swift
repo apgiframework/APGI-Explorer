@@ -35,10 +35,10 @@ struct ExportView: View {
 
         // Show a preview of the scores
         VStack(alignment: .leading, spacing: 4) {
-          ScoreRow(parameter: "Reported reactivity to the unexpected", value: self.apgiProfile.epsilon)
-          ScoreRow(parameter: "Reported information prioritisation", value: self.apgiProfile.precision)
-          ScoreRow(parameter: "Reported attentional threshold", value: self.apgiProfile.threshold)
-          ScoreRow(parameter: "Reported body-signal attention", value: self.apgiProfile.somaticBias)
+          ScoreRow(parameter: ScoreLabels.reactivity, value: self.apgiProfile.epsilon)
+          ScoreRow(parameter: ScoreLabels.prioritisation, value: self.apgiProfile.precision)
+          ScoreRow(parameter: ScoreLabels.threshold, value: self.apgiProfile.threshold)
+          ScoreRow(parameter: ScoreLabels.bodySignal, value: self.apgiProfile.somaticBias)
           ScoreRow(parameter: "ι (Interaction Score)", value: self.apgiProfile.interactionScore)
           ScoreRow(parameter: "τ (Temporal Stability)", value: self.apgiProfile.temporalStability)
           ScoreRow(parameter: "φ (Environmental Fit)", value: self.apgiProfile.environmentalFit)

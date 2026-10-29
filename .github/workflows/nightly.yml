@@ -5,9 +5,15 @@ on:
     - cron: '0 2 * * *'  # Daily at 2 AM UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: macos-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,31 +23,24 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData
-            .build
-          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.xcodeproj/**') }}
-
       - name: Run tests
-        run: |
-          xcodebuild test \
-            -project APGI-Explorer.xcodeproj \
-            -scheme APGI-Explorer \
-            -destination 'platform=macOS' \
-            -enableCodeCoverage YES \
-            -derivedDataPath DerivedData
+        run: >-
+          xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer
+          -destination 'platform=macOS' -configuration Debug
+          -derivedDataPath DerivedData -parallel-testing-enabled NO
+          -enableCodeCoverage YES -test-timeouts-enabled YES
+          -default-test-execution-time-allowance 30 -maximum-test-execution-time-allowance 60
+          -resultBundlePath TestResults.xcresult CODE_SIGNING_ALLOWED=NO
 
       - name: Generate test coverage report
         run: |
-          xcrun xccov view --report --json DerivedData/Logs/Test/*.xcresult > coverage.json
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
-          file: ./coverage.json
+          files: ./coverage.json
+          use_oidc: true
           fail_ci_if_error: false
 
   notify:

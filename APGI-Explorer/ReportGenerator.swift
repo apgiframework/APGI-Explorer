@@ -57,10 +57,10 @@ class ReportGenerator {
       self.sortedTimeline = timelineEntries.sorted(by: { $0.date < $1.date })
 
       self.parameterData = [
-        ParameterData(label: "Reported reactivity to the unexpected", value: apgiProfile.epsilon, descriptor: apgiProfile.epsilonCategory.rawValue),
-        ParameterData(label: "Reported information prioritisation", value: apgiProfile.precision, descriptor: apgiProfile.precisionCategory.rawValue),
-        ParameterData(label: "Reported attentional threshold", value: apgiProfile.threshold, descriptor: apgiProfile.thresholdCategory.rawValue),
-        ParameterData(label: "Reported body-signal attention", value: apgiProfile.somaticBias, descriptor: apgiProfile.somaticCategory.rawValue)
+        ParameterData(label: ScoreLabels.reactivity, value: apgiProfile.epsilon, descriptor: apgiProfile.epsilonCategory.rawValue),
+        ParameterData(label: ScoreLabels.prioritisation, value: apgiProfile.precision, descriptor: apgiProfile.precisionCategory.rawValue),
+        ParameterData(label: ScoreLabels.threshold, value: apgiProfile.threshold, descriptor: apgiProfile.thresholdCategory.rawValue),
+        ParameterData(label: ScoreLabels.bodySignal, value: apgiProfile.somaticBias, descriptor: apgiProfile.somaticCategory.rawValue)
       ]
     }
 
@@ -180,7 +180,7 @@ class ReportGenerator {
       historyHTML = "<p class=\"hint\">No saved snapshots yet. Your current profile will populate once you store it.</p>"
     } else {
       historyHTML = sortedTimeline.map { entry in
-        let summary = "Reported reactivity to the unexpected: \(Int(entry.apgiProfile.epsilon)), Reported information prioritisation: \(Int(entry.apgiProfile.precision)), Reported attentional threshold: \(Int(entry.apgiProfile.threshold)), Reported body-signal attention: \(Int(entry.apgiProfile.somaticBias))"
+        let summary = "\(ScoreLabels.reactivity): \(Int(entry.apgiProfile.epsilon)), \(ScoreLabels.prioritisation): \(Int(entry.apgiProfile.precision)), \(ScoreLabels.threshold): \(Int(entry.apgiProfile.threshold)), \(ScoreLabels.bodySignal): \(Int(entry.apgiProfile.somaticBias))"
         return """
           <div class="history-card">
               <div class="history-header">

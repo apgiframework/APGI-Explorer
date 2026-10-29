@@ -9,57 +9,11 @@ enum APGIIdentifiers {
   static let analysisMode = "exploratory"
 }
 
-enum APIJSONValue: Codable, Equatable, Sendable {
-  case string(String), number(Double), bool(Bool), object([String: APIJSONValue])
-  case array([APIJSONValue]), null
-
-  init(from decoder: Decoder) throws {
-    let container = try decoder.singleValueContainer()
-    if container.decodeNil() {
-      self = .null
-    } else if let value = try? container.decode(Bool.self) {
-      self = .bool(value)
-    } else if let value = try? container.decode(String.self) {
-      self = .string(value)
-    } else if let value = try? container.decode(Double.self) {
-      self = .number(value)
-    } else if let value = try? container.decode([String: APIJSONValue].self) {
-      self = .object(value)
-    } else {
-      self = .array(try container.decode([APIJSONValue].self))
-    }
-  }
-
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    switch self {
-    case .string(let value): try container.encode(value)
-    case .number(let value): try container.encode(value)
-    case .bool(let value): try container.encode(value)
-    case .object(let value): try container.encode(value)
-    case .array(let value): try container.encode(value)
-    case .null: try container.encodeNil()
-    }
-  }
-
-  var object: [String: APIJSONValue]? {
-    guard case .object(let value) = self else { return nil }
-    return value
-  }
-
-  var string: String? {
-    guard case .string(let value) = self else { return nil }
-    return value
-  }
-
-  var bool: Bool { self == .bool(true) }
-
-}
-
 enum APGIAPIError: Error, LocalizedError {
-  case invalidResponse, http(Int), incompatibleMetadata
+  case invalidResponse, http(Int), incompatibleMetadata, transport(APITransportError)
   var errorDescription: String? {
     switch self {
+    case .transport(let error): error.errorDescription
     case .invalidResponse: "The API returned an invalid response."
     case .http(let status): "The API returned HTTP \(status). Try again later."
     case .incompatibleMetadata: "The API metadata is incomplete or incompatible with Explorer."
@@ -91,28 +45,32 @@ struct ExplorerReleasePolicy: Equatable {
 }
 
 final class APGIAPIClient {
-  private let session: URLSession
+  private let transport: APITransport
+
   init(session: URLSession? = nil) {
-    if let session { self.session = session } else {
-      let configuration = URLSessionConfiguration.ephemeral
-      configuration.timeoutIntervalForRequest = 15
-      configuration.timeoutIntervalForResource = 30
-      configuration.httpCookieStorage = nil
-      configuration.urlCache = nil
-      self.session = URLSession(configuration: configuration)
+    // The origin is a compile-time HTTPS constant, so construction cannot fail.
+    // swiftlint:disable:next force_try
+    transport = try! APITransport(baseURL: APGIIdentifiers.api, session: session)
+  }
+
+  /// Any operation of the pinned v1 catalog. Authentication is always explicit.
+  func call(_ operation: APIOperation, request: APIRequest = APIRequest(),
+            authentication: APIAuthentication = .none) async throws -> APIJSONValue {
+    do {
+      return try await transport.send(operation, request: request, authentication: authentication)
+    } catch let error as APITransportError {
+      if case .http(let status) = error { throw APGIAPIError.http(status) }
+      throw APGIAPIError.transport(error)
     }
   }
 
+  /// Public metadata checks only; participant credentials never reach these calls.
   func get<T: Decodable>(_ path: String) async throws -> T {
-    guard ["/v1/meta", "/v1/version"].contains(path) else { throw APGIAPIError.invalidResponse }
-    var request = URLRequest(url: APGIIdentifiers.api.appendingPathComponent(String(path.dropFirst())))
-    request.setValue("application/json", forHTTPHeaderField: "Accept")
-    let (data, response) = try await session.data(for: request)
-    guard let response = response as? HTTPURLResponse,
-          response.url?.scheme == "https", response.url?.host == APGIIdentifiers.api.host else {
+    guard ["/v1/meta", "/v1/version"].contains(path),
+          let operation = APGIOperations.all.first(where: { $0.path == path && $0.method == .get }) else {
       throw APGIAPIError.invalidResponse
     }
-    guard (200..<300).contains(response.statusCode) else { throw APGIAPIError.http(response.statusCode) }
-    return try JSONDecoder().decode(T.self, from: data)
+    let value = try await call(operation)
+    return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(value))
   }
 }

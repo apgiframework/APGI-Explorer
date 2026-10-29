@@ -1,0 +1,42 @@
+[
+ {
+  "consent_type": "product_use",
+  "version": "1.0",
+  "locale": "en",
+  "status": "approved",
+  "required_for_research": true,
+  "title": "Using the APGI Explorer service",
+  "body": "To sync your Explorer session with the APGI service, we process your account identifier, the answers you give and when you give them. This is needed to run the service and show you your own result. It does not by itself make you a research participant. You can withdraw at any time in Explorer settings.",
+  "sha256": "f969209f2348f234ce78c33ac15f7a39a58d3820fc9babdf49271ef6814bbd18"
+ },
+ {
+  "consent_type": "research_participation",
+  "version": "1.0",
+  "locale": "en",
+  "status": "approved",
+  "required_for_research": true,
+  "title": "Taking part in research",
+  "body": "I agree that my answers, response timings and device information from Explorer may be used in the APGI research study. Taking part is voluntary. I can withdraw at any time without giving a reason; data already analysed in aggregate may not be removable.",
+  "sha256": "dbf96130a9c83ca77064a4ccb7f4796a0f1022ac356568d59de4585c754ee4ec"
+ },
+ {
+  "consent_type": "data_sharing",
+  "version": "1.0",
+  "locale": "en",
+  "status": "approved",
+  "required_for_research": false,
+  "title": "Sharing de-identified data",
+  "body": "I agree that a de-identified copy of my research data may be shared with other researchers in a public or controlled-access repository. Direct identifiers are never included.",
+  "sha256": "a93aaecb60d79f0daf82925b43691e0d1258b5adc6986be5fc6d89419f1aa6e8"
+ },
+ {
+  "consent_type": "recontact",
+  "version": "1.0",
+  "locale": "en",
+  "status": "approved",
+  "required_for_research": false,
+  "title": "Being contacted about future studies",
+  "body": "I agree that the APGI research team may contact me about follow-up or future studies using the contact details I provided. I can decline without affecting my participation.",
+  "sha256": "11ae025364f74d8da964192a71a584d8c51fdff865826b207e30658a2af9ef80"
+ }
+]

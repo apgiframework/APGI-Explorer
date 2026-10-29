@@ -14,10 +14,10 @@ struct LiveScoreTracker: View {
   @ObservedObject var quizModel: QuizModel
 
   private let trackedParameters: [TrackedParameter] = [
-    TrackedParameter(key: "epsilon", label: "Reported reactivity to the unexpected", description: "Reported reactivity to the unexpected"),
-    TrackedParameter(key: "precision", label: "Reported information prioritisation", description: "Reported information prioritisation"),
-    TrackedParameter(key: "threshold", label: "Reported attentional threshold", description: "Reported attentional threshold"),
-    TrackedParameter(key: "somatic", label: "Reported body-signal attention", description: "Reported body-signal attention")
+    TrackedParameter(key: "epsilon", label: ScoreLabels.reactivity, description: ScoreLabels.reactivity),
+    TrackedParameter(key: "precision", label: ScoreLabels.prioritisation, description: ScoreLabels.prioritisation),
+    TrackedParameter(key: "threshold", label: ScoreLabels.threshold, description: ScoreLabels.threshold),
+    TrackedParameter(key: "somatic", label: ScoreLabels.bodySignal, description: ScoreLabels.bodySignal)
   ]
 
   var body: some View {
@@ -67,10 +67,10 @@ struct ConfidenceBar: View {
 
   private var barColor: Color {
     switch self.parameter {
-    case "Reported reactivity to the unexpected": .orange
-    case "Reported information prioritisation": .green
-    case "Reported attentional threshold": .purple
-    case "Reported body-signal attention": .blue
+    case ScoreLabels.reactivity: .orange
+    case ScoreLabels.prioritisation: .green
+    case ScoreLabels.threshold: .purple
+    case ScoreLabels.bodySignal: .blue
     default: .gray
     }
   }

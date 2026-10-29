@@ -1,0 +1,20 @@
+{
+ "fields": [
+  {
+   "field": "reported_reactivity_to_the_unexpected",
+   "label": "Reported reactivity to the unexpected"
+  },
+  {
+   "field": "reported_information_prioritisation",
+   "label": "Reported information prioritisation"
+  },
+  {
+   "field": "reported_attentional_threshold",
+   "label": "Reported attentional threshold"
+  },
+  {
+   "field": "reported_body_signal_attention",
+   "label": "Reported body-signal attention"
+  }
+ ]
+}

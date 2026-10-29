@@ -1,0 +1,14 @@
+{
+  "_note": "Desired required status checks for the protected main branch. This file records intent only; it does NOT apply branch protection. Apply it in repository settings (Branches > main) or via the API, then verify.",
+  "branch": "main",
+  "required_status_checks": [
+    "contracts",
+    "secret-scan",
+    "portable-swift",
+    "build-and-test"
+  ],
+  "workflows": [
+    "Explorer release gates",
+    "Swift release build"
+  ]
+}

@@ -59,25 +59,25 @@ struct IntroView: View {
             ParameterCard(
               symbol: "bolt.fill",
               color: .orange,
-              title: "Reported reactivity to the unexpected",
+              title: ScoreLabels.reactivity,
               description: "Your descriptions of responses to unexpected experiences."
             )
             ParameterCard(
               symbol: "scale.3d",
               color: .green,
-              title: "Reported information prioritisation",
+              title: ScoreLabels.prioritisation,
               description: "Your descriptions of how you prioritise information."
             )
             ParameterCard(
               symbol: "target",
               color: .purple,
-              title: "Reported attentional threshold",
+              title: ScoreLabels.threshold,
               description: "Your descriptions of attention in everyday situations."
             )
             ParameterCard(
               symbol: "figure.walk",
               color: .blue,
-              title: "Reported body-signal attention",
+              title: ScoreLabels.bodySignal,
               description: "Your descriptions of attention to bodily signals."
             )
           }
