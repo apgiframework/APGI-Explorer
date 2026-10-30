@@ -196,3 +196,17 @@ adapter.
 - **GitHub account references:** the only remaining `lesoto` GitHub reference was in `apgi-api` docs and is replaced with `apgiframework`. `com.lesoto…` bundle, keychain-service and StoreKit product identifiers are not GitHub accounts and were left unchanged, because changing them alters app identity, entitlements and purchases.
 - **Branch protection:** still not enforced (verified via the GitHub API: `main` and the working branch are unprotected). It cannot be applied from this repository or session.
 - **Hosted CI:** runs for `daf69fc` remained queued for over 40 minutes, so the macOS build and native tests are still unverified.
+
+## Update — October 30, 2026 (hosted CI results)
+
+Hosted runs on `aa1c60a` (main):
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Explorer release gates: `contracts`, `secret-scan` | success | run 40797010818 |
+| Explorer release gates: `build-and-test` (macOS: signed sandbox build, entitlement verification, `xcodebuild test` including `ResearchNativeTests` and `ExplorerContractTests`, coverage upload) | **success** | same run, job 123195804092 |
+| Swift release build | success | run 40797010883 |
+| Nightly Build (previously failing on signing) | **success** | run 40839705261 |
+| Explorer release gates: `portable-swift` | failure: `libxml2.so.2` missing on the runner | fixed in `aad286d` by installing the Swift runtime dependencies; re-run pending |
+
+What this establishes: the macOS app, including the new research code, builds and its XCTest suite exits successfully on a hosted runner, and the nightly failure is resolved. What it does not establish: individual test counts were not inspected here, `BackgroundUploadSession` relaunch behaviour, live uploads, the StoreKit positive flow, visual QA, and branch-protection enforcement (branches remain unprotected).
