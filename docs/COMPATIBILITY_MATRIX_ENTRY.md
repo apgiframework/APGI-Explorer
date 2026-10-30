@@ -11,3 +11,13 @@ below against the source on every CI run.
 
 Compatibility with any APGI model version: **none is claimed.** Explorer sessions carry
 `analysis_mode: exploratory` and are excluded from norms.
+
+## Entry status
+
+| Field | Value |
+| --- | --- |
+| Parent matrix | **Not in this repository.** Copying this entry into S1-CMP-01 and verifying its acceptance needs access to that matrix; it has not been done. |
+| Classified source | `APGI-Explorer/Core/APGIScorer.swift` |
+| Source fingerprint (SHA-256) | `743cbea9d1b9e9f9a665a5de505cfaf68abbe23454056d3f7644547cdfdb9e2b` |
+| Kept current by | `scripts/check_explorer_contracts.py` fails when the scorer's bytes no longer match this fingerprint. Whoever changes the scorer re-reads the classification above, updates it if needed, and then updates the fingerprint. |
+| Server-side counterpart | `apgi-api` `app/services/explorer_contract.py` `score_answers`; its result is exercised by `tests/integration/test_explorer_contract.py` and `tests/integration/test_explorer_swift_vectors.py`. |

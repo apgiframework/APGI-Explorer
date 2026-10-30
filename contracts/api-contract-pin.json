@@ -1,0 +1,12 @@
+{
+  "repository": "apgiframework/apgi-api",
+  "commit": "7f10553cb0a8e127ba869f92e9b452991aba8aa9",
+  "files": {
+    "contracts/explorer-research-v1.json": "60b92a830a45f1061fc1643d115952476f561fa51bb2a99678c21ed488707b97",
+    "contracts/explorer-instrument-pin.json": "65ad1eeee1f6e0ffe77abdae4b01d5dda71740a1b2ce115302c57ea501fc9cd1",
+    "Tests/ExplorerCoreTests/Fixtures/item-bank.json": "ab6769f4ca993b03df0ded0df0e4c3a028d2684059a52b049ece0c64a239ae03",
+    "Tests/ExplorerCoreTests/Fixtures/consent-texts-approved-for-test.json": "32b002b1ba23d9b2a6163584e1e3a83fac0af20d99352c71e4c22a0c26e5ef3b",
+    "Tests/ExplorerCoreTests/Fixtures/score-allowlist.json": "0c7b232ee31bacba289aaa9cc9399a42c96a557899347248bc876055ba95aecd",
+    "Tests/ExplorerCoreTests/Fixtures/upload-vectors.json": "a1fd111ca247f4d041775a76dc81c03df14e6ec0817481881916042f3fda793d"
+  }
+}

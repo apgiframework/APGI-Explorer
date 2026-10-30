@@ -1,0 +1,168 @@
+{
+ "get_consent_status_v1_participants__participant_id__consents_status_get": {
+  "response": {
+   "data_sharing": false,
+   "product_use": true,
+   "recontact": false,
+   "research_participation": true
+  }
+ },
+ "get_explorer_config_v1_explorer_config_get": {
+  "response": {
+   "battery_id": "battery-1",
+   "consent_purposes": [
+    {
+     "consent_type": "product_use",
+     "required_for_research": true,
+     "status": "draft",
+     "version": "1.0"
+    },
+    {
+     "consent_type": "recontact",
+     "required_for_research": false,
+     "status": "draft",
+     "version": "1.0"
+    }
+   ],
+   "instrument": {
+    "bank_version": "1.0.0",
+    "instrument_id": "apgi-explorer-35",
+    "item_count": 35,
+    "sha256": "8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0"
+   },
+   "paid_products_enabled": false,
+   "research_enabled": false,
+   "study_id": "study-1",
+   "validation_results": false
+  }
+ },
+ "get_explorer_result_v1_participant_sessions__participant_session_id__explorer_result_get": {
+  "response": {
+   "analysis_mode": "exploratory",
+   "excluded_from_norms": true,
+   "instrument_id": "apgi-explorer-35",
+   "instrument_sha256": "8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0",
+   "participant_session_id": "session-1",
+   "scores": {
+    "reported_attentional_threshold": 37.25,
+    "reported_reactivity_to_the_unexpected": 62.5
+   }
+  }
+ },
+ "get_item_bank_v1_instruments_apgi_explorer_35_get": {
+  "response": {
+   "bank_version": "1.0.0",
+   "instrument_id": "apgi-explorer-35",
+   "items": [
+    {
+     "item_id": 1,
+     "options": [
+      {
+       "text": "Never",
+       "value": 1
+      },
+      {
+       "text": "Always",
+       "value": 4
+      }
+     ],
+     "scoring": "ordinal",
+     "subscale": "epsilon",
+     "text": "Question?"
+    }
+   ],
+   "locale": "en",
+   "sha256": "8d9c51edb1931de0a2d0a30a33cbeddc4d32133145add2c86c55e2202c1eefa0"
+  }
+ },
+ "get_score_allowlist_v1_instruments_apgi_explorer_35_score_allowlist_get": {
+  "response": {
+   "fields": [
+    {
+     "field": "reported_reactivity_to_the_unexpected",
+     "label": "Reported reactivity to the unexpected"
+    }
+   ],
+   "instrument_id": "apgi-explorer-35"
+  }
+ },
+ "grant_consent_v1_participants__participant_id__consents_post": {
+  "request": {
+   "consent_text": "Legacy text",
+   "consent_type": "research_participation",
+   "locale": "en"
+  },
+  "response": {
+   "consent_id": "consent-1",
+   "consent_type": "research_participation",
+   "granted_at": "2026-10-30T01:00:00Z",
+   "version": "1.0"
+  }
+ },
+ "list_consent_texts_v1_consent_texts_get": {
+  "response": [
+   {
+    "body": "Body text.",
+    "consent_type": "product_use",
+    "locale": "en",
+    "required_for_research": true,
+    "sha256": "fbfaf60da24d32924829083feeb64eb560b467e51e29600f52f0089430119d72",
+    "status": "draft",
+    "title": "Using the service",
+    "version": "1.0"
+   }
+  ]
+ },
+ "refresh_token_v1_auth_refresh_post": {
+  "request": {
+   "refresh_token": "r0"
+  },
+  "response": {
+   "access_token": "a1",
+   "expires_in": 1800,
+   "refresh_expires_in": 604800,
+   "refresh_token": "r1",
+   "token_type": "bearer"
+  }
+ },
+ "revoke_consent_route_v1_participants__participant_id__consents_revoke_post": {
+  "request": {
+   "consent_type": "recontact"
+  },
+  "response": null
+ },
+ "upload_journal_events_v1_participant_sessions__participant_session_id__events_post": {
+  "request": {
+   "events": [
+    {
+     "event_id": "00000000-0000-5000-8000-000000000000",
+     "payload": {
+      "item_id": 1,
+      "latency_us": 1500000,
+      "value": 2
+     },
+     "payload_sha256": "fbfaf60da24d32924829083feeb64eb560b467e51e29600f52f0089430119d72",
+     "seq_no": 0
+    }
+   ]
+  },
+  "response": {
+   "acks": [
+    {
+     "event_id": "00000000-0000-5000-8000-000000000000",
+     "payload_sha256": "fbfaf60da24d32924829083feeb64eb560b467e51e29600f52f0089430119d72",
+     "seq_no": 0,
+     "server_verified": true,
+     "status": "accepted"
+    },
+    {
+     "event_id": "00000000-0000-5000-8000-000000000000",
+     "payload_sha256": "fbfaf60da24d32924829083feeb64eb560b467e51e29600f52f0089430119d72",
+     "seq_no": 0,
+     "server_verified": true,
+     "status": "duplicate"
+    }
+   ]
+  }
+ }
+}

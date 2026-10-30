@@ -81,6 +81,57 @@ final class ResearchNativeTests: XCTestCase {
     XCTAssertEqual(sessions, ["s1"])
   }
 
+  /// The model the app actually loads (through `PersistenceController`, i.e. whatever `.xccurrentversion`
+  /// selects after Xcode compiles the `.momd`) must expose the outbox with every attribute the store uses.
+  func testModelTheAppLoadsContainsTheOutboxEntity() throws {
+    let loaded = PersistenceController(inMemory: true).container.managedObjectModel
+    let entity = try XCTUnwrap(loaded.entitiesByName["PendingEvent"], "the selected model version must contain PendingEvent")
+    XCTAssertEqual(Set(entity.attributesByName.keys),
+                   ["attemptCount", "createdAt", "eventKey", "nextAttemptAt", "payload", "payloadDigest",
+                    "seqNo", "sessionID", "stateRaw", "verifiedAt"])
+    XCTAssertFalse(entity.uniquenessConstraints.isEmpty, "eventKey uniqueness keeps tombstones from being duplicated")
+    XCTAssertNotNil(loaded.entitiesByName["QuizSession"], "personal data model must remain")
+    XCTAssertEqual(loaded.entitiesByName.keys.sorted(), try currentModel().entitiesByName.keys.sorted())
+  }
+
+  /// Retry state is durable: after a failed attempt the counter, the deadline and the payload survive a
+  /// restart of the persistent container, the backoff still blocks early uploads, an interrupted upload
+  /// returns to pending, and the next failure continues the schedule instead of restarting it.
+  func testRetryAndBackoffStateSurviveContainerRestart() async throws {
+    let storeURL = directory.appendingPathComponent("retry.sqlite")
+    let model = try currentModel()
+    let first = record(0)
+    let second = record(1)
+    let t0 = Date(timeIntervalSince1970: 1_800_000_000)
+    var container: NSPersistentContainer? = try self.container(model: model, store: storeURL)
+    var store = CoreDataPendingEventStore(container: try XCTUnwrap(container))
+    _ = try await store.insertIfAbsent(first)
+    _ = try await store.insertIfAbsent(second)
+    try await store.markUploading(eventKeys: [first.eventKey, second.eventKey])
+    try await store.recordFailure(eventKey: first.eventKey, nextAttemptAt: t0.addingTimeInterval(5))
+    container = nil
+
+    store = CoreDataPendingEventStore(container: try self.container(model: model, store: storeURL))
+    var stored = try await store.record(eventKey: first.eventKey)
+    XCTAssertEqual(stored?.attemptCount, 1)
+    XCTAssertEqual(stored?.nextAttemptAt, t0.addingTimeInterval(5))
+    XCTAssertEqual(stored?.state, .pending)
+    XCTAssertEqual(stored?.payload, first.payload, "the payload is retained until a verified acknowledgement")
+    let interrupted = try await store.record(eventKey: second.eventKey)
+    XCTAssertEqual(interrupted?.state, .uploading, "the interrupted upload is still marked in flight")
+
+    try await store.resetInFlight()
+    var due = try await store.dueEvents(sessionID: "s1", now: t0, limit: 10)
+    XCTAssertTrue(due.isEmpty, "the backoff deadline survives the restart and blocks later events too")
+    due = try await store.dueEvents(sessionID: "s1", now: t0.addingTimeInterval(5), limit: 10)
+    XCTAssertEqual(due.map(\.seqNo), [0, 1])
+
+    try await store.recordFailure(eventKey: first.eventKey, nextAttemptAt: t0.addingTimeInterval(15))
+    stored = try await store.record(eventKey: first.eventKey)
+    XCTAssertEqual(stored?.attemptCount, 2, "the attempt counter continues across the restart")
+    XCTAssertEqual(stored?.nextAttemptAt, t0.addingTimeInterval(15))
+  }
+
   func testSequenceOrderingBackoffAndRelaunchReset() async throws {
     let store = CoreDataPendingEventStore(container: try container(model: try currentModel(),
                                                                    store: directory.appendingPathComponent("order.sqlite")))
@@ -166,5 +217,19 @@ final class ResearchNativeTests: XCTestCase {
     XCTAssertTrue(manager.purchasedProductIDs.isEmpty)
     XCTAssertFalse(manager.hasPremiumFeatures || manager.hasProfessionalFeatures
                    || manager.hasResearchFeatures || manager.hasUnlimitedProfiles)
+  }
+
+  /// The approved-test-build configuration exists only in Debug builds compiled with the flag.
+  func testResearchStaysOffUnlessThisIsAnApprovedDebugTestBuild() {
+    XCTAssertFalse(ExplorerBuildApproval.researchApproved)
+    #if DEBUG && APGI_RESEARCH_TEST_BUILD
+      XCTAssertTrue(ResearchTestBuild.isCompiledIn)
+      XCTAssertNil(ResearchTestBuild.resolve(production: APGIIdentifiers.api, environment: [:]),
+                   "a test build without a test server must not fall back to production")
+    #else
+      XCTAssertFalse(ResearchTestBuild.isCompiledIn)
+      XCTAssertNil(ResearchTestBuild.resolve(production: APGIIdentifiers.api,
+                                             environment: [ResearchTestBuild.environmentKey: "https://research-test.example.org"]))
+    #endif
   }
 }

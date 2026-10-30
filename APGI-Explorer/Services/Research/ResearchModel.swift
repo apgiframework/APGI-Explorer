@@ -1,8 +1,9 @@
 import Combine
 import Foundation
 
-/// View model for the opt-in research flow. In this build `ExplorerBuildApproval.researchApproved`
+/// View model for the opt-in research flow. In a shipped build `ExplorerBuildApproval.researchApproved`
 /// is false, so `refreshAvailability()` returns before any network call and the UI never appears.
+/// Only an approved Debug test build (`ResearchTestBuild`) can reach a test server.
 @MainActor
 final class ResearchModel: ObservableObject {
   static let shared = ResearchModel()
@@ -21,7 +22,13 @@ final class ResearchModel: ObservableObject {
   /// Purposes the participant ticked on the consent screen.
   @Published private(set) var acceptedPurposes: Set<String> = []
 
+  /// Host of the test server when this is an approved test build; nil in every shipped build.
+  @Published private(set) var testServerHost: String?
+
+  private static let keychainService = "org.apgiframework.APGI-Explorer.research"
+
   private var workflow: ResearchWorkflow?
+  private var origin: ResearchTestBuild.Origin?
   private var background: BackgroundUploadSession?
 
   var isAvailable: Bool { phase != .unavailable }
@@ -32,11 +39,17 @@ final class ResearchModel: ObservableObject {
 
   /// Decides whether research can be offered at all. Build approval first, then the server flag.
   func refreshAvailability() async {
-    guard ExplorerBuildApproval.researchApproved else { phase = .unavailable; return }
+    guard let origin = ResearchTestBuild.resolve(production: APGIIdentifiers.api,
+                                                 environment: ProcessInfo.processInfo.environment) else {
+      phase = .unavailable
+      return
+    }
+    self.origin = origin
+    testServerHost = origin.isTestServer ? origin.baseURL.host : nil
     do {
-      let transport = try APITransport(baseURL: APGIIdentifiers.api)
+      let transport = try APITransport(baseURL: origin.baseURL)
       let config = try await ExplorerResearchClient(transport: transport).config()
-      let capability = ResearchCapability.current(serverResearchEnabled: config.researchEnabled)
+      let capability = ResearchCapability.current(serverResearchEnabled: config.researchEnabled, buildApproved: true)
       guard capability.isEnabled else { phase = .unavailable; return }
       workflow = try makeWorkflow(capability: capability, transport: transport)
       phase = .idle
@@ -46,11 +59,15 @@ final class ResearchModel: ObservableObject {
   }
 
   private func makeWorkflow(capability: ResearchCapability, transport: APITransport) throws -> ResearchWorkflow {
-    let background = try BackgroundUploadSession(baseURL: APGIIdentifiers.api,
-                                                 identifier: "org.apgiframework.APGI-Explorer.research-upload")
+    // A test build keeps credentials, progress and the background session per test host, so switching
+    // `APGI_RESEARCH_TEST_API` can never resume one server's participant/session against another.
+    // Shipped builds keep the original names.
+    let scope = origin?.isTestServer == true ? origin?.baseURL.host.map { ".test.\($0)" } ?? ".test" : ""
+    let background = try BackgroundUploadSession(baseURL: origin?.baseURL ?? APGIIdentifiers.api,
+                                                 identifier: "org.apgiframework.APGI-Explorer.research-upload" + scope)
     self.background = background
     let account = ResearchAccountClient(transport: transport)
-    let credentials = ResearchCredentialManager(store: ResearchKeychainCredentialStore(),
+    let credentials = ResearchCredentialManager(store: ResearchKeychainCredentialStore(service: Self.keychainService + scope),
                                                 refresher: APIResearchTokenRefresher(account: account))
     let coordinator = UploadCoordinator(
       store: CoreDataPendingEventStore(container: PersistenceController.shared.container),
@@ -58,7 +75,7 @@ final class ResearchModel: ObservableObject {
       authorization: { try await credentials.validAccessToken() })
     return ResearchWorkflow(client: ExplorerResearchClient(transport: transport), account: account,
                             credentials: credentials, coordinator: coordinator,
-                            progress: ResearchKeychainProgressStore(), capability: capability)
+                            progress: ResearchKeychainProgressStore(service: Self.keychainService + scope), capability: capability)
   }
 
   func begin() async {

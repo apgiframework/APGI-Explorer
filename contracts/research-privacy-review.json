@@ -1,0 +1,102 @@
+{
+  "status": "draft",
+  "approved": false,
+  "reviewer": null,
+  "reviewed_at": null,
+  "scope": "Data the Explorer research mode collects and sends to the apgi-api research contract (contracts/explorer-research-v1.json) once research is enabled. DRAFT for human review: it does not enable research, is not legal advice, and has not been checked against App Store Connect nutrition-label answers.",
+  "privacy_manifest": "APGI-Explorer/PrivacyInfo.xcprivacy",
+  "privacy_manifest_sha256": "a707c8db6d3f63e5c3e33692c50bf8919b0965d6b79b8d3d4a568496d915cf19",
+  "proposed_manifest": "contracts/proposed-PrivacyInfo.research.xcprivacy",
+  "proposed_manifest_sha256": "136f58eaf98c2be19bfd101820b6483d7058cdaef7eac5a1e1aaf062dff9ffd3",
+  "collected_data_types_declared": false,
+  "enablement_blockers": [
+    "A named reviewer approves this inventory (set reviewer, reviewed_at, approved).",
+    "The approved manifest replaces APGI-Explorer/PrivacyInfo.xcprivacy and APGI-Explorer-iOS/PrivacyInfo.xcprivacy, release-hashes.json is updated, and privacy_manifest_sha256 here is set to the new hash.",
+    "collected_data_types_declared is set to true only after that replacement.",
+    "Consent texts are approved (S1-PRV-06) so the privacy policy view and the consent texts agree.",
+    "Only then may ExplorerBuildApproval.researchApproved become true (scripts/check_explorer_contracts.py enforces the ordering)."
+  ],
+  "inventory": [
+    {
+      "id": "account_identity",
+      "data": "Username and, only if the participant registers with it, an email address",
+      "apple_type": "NSPrivacyCollectedDataTypeEmailAddress (email); username is covered by User ID",
+      "when": "Account sign-in or registration inside the research flow",
+      "source": "ResearchAccountClient.login / register (deployed v1 auth operations)",
+      "linked": true,
+      "tracking": false,
+      "purposes": [
+        "App Functionality"
+      ],
+      "notes": "Email is optional in the flow. The participant record itself is created with an empty body (pseudonymous)."
+    },
+    {
+      "id": "user_id",
+      "data": "Participant ID, participant-session ID and the account's user ID",
+      "apple_type": "NSPrivacyCollectedDataTypeUserID",
+      "when": "Enrolment and every upload",
+      "source": "createParticipant, createSession, upload path parameters",
+      "linked": true,
+      "tracking": false,
+      "purposes": [
+        "App Functionality",
+        "Other (research)"
+      ],
+      "notes": "The shipped manifest already declares User ID as not linked; research makes it linked."
+    },
+    {
+      "id": "answers",
+      "data": "Answer value for each of the 35 items, the previous value when an answer changes, and the instrument hash",
+      "apple_type": "NSPrivacyCollectedDataTypeOtherUserContent",
+      "when": "Each answer, uploaded through the outbox",
+      "source": "JournalEvent.payload (item_id, value, previous_value, instrument_sha256)",
+      "linked": true,
+      "tracking": false,
+      "purposes": [
+        "Other (research)"
+      ],
+      "notes": "Whether self-reported attentional/psychological answers count as Health data is an open question below."
+    },
+    {
+      "id": "response_timing",
+      "data": "Per-answer response latency in microseconds",
+      "apple_type": "NSPrivacyCollectedDataTypeProductInteraction",
+      "when": "Each answer",
+      "source": "JournalEvent.payload.latency_us",
+      "linked": true,
+      "tracking": false,
+      "purposes": [
+        "Other (research)"
+      ],
+      "notes": "The shipped manifest declares Product Interaction as not linked; research makes it linked."
+    },
+    {
+      "id": "consent_records",
+      "data": "Which of the four consent purposes were granted or withdrawn, with versions and timestamps",
+      "apple_type": "NSPrivacyCollectedDataTypeOtherDataTypes",
+      "when": "Enrolment and withdrawal",
+      "source": "ConsentGrantRequest / ConsentResponse / ConsentRevokeRequest",
+      "linked": true,
+      "tracking": false,
+      "purposes": [
+        "App Functionality",
+        "Other (research)"
+      ],
+      "notes": ""
+    }
+  ],
+  "not_collected": [
+    "Personal profiles, personal journals and QuizSession data (never read into the research outbox; enforced by CI).",
+    "Names, demographics, location, contacts, photos, advertising identifiers or device identifiers.",
+    "Sensor data. Authentication tokens live only in the device-local Keychain and are not collected data.",
+    "Any data used for tracking; NSPrivacyTracking stays false with no tracking domains."
+  ],
+  "withdrawal": "Revoking research consent stops uploads (server returns 403) and the app purges the local outbox for the session (ResearchWorkflow.withdraw). Deleting data already held by the server is a server-side erasure process (apgi-api deletion tasks) and must be described in the privacy policy before release.",
+  "open_questions": [
+    "Do self-reported attentional/psychological questionnaire answers need the Health data type in the App Store privacy label, and what do the research ethics approvals say about special-category data?",
+    "Do apgi-api request logs retain IP address or device metadata? If so, add the relevant data types (Device ID/other) and a retention statement.",
+    "Which retention period applies to raw events, and is it stated in the consent texts?",
+    "Is the optional email used for anything beyond account recovery (recontact is a separate consent purpose)?",
+    "Does the iOS manifest need identical content? APGI-Explorer-iOS/PrivacyInfo.xcprivacy differs from the macOS manifest today."
+  ]
+}
