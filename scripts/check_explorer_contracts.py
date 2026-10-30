@@ -70,6 +70,8 @@ assert hashlib.sha256(_canonical(unsigned).encode()).hexdigest() == fixture['sha
 assert pin['instrument_id'] == ids['instrument_id'] and pin['item_count'] == 35
 matrix = (root / 'docs/COMPATIBILITY_MATRIX_ENTRY.md').read_text()
 assert 'Instrument scoring key' in matrix and 'not a scientific model' in (app / 'Core/APGIScorer.swift').read_text()
+scorer_sha = hashlib.sha256((app / 'Core/APGIScorer.swift').read_bytes()).hexdigest()
+assert f'`{scorer_sha}`' in matrix, 'APGIScorer.swift changed: re-read docs/COMPATIBILITY_MATRIX_ENTRY.md, then update its fingerprint'
 for personal in ['FileStorageManager.swift', 'HandoffManager.swift', 'ProfileManager.swift', 'QuizModel.swift', 'SettingsView.swift', 'MenuCommands.swift']:
     text = (app / personal).read_text()
     for research in ['ResearchWorkflow', 'ResearchRecorder', 'UploadCoordinator', 'PendingEvent', 'ResearchModel']:
@@ -82,6 +84,22 @@ if 'static let researchApproved = true' in approval:
     assert review['privacy_manifest_sha256'] == hashlib.sha256(manifest).hexdigest(), 'Privacy manifest changed since its research review'
     assert review['collected_data_types_declared'] is True
 assert 'ResearchModel.shared' in (app / 'SettingsViews/GeneralSettingsView.swift').read_text() or 'ResearchEntryView' in (app / 'SettingsViews/GeneralSettingsView.swift').read_text(), 'Research feature flag must be wired into the app'
+# Research test-build harness (item 6): the acceptance flag is command-line only and Debug-only.
+test_build = (core / 'ResearchTestBuild.swift').read_text()
+assert '#if !DEBUG && APGI_RESEARCH_TEST_BUILD' in test_build and '#error(' in test_build, 'Release builds must reject the acceptance flag'
+assert '#if DEBUG && APGI_RESEARCH_TEST_BUILD' in test_build
+assert 'APGI_RESEARCH_TEST_BUILD' not in (root / 'APGI-Explorer.xcodeproj/project.pbxproj').read_text(), \
+    'The acceptance flag must never be written into the Xcode project (Release would inherit it)'
+assert 'ResearchTestBuild.resolve' in (app / 'Services/Research/ResearchModel.swift').read_text()
+assert 'ExplorerBuildApproval.researchApproved' not in (app / 'Services/Research/ResearchModel.swift').read_text().split('func refreshAvailability')[1], \
+    'Availability must go through ResearchTestBuild.resolve'
+# The Core Data model gate parses the model XML (item 2) instead of only grepping it.
+import check_core_data_model
+assert not check_core_data_model.problems(), check_core_data_model.problems()
+import check_privacy_draft
+assert not check_privacy_draft.problems(), check_privacy_draft.problems()
+assert (root / 'APGI-ExplorerUITests').is_dir() and 'APGI-ExplorerUITests' in (root / 'APGI-Explorer.xcodeproj/project.pbxproj').read_text(), \
+    'APGI-ExplorerUITests must be a registered Xcode target'
 print('Explorer contract gates passed: identifiers, labels, instrument/privacy hashes, scorer, Spotlight, Handoff, sandbox.')
 # Source entitlements alone do not prove that Xcode embeds them in either configuration.
 project = (root / 'APGI-Explorer.xcodeproj/project.pbxproj').read_text()

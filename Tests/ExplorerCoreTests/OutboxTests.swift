@@ -74,6 +74,43 @@ final class OutboxTests: XCTestCase {
     XCTAssertEqual(adapter.calls[0], adapter.calls[1], "a retry resends the identical key, sequence and digest")
   }
 
+  /// A relaunch builds a new coordinator over the same store. Attempt counts, backoff deadlines and
+  /// payloads must carry over, and the retry must resend the identical key, sequence and digest.
+  /// (Durability of the real Core Data store across a process restart is exercised natively in
+  /// `ResearchNativeTests.testRetryAndBackoffStateSurviveContainerRestart`.)
+  func testRetryStateSurvivesCoordinatorRestart() async throws {
+    let store = InMemoryPendingEventStore()
+    let clock = Clock()
+    let (first, firstAdapter, _, _) = make([.fail], store: store, clock: clock)
+    guard case .enqueued(let key) = try await first.enqueue(sessionID: "s", seqNo: 0, payload: payload(1, 2)) else { return XCTFail() }
+    _ = await first.drain(sessionID: "s")
+
+    let (second, adapter, _, _) = make([.fail, .ack], store: store, clock: clock)
+    let sessions = try await second.recover()
+    XCTAssertEqual(sessions, ["s"])
+    var record = try await store.record(eventKey: key)
+    XCTAssertEqual(record?.attemptCount, 1)
+    XCTAssertEqual(record?.nextAttemptAt, clock.now.addingTimeInterval(5))
+    XCTAssertNotNil(record?.payload)
+
+    let early = await second.drain(sessionID: "s")
+    XCTAssertEqual(early.verified, 0)
+    XCTAssertTrue(adapter.calls.isEmpty, "the backoff deadline survives the restart")
+
+    clock.advance(6)
+    let retried = await second.drain(sessionID: "s")
+    XCTAssertTrue(retried.failed)
+    record = try await store.record(eventKey: key)
+    XCTAssertEqual(record?.attemptCount, 2)
+    XCTAssertEqual(record?.nextAttemptAt, clock.now.addingTimeInterval(10), "backoff keeps growing across restarts")
+
+    clock.advance(11)
+    let done = await second.drain(sessionID: "s")
+    XCTAssertEqual(done.verified, 1)
+    XCTAssertEqual(adapter.calls.count, 2)
+    XCTAssertEqual(adapter.calls[1], firstAdapter.calls[0], "a post-restart retry resends the identical envelope")
+  }
+
   func testOrderingIsPreservedWithinASession() async throws {
     let (coordinator, adapter, store, _) = make([.fail])
     for seq in 0..<3 { _ = try await coordinator.enqueue(sessionID: "s", seqNo: seq, payload: payload(seq + 1, 1)) }

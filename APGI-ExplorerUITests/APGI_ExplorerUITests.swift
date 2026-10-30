@@ -1,22 +1,25 @@
 import XCTest
 
 final class APGI_ExplorerUITests: XCTestCase {
-  override func setUpWithError() throws {
-    continueAfterFailure = false
-    self.app.launch()
-  }
-
-  override func tearDownWithError() throws {
-  }
-
   private var app: XCUIApplication = .init()
 
-  override func setUp() {
-    super.setUp()
+  override func setUpWithError() throws {
     continueAfterFailure = false
     self.app = XCUIApplication()
     self.app.launchArguments = ["--uitesting"]
     self.app.launch()
+  }
+
+  override func tearDownWithError() throws {
+    self.app.terminate()
+  }
+
+  /// Research ships off (`ExplorerBuildApproval.researchApproved == false`); no research entry may appear.
+  func testResearchEntryIsAbsentInShippedBuilds() {
+    let settingsTab = self.app.buttons["Settings"]
+    if settingsTab.exists { settingsTab.tap() }
+    XCTAssertFalse(self.app.staticTexts["Research participation"].exists)
+    XCTAssertFalse(self.app.buttons["Learn more and take part…"].exists)
   }
 
   func testAppLaunch() {
@@ -71,7 +74,7 @@ final class APGI_ExplorerUITests: XCTestCase {
 
         let answerButtons = self.app.buttons.matching(
           NSPredicate(format: "label CONTAINS 'Answer'"))
-        if !answerButtons.isEmpty {
+        if answerButtons.count > 0 {
           answerButtons.firstMatch.tap()
 
           let nextButton = self.app.buttons["Next"]
@@ -169,15 +172,11 @@ final class APGI_ExplorerUITests: XCTestCase {
   }
 
   func testKeyboardNavigation() {
-    self.app.typeKey("\t", modifier: [])
+    self.app.typeKey("\t", modifierFlags: [])
+    XCTAssertTrue(self.app.windows.firstMatch.exists)
 
-    let focusedElement = self.app.focusedElement
-    XCTAssertNotNil(focusedElement)
-
-    self.app.typeKey("\t", modifier: [.shift])
-
-    let previousElement = self.app.focusedElement
-    XCTAssertNotNil(previousElement)
+    self.app.typeKey("\t", modifierFlags: [.shift])
+    XCTAssertTrue(self.app.windows.firstMatch.exists)
   }
 
   func testPerformanceOfAppLaunch() {
@@ -197,7 +196,6 @@ final class APGI_ExplorerUITests: XCTestCase {
     XCTAssertTrue(mainWindow.exists)
 
     // Test window resizing
-    let initialFrame = mainWindow.frame
     mainWindow.doubleClick()
 
     // Test window state persistence

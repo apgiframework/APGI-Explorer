@@ -14,11 +14,19 @@
 			remoteGlobalIDString = E98601D22EF9044F001602F7;
 			remoteInfo = "APGI-Explorer";
 		};
+		E9B0C10A2F9700010000A007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E98601CB2EF9044F001602F7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E98601D22EF9044F001602F7;
+			remoteInfo = "APGI-Explorer";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		E93A4B812F94292D0055A7C3 /* APGI-ExplorerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "APGI-ExplorerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E98601D32EF9044F001602F7 /* APGI-Explorer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "APGI-Explorer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9B0C10A2F9700010000A001 /* APGI-ExplorerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "APGI-ExplorerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -30,6 +38,11 @@
 		E98601D52EF9044F001602F7 /* APGI-Explorer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "APGI-Explorer";
+			sourceTree = "<group>";
+		};
+		E9B0C10A2F9700010000A002 /* APGI-ExplorerUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "APGI-ExplorerUITests";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -45,6 +58,11 @@
 			files = (
 			);
 		};
+		E9B0C10A2F9700010000A003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -53,6 +71,7 @@
 			children = (
 				E98601D52EF9044F001602F7 /* APGI-Explorer */,
 				E93A4B822F94292D0055A7C3 /* APGI-ExplorerTests */,
+				E9B0C10A2F9700010000A002 /* APGI-ExplorerUITests */,
 				E98601D42EF9044F001602F7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -62,6 +81,7 @@
 			children = (
 				E98601D32EF9044F001602F7 /* APGI-Explorer.app */,
 				E93A4B812F94292D0055A7C3 /* APGI-ExplorerTests.xctest */,
+				E9B0C10A2F9700010000A001 /* APGI-ExplorerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +128,27 @@
 			productReference = E98601D32EF9044F001602F7 /* APGI-Explorer.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E9B0C10A2F9700010000A006 /* APGI-ExplorerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E9B0C10A2F9700010000A00B /* Build configuration list for PBXNativeTarget "APGI-ExplorerUITests" */;
+			buildPhases = (
+				E9B0C10A2F9700010000A004 /* Sources */,
+				E9B0C10A2F9700010000A003 /* Frameworks */,
+				E9B0C10A2F9700010000A005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E9B0C10A2F9700010000A008 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E9B0C10A2F9700010000A002 /* APGI-ExplorerUITests */,
+			);
+			name = "APGI-ExplorerUITests";
+			productName = "APGI-ExplorerUITests";
+			productReference = E9B0C10A2F9700010000A001 /* APGI-ExplorerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -124,6 +165,10 @@
 					};
 					E98601D22EF9044F001602F7 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					E9B0C10A2F9700010000A006 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = E98601D22EF9044F001602F7;
 					};
 				};
 			};
@@ -147,6 +192,7 @@
 			targets = (
 				E98601D22EF9044F001602F7 /* APGI-Explorer */,
 				E93A4B802F94292D0055A7C3 /* APGI-ExplorerTests */,
+				E9B0C10A2F9700010000A006 /* APGI-ExplorerUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -158,6 +204,11 @@
 			);
 		};
 		E98601D12EF9044F001602F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		E9B0C10A2F9700010000A005 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -175,6 +226,11 @@
 			files = (
 			);
 		};
+		E9B0C10A2F9700010000A004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -182,6 +238,11 @@
 			isa = PBXTargetDependency;
 			target = E98601D22EF9044F001602F7 /* APGI-Explorer */;
 			targetProxy = E93A4B852F94292D0055A7C3 /* PBXContainerItemProxy */;
+		};
+		E9B0C10A2F9700010000A008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E98601D22EF9044F001602F7 /* APGI-Explorer */;
+			targetProxy = E9B0C10A2F9700010000A007 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -428,6 +489,46 @@
 			};
 			name = Release;
 		};
+		E9B0C10A2F9700010000A009 /* Debug configuration for PBXNativeTarget "APGI-ExplorerUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 939E3R72F7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "lesoto.APGI-ExplorerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "APGI-Explorer";
+			};
+			name = Debug;
+		};
+		E9B0C10A2F9700010000A00A /* Release configuration for PBXNativeTarget "APGI-ExplorerUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 939E3R72F7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "lesoto.APGI-ExplorerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "APGI-Explorer";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -452,6 +553,14 @@
 			buildConfigurations = (
 				E98601DF2EF90450001602F7 /* Debug configuration for PBXNativeTarget "APGI-Explorer" */,
 				E98601E02EF90450001602F7 /* Release configuration for PBXNativeTarget "APGI-Explorer" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		E9B0C10A2F9700010000A00B /* Build configuration list for PBXNativeTarget "APGI-ExplorerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9B0C10A2F9700010000A009 /* Debug configuration for PBXNativeTarget "APGI-ExplorerUITests" */,
+				E9B0C10A2F9700010000A00A /* Release configuration for PBXNativeTarget "APGI-ExplorerUITests" */,
 			);
 			defaultConfigurationName = Release;
 		};

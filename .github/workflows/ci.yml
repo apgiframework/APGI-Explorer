@@ -20,11 +20,41 @@ jobs:
           python-version: '3.x'
       - name: Verify generated API catalogs against pinned OpenAPI
         run: python3 scripts/generate_api_client.py --check
-      - name: Generator and language-policy tests
+      - name: Generator, language-policy, Core Data model and privacy-draft tests
         working-directory: scripts
-        run: python3 -m unittest test_api_generation test_language_policy
+        run: python3 -m unittest test_api_generation test_language_policy test_core_data_model test_privacy_draft
+      - name: Shared Swift/Python upload vectors are reproducible
+        run: python3 scripts/generate_swift_vectors.py --check
+      - name: Current Core Data model version contains the research outbox
+        run: python3 scripts/check_core_data_model.py
+      - name: Research privacy review draft agrees with its proposed manifest
+        run: python3 scripts/check_privacy_draft.py
+      - name: Sealed research contract still matches its apgi-api pin
+        run: python3 scripts/check_api_contract_pin.py
       - name: Check labels, identifiers, instrument, privacy and research gates
         run: python3 scripts/check_explorer_contracts.py
+
+  api-contract-pin:
+    name: api-contract-pin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Read the pinned apgi-api commit
+        id: pin
+        run: echo "commit=$(python3 -c "import json; print(json.load(open('contracts/api-contract-pin.json'))['commit'])")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: apgiframework/apgi-api
+          ref: ${{ steps.pin.outputs.commit }}
+          path: api
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install apgi-api runtime dependencies
+        run: pip install -r api/requirements.txt
+      - name: Contract artifacts reproduce from the pinned commit and shared vectors match
+        run: python3 scripts/check_api_contract_pin.py --api api
 
   secret-scan:
     name: secret-scan
@@ -55,6 +85,14 @@ jobs:
         run: swift test
       - name: Build with MainActor default isolation (as the app target does)
         run: swift build -Xswiftc -default-isolation -Xswiftc MainActor
+      - name: Portable tests with the acceptance test-build flag compiled in
+        run: swift test -Xswiftc -DAPGI_RESEARCH_TEST_BUILD
+      - name: A release build must refuse the acceptance test-build flag
+        run: |
+          if swift build -c release -Xswiftc -DAPGI_RESEARCH_TEST_BUILD > release-flag.log 2>&1; then
+            echo "A release build accepted APGI_RESEARCH_TEST_BUILD"; exit 1
+          fi
+          grep -q "Debug-only acceptance flag" release-flag.log
 
   build-and-test:
     name: build-and-test
@@ -97,3 +135,59 @@ jobs:
         with:
           name: explorer-test-results
           path: TestResults.xcresult
+
+  research-test-build:
+    name: research-test-build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: A Release app build must refuse the acceptance test-build flag
+        run: |
+          if xcodebuild build -project APGI-Explorer.xcodeproj -scheme APGI-Explorer \
+            -destination 'platform=macOS' -configuration Release -derivedDataPath ReleaseFlagDerivedData \
+            CODE_SIGNING_ALLOWED=NO SWIFT_ACTIVE_COMPILATION_CONDITIONS=APGI_RESEARCH_TEST_BUILD \
+            > release-flag.log 2>&1; then
+            echo "A Release build accepted APGI_RESEARCH_TEST_BUILD"; exit 1
+          fi
+          grep -q "Debug-only acceptance flag" release-flag.log
+      - name: Research tests in the approved Debug test-build configuration
+        run: >-
+          xcodebuild test -project APGI-Explorer.xcodeproj -scheme APGI-Explorer
+          -destination 'platform=macOS' -configuration Debug
+          -derivedDataPath TestBuildDerivedData -parallel-testing-enabled NO
+          -only-testing:APGI-ExplorerTests/ResearchNativeTests
+          -test-timeouts-enabled YES -default-test-execution-time-allowance 30
+          -maximum-test-execution-time-allowance 60
+          CODE_SIGNING_ALLOWED=NO 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG APGI_RESEARCH_TEST_BUILD'
+
+  ui-test-target:
+    name: ui-test-target
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: APGI-ExplorerUITests is a registered target and compiles
+        run: >-
+          xcodebuild build-for-testing -project APGI-Explorer.xcodeproj -scheme APGI-ExplorerUITests
+          -destination 'platform=macOS' -configuration Debug -derivedDataPath UIDerivedData
+          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+      - name: Run the UI tests (informational; hosted runners may lack UI-automation permission)
+        continue-on-error: true
+        run: >-
+          xcodebuild test-without-building -project APGI-Explorer.xcodeproj -scheme APGI-ExplorerUITests
+          -destination 'platform=macOS' -configuration Debug -derivedDataPath UIDerivedData
+          -test-timeouts-enabled YES -default-test-execution-time-allowance 60
+          -maximum-test-execution-time-allowance 120 -resultBundlePath UITestResults.xcresult
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: explorer-ui-test-results
+          path: UITestResults.xcresult
+          if-no-files-found: ignore

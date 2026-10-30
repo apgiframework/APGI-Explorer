@@ -11,6 +11,9 @@ struct ResearchEntryView: View {
       if model.isAvailable {
         VStack(alignment: .leading, spacing: 8) {
           Text("Research participation").font(.headline)
+          if let host = model.testServerHost {
+            Text("TEST BUILD — data goes to \(host), not to production.").font(.caption.bold()).foregroundStyle(.orange)
+          }
           Text("Optional. Your personal results stay on this device unless you choose to take part.")
             .font(.caption).foregroundStyle(.secondary)
           Button("Learn more and take part…") { showFlow = true }

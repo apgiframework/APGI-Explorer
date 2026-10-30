@@ -3,9 +3,12 @@
   "branch": "main",
   "required_status_checks": [
     "contracts",
+    "api-contract-pin",
     "secret-scan",
     "portable-swift",
-    "build-and-test"
+    "build-and-test",
+    "research-test-build",
+    "ui-test-target"
   ],
   "workflows": [
     "Explorer release gates",

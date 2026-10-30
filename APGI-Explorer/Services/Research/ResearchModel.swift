@@ -1,8 +1,9 @@
 import Combine
 import Foundation
 
-/// View model for the opt-in research flow. In this build `ExplorerBuildApproval.researchApproved`
+/// View model for the opt-in research flow. In a shipped build `ExplorerBuildApproval.researchApproved`
 /// is false, so `refreshAvailability()` returns before any network call and the UI never appears.
+/// Only an approved Debug test build (`ResearchTestBuild`) can reach a test server.
 @MainActor
 final class ResearchModel: ObservableObject {
   static let shared = ResearchModel()
@@ -21,7 +22,11 @@ final class ResearchModel: ObservableObject {
   /// Purposes the participant ticked on the consent screen.
   @Published private(set) var acceptedPurposes: Set<String> = []
 
+  /// Host of the test server when this is an approved test build; nil in every shipped build.
+  @Published private(set) var testServerHost: String?
+
   private var workflow: ResearchWorkflow?
+  private var origin: ResearchTestBuild.Origin?
   private var background: BackgroundUploadSession?
 
   var isAvailable: Bool { phase != .unavailable }
@@ -32,11 +37,17 @@ final class ResearchModel: ObservableObject {
 
   /// Decides whether research can be offered at all. Build approval first, then the server flag.
   func refreshAvailability() async {
-    guard ExplorerBuildApproval.researchApproved else { phase = .unavailable; return }
+    guard let origin = ResearchTestBuild.resolve(production: APGIIdentifiers.api,
+                                                 environment: ProcessInfo.processInfo.environment) else {
+      phase = .unavailable
+      return
+    }
+    self.origin = origin
+    testServerHost = origin.isTestServer ? origin.baseURL.host : nil
     do {
-      let transport = try APITransport(baseURL: APGIIdentifiers.api)
+      let transport = try APITransport(baseURL: origin.baseURL)
       let config = try await ExplorerResearchClient(transport: transport).config()
-      let capability = ResearchCapability.current(serverResearchEnabled: config.researchEnabled)
+      let capability = ResearchCapability.current(serverResearchEnabled: config.researchEnabled, buildApproved: true)
       guard capability.isEnabled else { phase = .unavailable; return }
       workflow = try makeWorkflow(capability: capability, transport: transport)
       phase = .idle
@@ -46,7 +57,7 @@ final class ResearchModel: ObservableObject {
   }
 
   private func makeWorkflow(capability: ResearchCapability, transport: APITransport) throws -> ResearchWorkflow {
-    let background = try BackgroundUploadSession(baseURL: APGIIdentifiers.api,
+    let background = try BackgroundUploadSession(baseURL: origin?.baseURL ?? APGIIdentifiers.api,
                                                  identifier: "org.apgiframework.APGI-Explorer.research-upload")
     self.background = background
     let account = ResearchAccountClient(transport: transport)

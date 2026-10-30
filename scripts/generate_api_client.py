@@ -8,6 +8,11 @@ Outputs (all reproducible, checked in CI with --check):
   * APGI-Explorer/Core/ResearchOperationCatalog+Generated.swift - the Explorer
     research operations from contracts/explorer-research-v1.json, an extract of
     the apgi-api OpenAPI that is NOT yet deployed. Research stays disabled.
+  * APGI-Explorer/Core/ResearchSchemas+Generated.swift - strongly typed Codable
+    request/response models for those research operations (components.schemas of the
+    same extract, namespaced under ExplorerResearchSchema) and a typed binding of every
+    operation to its request and response types. The 121-operation public catalog
+    stays lossless JSON; only the research surface is typed.
   * APGI-Explorer/Services/APGIAPIClient+Generated.swift - public meta/version.
 """
 import argparse
@@ -100,6 +105,228 @@ def client_source(spec_path, spec):
     return '\n'.join(lines)
 
 
+# --- Strongly typed research schemas -------------------------------------------------------
+
+ACRONYMS = {'id': 'ID'}
+SWIFT_RESERVED = {'default', 'self', 'init', 'protocol', 'class', 'struct', 'enum', 'in', 'is', 'as', 'func', 'let', 'var'}
+
+
+def camel(name, upper_first=False):
+    parts = [p for p in name.replace('-', '_').split('_') if p]
+    out = []
+    for index, part in enumerate(parts):
+        if index == 0 and not upper_first:
+            out.append(part if part != 'id' else 'id')
+        else:
+            out.append(ACRONYMS.get(part, part[:1].upper() + part[1:]))
+    result = ''.join(out)
+    assert result not in SWIFT_RESERVED, f'{name} maps to a reserved word'
+    return result
+
+
+def ref_name(node):
+    return node['$ref'].split('/')[-1]
+
+
+def non_null(schema):
+    """Return (schema without a null alternative, whether null was allowed)."""
+    options = schema.get('anyOf')
+    if not options:
+        return schema, False
+    rest = [o for o in options if o != {'type': 'null'}]
+    nullable = len(rest) != len(options)
+    if len(rest) == 1:
+        return rest[0], nullable
+    return {'anyOf': rest}, nullable
+
+
+def swift_type(schema, context):
+    """Swift spelling of a JSON schema; `context` names a nested enum for inline enums."""
+    schema, nullable = non_null(schema)
+    if '$ref' in schema:
+        base = ref_name(schema)
+    elif 'anyOf' in schema:
+        base = 'APIJSONValue'  # heterogeneous (e.g. validation `loc` entries): lossless
+    elif 'enum' in schema:
+        base = context
+    else:
+        kind = schema.get('type')
+        if kind == 'string':
+            base = 'String'
+        elif kind == 'integer':
+            base = 'Int'
+        elif kind == 'number':
+            base = 'Double'
+        elif kind == 'boolean':
+            base = 'Bool'
+        elif kind == 'array':
+            base = '[' + swift_type(schema['items'], context + 'Item') + ']'
+        elif kind == 'object':
+            extra = schema.get('additionalProperties', True)
+            if extra in (True, {}) or schema.get('properties'):
+                base = '[String: APIJSONValue]'
+            else:
+                base = '[String: ' + swift_type(extra, context + 'Value') + ']'
+        elif kind is None:
+            base = 'APIJSONValue'  # unconstrained JSON
+        else:
+            raise AssertionError(f'unsupported schema {schema}')
+    return base + ('?' if nullable and base != 'APIJSONValue' else '')
+
+
+def default_literal(value, swift):
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+    if isinstance(value, int) and swift == 'Int':
+        return str(value)
+    if isinstance(value, str) and swift == 'String':
+        return swift_string(value)
+    raise AssertionError(f'unsupported default {value!r} for {swift}')
+
+
+def enum_source(name, values, indent, doc=None):
+    pad = ' ' * indent
+    lines = []
+    if doc:
+        lines += [f'{pad}/// {line}' for line in doc.strip().splitlines() if line.strip()]
+    lines.append(f'{pad}nonisolated enum {name}: String, Codable, Equatable, Sendable, CaseIterable {{')
+    for value in values:
+        case = camel(value)
+        lines.append(f'{pad}  case {case}' + (f' = {swift_string(value)}' if case != value else ''))
+    lines.append(f'{pad}}}')
+    return lines
+
+
+def struct_source(name, schema, indent):
+    pad = ' ' * indent
+    required = set(schema.get('required', []))
+    fields, nested = [], []
+    for json_name in sorted(schema['properties']):
+        prop = schema['properties'][json_name]
+        plain, _ = non_null(prop)
+        context = camel(json_name, upper_first=True)
+        if 'enum' in plain:
+            nested.append((context, plain['enum']))
+        swift = swift_type(prop, context)
+        has_default = json_name not in required and 'default' in prop
+        # Absent keys decode to nil unless the contract supplies a default.
+        optional = not has_default and (swift.endswith('?') or json_name not in required)
+        fields.append(dict(json=json_name, swift_name=camel(json_name), type=swift, optional=optional,
+                           required=json_name in required, default=prop.get('default') if has_default else None,
+                           has_default=has_default))
+    lines = []
+    description = schema.get('description')
+    if description:
+        lines += [f'{pad}/// {line.strip()}' for line in description.strip().splitlines() if line.strip()]
+    lines.append(f'{pad}nonisolated struct {name}: Codable, Equatable, Sendable {{')
+    for context, values in nested:
+        lines += enum_source(context, values, indent + 2)
+    for f in fields:
+        t = f['type']
+        if f['optional'] and not t.endswith('?'):
+            t += '?'
+        f['decl'] = t
+        lines.append(f'{pad}  let {f["swift_name"]}: {t}')
+    lines.append('')
+    # memberwise initialiser: optionals and defaults are omittable
+    params = []
+    for f in fields:
+        piece = f'{f["swift_name"]}: {f["decl"]}'
+        if f['has_default']:
+            piece += ' = ' + default_literal(f['default'], f['type'])
+        elif f['decl'].endswith('?'):
+            piece += ' = nil'
+        params.append(piece)
+    lines.append(f'{pad}  init({", ".join(params)}) {{')
+    for f in fields:
+        lines.append(f'{pad}    self.{f["swift_name"]} = {f["swift_name"]}')
+    lines.append(f'{pad}  }}')
+    lines.append('')
+    lines.append(f'{pad}  nonisolated enum CodingKeys: String, CodingKey {{')
+    for f in fields:
+        spelled = '' if f['swift_name'] == f['json'] else f' = {swift_string(f["json"])}'
+        lines.append(f'{pad}    case {f["swift_name"]}{spelled}')
+    lines.append(f'{pad}  }}')
+    lines.append('')
+    lines.append(f'{pad}  init(from decoder: Decoder) throws {{')
+    lines.append(f'{pad}    let container = try decoder.container(keyedBy: CodingKeys.self)')
+    for f in fields:
+        key = f'.{f["swift_name"]}'
+        base = f['decl'][:-1] if f['decl'].endswith('?') else f['decl']
+        if f['has_default']:
+            lines.append(f'{pad}    self.{f["swift_name"]} = try container.decodeIfPresent({base}.self, forKey: {key}) '
+                         f'?? {default_literal(f["default"], f["type"])}')
+        elif f['decl'].endswith('?'):
+            lines.append(f'{pad}    self.{f["swift_name"]} = try container.decodeIfPresent({base}.self, forKey: {key})')
+        else:
+            lines.append(f'{pad}    self.{f["swift_name"]} = try container.decode({base}.self, forKey: {key})')
+    lines.append(f'{pad}  }}')
+    lines.append(f'{pad}}}')
+    return lines
+
+
+def typed_binding(operation, spec):
+    """(request type, response type) for one operation of the research extract."""
+    body = operation.get('requestBody')
+    request = 'NoBody'
+    if body:
+        schema = body['content']['application/json']['schema']
+        request = 'ExplorerResearchSchema.' + ref_name(schema)
+    ok = sorted(c for c in operation['responses'] if c.startswith('2'))
+    assert len(ok) == 1, operation['operationId']
+    content = operation['responses'][ok[0]].get('content')
+    if not content:
+        return request, 'NoContent'
+    schema = content['application/json']['schema']
+    if '$ref' in schema:
+        return request, 'ExplorerResearchSchema.' + ref_name(schema)
+    assert schema.get('type') == 'array' and '$ref' in schema['items'], operation['operationId']
+    return request, '[ExplorerResearchSchema.' + ref_name(schema['items']) + ']'
+
+
+def schemas_source(spec_path, spec):
+    schemas = spec['components']['schemas']
+    lines = [
+        '// Generated by scripts/generate_api_client.py. Do not edit.',
+        '// Source: contracts/' + spec_path.name + ' (components.schemas)',
+        '// OpenAPI SHA-256: ' + hashlib.sha256(spec_path.read_bytes()).hexdigest(),
+        'import Foundation', '',
+        '/// Strongly typed models for the Explorer research contract. Timestamps stay ISO-8601 strings',
+        '/// exactly as the server sends them; decode them with the formatter the caller needs.',
+        'nonisolated enum ExplorerResearchSchema {']
+    first = True
+    for name in sorted(schemas):
+        schema = schemas[name]
+        if not first:
+            lines.append('')
+        first = False
+        if 'enum' in schema:
+            assert schema.get('type') == 'string'
+            lines += enum_source(name, schema['enum'], 2, schema.get('description'))
+        else:
+            assert schema.get('type') == 'object' and 'properties' in schema, name
+            lines += struct_source(name, schema, 2)
+    lines += ['}', '', '/// Typed binding of every research operation to its request and response models.',
+              'nonisolated enum ExplorerResearchTypedOperations {']
+    ops, names = [], []
+    for path in sorted(spec['paths']):
+        for method in METHODS:
+            if method not in spec['paths'][path]:
+                continue
+            operation = spec['paths'][path][method]
+            request, response = typed_binding(operation, spec)
+            ident = camel(operation['operationId'].split('_v1_')[0])
+            ops.append((ident, operation['operationId'], request, response))
+    ops.sort(key=lambda o: o[1])
+    for ident, op_id, request, response in ops:
+        lines.append(f'  static let {ident} = TypedOperation<{request}, {response}>(operationID: {swift_string(op_id)})')
+    lines += ['', '  /// Every bound operation ID, for completeness checks against the operation catalog.',
+              '  static let operationIDs: [String] = [']
+    lines += [f'    {swift_string(op_id)},' for _, op_id, _, _ in ops]
+    lines += ['  ]', '}', '']
+    return '\n'.join(lines)
+
+
 def pins_source():
     path = ROOT / 'contracts/explorer-instrument-pin.json'
     pin = json.loads(path.read_text())
@@ -127,6 +354,7 @@ def outputs():
         ROOT / 'APGI-Explorer/Core/ResearchOperationCatalog+Generated.swift': catalog_source(
             research_path, research, 'ExplorerResearchOperations',
             'Explorer research operations from the not-yet-deployed contract extract.'),
+        ROOT / 'APGI-Explorer/Core/ResearchSchemas+Generated.swift': schemas_source(research_path, research),
         ROOT / 'APGI-Explorer/Core/ResearchPins+Generated.swift': pins_source(),
         ROOT / 'APGI-Explorer/Services/APGIAPIClient+Generated.swift': client_source(v1_path, v1),
     }

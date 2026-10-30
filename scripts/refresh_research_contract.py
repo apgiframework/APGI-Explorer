@@ -6,6 +6,10 @@ Run with the API's Python environment (it imports the API application):
 Writes contracts/explorer-research-v1.json (OpenAPI extract), contracts/explorer-instrument-pin.json
 (item-bank hash pin) and the Swift test fixtures, then run scripts/generate_api_client.py.
 Review the diff: a changed bank hash is an intentional instrument change.
+
+With --check nothing is written: the artifacts are regenerated in memory and compared with the
+checked-in files, which is how CI proves they still come from the pinned apgi-api commit
+(scripts/check_api_contract_pin.py).
 """
 import argparse
 import json
@@ -35,11 +39,9 @@ def refs(node, found):
             refs(value, found)
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--api', required=True, help='path to an apgi-api checkout')
-    args = parser.parse_args()
-    sys.path.insert(0, str(Path(args.api).resolve()))
+def build(api):
+    """Regenerate every artifact from an apgi-api checkout; returns {repo-relative path: text}."""
+    sys.path.insert(0, str(Path(api).resolve()))
     from app.main import create_app
     from app.services import explorer_contract as contract
 
@@ -58,20 +60,35 @@ def main():
                'paths': paths,
                'components': {'schemas': {n: schemas[n] for n in sorted(seen)},
                               'securitySchemes': spec['components'].get('securitySchemes', {})}}
-    (ROOT / 'contracts/explorer-research-v1.json').write_text(json.dumps(extract, indent=2, sort_keys=True))
-
     bank = dict(contract.item_bank())
     pin = {'instrument_id': bank['instrument_id'], 'bank_version': bank['bank_version'],
            'sha256': bank['sha256'], 'item_count': len(bank['items'])}
-    (ROOT / 'contracts/explorer-instrument-pin.json').write_text(json.dumps(pin, indent=2) + '\n')
-
-    fixtures = ROOT / 'Tests/ExplorerCoreTests/Fixtures'
-    (fixtures / 'item-bank.json').write_text(json.dumps(bank, ensure_ascii=False, indent=1))
     texts = [dict(t, status='approved') for t in contract.consent_texts()]  # test-only approval
-    (fixtures / 'consent-texts-approved-for-test.json').write_text(json.dumps(texts, ensure_ascii=False, indent=1))
     allow = {'fields': [{'field': e['field'], 'label': e['label']} for e in contract.SCORE_ALLOWLIST.values()]}
-    (fixtures / 'score-allowlist.json').write_text(json.dumps(allow, indent=1))
-    print('refreshed; bank sha256', bank['sha256'])
+    return {
+        'contracts/explorer-research-v1.json': json.dumps(extract, indent=2, sort_keys=True),
+        'contracts/explorer-instrument-pin.json': json.dumps(pin, indent=2) + '\n',
+        'Tests/ExplorerCoreTests/Fixtures/item-bank.json': json.dumps(bank, ensure_ascii=False, indent=1),
+        'Tests/ExplorerCoreTests/Fixtures/consent-texts-approved-for-test.json': json.dumps(texts, ensure_ascii=False, indent=1),
+        'Tests/ExplorerCoreTests/Fixtures/score-allowlist.json': json.dumps(allow, indent=1),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--api', required=True, help='path to an apgi-api checkout')
+    parser.add_argument('--check', action='store_true', help='compare with the checked-in files instead of writing')
+    args = parser.parse_args()
+    outputs = build(args.api)
+    if args.check:
+        drifted = [name for name, text in outputs.items() if (ROOT / name).read_text() != text]
+        if drifted:
+            raise SystemExit('Checked-in contract artifacts differ from the pinned apgi-api commit:\n  ' + '\n  '.join(drifted))
+        print('contract artifacts reproduce from the pinned apgi-api commit')
+        return
+    for name, text in outputs.items():
+        (ROOT / name).write_text(text)
+    print('refreshed; bank sha256', json.loads(outputs['contracts/explorer-instrument-pin.json'])['sha256'])
 
 
 if __name__ == '__main__':

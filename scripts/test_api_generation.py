@@ -40,6 +40,36 @@ class GenerationTests(unittest.TestCase):
         self.assertIn('/v1/explorer/config', new_paths)
         self.assertNotIn('/v1/explorer/config', deployed['paths'])
 
+    def test_typed_schemas_cover_every_research_schema_property_and_operation(self):
+        spec = json.loads((ROOT / 'contracts/explorer-research-v1.json').read_text())
+        source = gen.outputs()[ROOT / 'APGI-Explorer/Core/ResearchSchemas+Generated.swift']
+        for name, schema in spec['components']['schemas'].items():
+            kind = 'enum' if 'enum' in schema else 'struct'
+            self.assertIn(f'nonisolated {kind} {name}:', source)
+            for prop in schema.get('properties', {}):
+                self.assertIn(f'forKey: .{gen.camel(prop)})', source, f'{name}.{prop}')
+        for op_id in (o['id'] for o in gen.operations(spec)):
+            self.assertIn(f'TypedOperation<', source)
+            self.assertIn(f'(operationID: "{op_id}")', source)
+        self.assertEqual(source.count('static let ') - 1, len(gen.operations(spec)))  # + operationIDs
+
+    def test_required_optional_and_default_semantics(self):
+        spec = json.loads((ROOT / 'contracts/explorer-research-v1.json').read_text())
+        source = gen.outputs()[ROOT / 'APGI-Explorer/Core/ResearchSchemas+Generated.swift']
+        schemas = spec['components']['schemas']
+        # Required keys decode strictly; defaulted keys fall back; absent optional keys become nil.
+        self.assertIn('try container.decode(Bool.self, forKey: .researchEnabled)', source)
+        self.assertIn('try container.decodeIfPresent(Bool.self, forKey: .productUse) ?? false', source)
+        self.assertIn('let studyID: String?', source)
+        self.assertIn('let ctx: [String: APIJSONValue]?', source)
+        self.assertNotIn('researchEnabled: Bool?', source)
+        self.assertEqual(schemas['ConsentStatusResponse']['properties']['product_use']['default'], False)
+
+    def test_snake_case_names_follow_the_acronym_rule(self):
+        self.assertEqual(gen.camel('participant_session_id'), 'participantSessionID')
+        self.assertEqual(gen.camel('payload_sha256'), 'payloadSha256')
+        self.assertEqual(gen.camel('consent_type', upper_first=True), 'ConsentType')
+
     def test_unsupported_shapes_fail_loudly(self):
         spec = {'openapi': '3.1.0', 'paths': {'/x': {'parameters': [{'name': 'a', 'in': 'query'}],
                 'get': {'operationId': 'x', 'responses': {'200': {}}}}}}
