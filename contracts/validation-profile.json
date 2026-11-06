@@ -1,0 +1,439 @@
+{
+  "profile": {
+    "component": "A07",
+    "name": "APGI-Explorer",
+    "spec": "APGI-VAL-SPEC-1.2",
+    "spec_status": "Draft for approval",
+    "app_version": "1.0 (1)",
+    "repository": "apgiframework/APGI-Explorer",
+    "release_owner": "PENDING: assign",
+    "status": "Draft: owner and approver sign-off pending",
+    "platforms": [
+      "macOS (Swift 5 app target)",
+      "Linux/macOS (portable Core package)"
+    ],
+    "data_classes": [
+      "personal questionnaire answers (local only)",
+      "research events (disabled in this release)"
+    ],
+    "interfaces": [
+      "GET https://api.apgiframework.com/v1/meta",
+      "research API (disabled)"
+    ],
+    "declared_protocol_definitions": [],
+    "approved_exclusions": []
+  },
+  "requirements": {
+    "PRO-001": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "Package.swift",
+        "contracts/api-contract-pin.json"
+      ],
+      "gap": "Explorer implements no Protocol v1.2 definition. It consumes a pinned apgi-api contract; the Protocol v1.2 to Explorer map needs the approved definitions.",
+      "test_set": "TC-PRO-01"
+    },
+    "PRO-002": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/ResearchContract.swift",
+        "Tests/ExplorerCoreTests/ResearchContractTests.swift"
+      ],
+      "gap": "Pinned research contract and bank hash are verified before use; no Protocol definition loader exists to test.",
+      "test_set": "TC-PRO-02"
+    },
+    "PRO-003": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [
+        "APGI-Explorer/Core/ResearchOutbox.swift"
+      ],
+      "gap": "Marked a dash for A07. Outbox idempotency is covered under DAT/INT.",
+      "test_set": "n/a"
+    },
+    "PRO-004": {
+      "matrix": "R",
+      "status": "Implemented",
+      "evidence": [
+        "docs/VALIDATION_PROFILE.md",
+        "contracts/validation-profile.json"
+      ],
+      "gap": "Profile added in this change. Owner and approver sign-off are still pending.",
+      "test_set": "TC-PRO-01"
+    },
+    "SCI-001": {
+      "matrix": "C",
+      "status": "Implemented",
+      "evidence": [
+        "APGI-Explorer/Core/APGIScorer.swift",
+        "Tests/ExplorerCoreTests/ScorerTests.swift",
+        "docs/COMPATIBILITY_MATRIX_ENTRY.md"
+      ],
+      "gap": "APGIScorer is an instrument scoring key, not an equation implementation. Parent matrix copy (S1-CMP-01.4) is external.",
+      "test_set": "TC-SCI-01"
+    },
+    "SCI-002": {
+      "matrix": "R",
+      "status": "Not applicable (declared)",
+      "evidence": [
+        "docs/VALIDATION_PROFILE.md"
+      ],
+      "gap": "Explorer implements no dynamic threshold equation. Exclusion needs owner approval in the profile.",
+      "test_set": "TC-SCI-01"
+    },
+    "SCI-003": {
+      "matrix": "R",
+      "status": "Not applicable (declared)",
+      "evidence": [
+        "docs/VALIDATION_PROFILE.md"
+      ],
+      "gap": "No timescale hierarchy implemented. Exclusion needs owner approval.",
+      "test_set": "TC-SCI-03"
+    },
+    "SCI-004": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "contracts/identifiers.json",
+        "APGI-Explorer/Core/ScoreLabels.swift",
+        "scripts/language_policy.py"
+      ],
+      "gap": "Display labels are descriptive and policy-checked. The controlled Notation Appendix is external; symbol-to-notation map not yet verified.",
+      "test_set": "TC-SCI-04"
+    },
+    "SCI-005": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "contracts/explorer-instrument-pin.json",
+        "APGI-Explorer/Core/APGIScorer.swift"
+      ],
+      "gap": "Scoring constants (1-4 responses, 12.5-87.5 display scale) are documented in code. No provenance label registry (derived/calibrated/assumed) exists.",
+      "test_set": "TC-SCI-04"
+    },
+    "SCI-006": {
+      "matrix": "R",
+      "status": "Implemented",
+      "evidence": [
+        "scripts/language_policy.py",
+        "contracts/identifiers.json"
+      ],
+      "gap": "Canonical name enforced by the language policy gate. Archive and remote metadata not verified.",
+      "test_set": "TC-SCI-04"
+    },
+    "SCI-007": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "scripts/language_policy.py",
+        "APGI-Explorer/Core/ScoreLabels.swift",
+        "docs/EXPLORER_AUDIT.md"
+      ],
+      "gap": "User-visible text is label-policed and framed as exploratory. No CLM-nnn claim register or statement-to-claim map yet; that register is external.",
+      "test_set": "TC-SCI-05"
+    },
+    "REP-001": {
+      "matrix": "C",
+      "status": "Implemented",
+      "evidence": [
+        "contracts/release-hashes.json",
+        "contracts/explorer-instrument-pin.json",
+        "scripts/check_explorer_contracts.py"
+      ],
+      "gap": "Instrument bank and contract artifacts are SHA-256 pinned and CI-verified. Protocol lock and OpenTimestamps proof are external.",
+      "test_set": "TC-REP-01"
+    },
+    "REP-002": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "Tests/ExplorerCoreTests/Fixtures/canonical-vectors.json",
+        "scripts/generate_swift_vectors.py"
+      ],
+      "gap": "Scorer is deterministic with no randomness. Shared Swift/Python vectors are reproducible. Cross-platform numerical comparison is limited to the portable Linux job.",
+      "test_set": "TC-REP-02"
+    },
+    "REP-003": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [],
+      "gap": "Marked a dash for A07. Explorer performs no power or sample-size calculation.",
+      "test_set": "n/a"
+    },
+    "REP-004": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [
+        "APGI-Explorer/Core/APGIScorer.swift"
+      ],
+      "gap": "Marked a dash for A07. Personal snapshots carry analysis_mode=exploratory.",
+      "test_set": "n/a"
+    },
+    "REP-005": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [],
+      "gap": "Marked a dash for A07.",
+      "test_set": "n/a"
+    },
+    "IMP-001": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        ".swift-version",
+        "Package.swift",
+        "contracts/release-hashes.json"
+      ],
+      "gap": "Source commit and contract hashes are pinned. No release-bound build record, artifact digests or SBOM for a candidate.",
+      "test_set": "TC-IMP-01"
+    },
+    "IMP-002": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "scripts/run_secret_scan.py",
+        ".gitleaks.toml",
+        "APGI-Explorer/Services/KeychainManager.swift",
+        "scripts/verify_app_entitlements.py"
+      ],
+      "gap": "Secret scan, Keychain storage and sandbox entitlement verification exist. Production-credential review against deployed auth is pending.",
+      "test_set": "TC-IMP-01"
+    },
+    "IMP-003": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/CrashReportingManager.swift",
+        "docs/RUNTIME_VERIFICATION.md"
+      ],
+      "gap": "Crash reporting exists. No fault-injection evidence that operational alerts and handoff work.",
+      "test_set": "TC-IMP-01"
+    },
+    "DAT-001": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/APGIScorer.swift",
+        "Tests/ExplorerCoreTests/ScorerTests.swift",
+        "Tests/ExplorerCoreTests/Fixtures/item-bank.json"
+      ],
+      "gap": "Scorer rejects incomplete, unknown-ID and out-of-range input. Golden dataset approval by the scientific authority is pending.",
+      "test_set": "TC-DAT-01"
+    },
+    "DAT-002": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [
+        "Tests/ExplorerCoreTests/OutboxTests.swift"
+      ],
+      "gap": "Marked a dash for A07. Outbox duplicate and lost-ack handling is tested anyway.",
+      "test_set": "n/a"
+    },
+    "DAT-003": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/FileStorageManager.swift",
+        "APGI-Explorer/UserDataExport.swift",
+        "APGI-Explorer/Core/ResearchOutbox.swift"
+      ],
+      "gap": "Local deletion and export exist. No approved per-data-class retention and recovery rules.",
+      "test_set": "TC-DAT-03"
+    },
+    "DAT-004": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "contracts/explorer-instrument-pin.json",
+        "contracts/release-hashes.json",
+        "APGI-Explorer/Core/ResearchContract.swift"
+      ],
+      "gap": "Instrument bank is versioned, checksummed and bound to every research event. License and full processing history are not recorded in results.",
+      "test_set": "TC-DAT-04"
+    },
+    "API-001": {
+      "matrix": "C",
+      "status": "Implemented",
+      "evidence": [
+        "contracts/openapi-v1.json",
+        "contracts/api-contract-pin.json",
+        "scripts/generate_api_client.py",
+        "scripts/check_api_contract_pin.py"
+      ],
+      "gap": "Generated catalogs are checked against the pinned OpenAPI snapshot and the apgi-api commit. Deployed consumer-contract evidence is pending.",
+      "test_set": "TC-API-01"
+    },
+    "API-002": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/ResearchCredentials.swift",
+        "APGI-Explorer/Services/Research/ResearchKeychainCredentialStore.swift"
+      ],
+      "gap": "Device-local credentials and refresh rotation exist. Live authorization review pending; research disabled.",
+      "test_set": "TC-SEC-01"
+    },
+    "API-003": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Services/KeychainManager.swift",
+        ".gitleaks.toml",
+        "contracts/proposed-PrivacyInfo.research.xcprivacy"
+      ],
+      "gap": "Tokens live in Keychain, the transport rejects non-HTTPS origins, secret scan in CI. At-rest encryption of local session data is not separately evidenced.",
+      "test_set": "TC-SEC-01"
+    },
+    "API-004": {
+      "matrix": "C",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/APITransport.swift",
+        "APGI-Explorer/Services/ExplorerAPIStatus.swift"
+      ],
+      "gap": "Errors are surfaced as named states. Redaction of server excerpts needs a test.",
+      "test_set": "TC-API-02"
+    },
+    "INT-001": {
+      "matrix": "R",
+      "status": "Implemented",
+      "evidence": [
+        "contracts/explorer-research-v1.json",
+        "contracts/api-contract-pin.json",
+        "Tests/ExplorerCoreTests/TypedSchemaTests.swift",
+        "Tests/ExplorerCoreTests/Fixtures/upload-vectors.json"
+      ],
+      "gap": "Sealed research contract is hash-pinned to apgi-api and shared vectors match. Protocol-version field requirement awaits the canonical schemas.",
+      "test_set": "TC-INT-01"
+    },
+    "INT-002": {
+      "matrix": "R",
+      "status": "Blocked",
+      "evidence": [
+        "Tests/ExplorerCoreTests/WorkflowTests.swift"
+      ],
+      "gap": "Needs a pinned release set across all components. Only an in-memory API simulation exists.",
+      "test_set": "TC-INT-01"
+    },
+    "INT-003": {
+      "matrix": "R",
+      "status": "Implemented",
+      "evidence": [
+        "APGI-Explorer/Core/APGIScorer.swift",
+        "Tests/ExplorerCoreTests/Fixtures/score-allowlist.json",
+        "Tests/ExplorerCoreTests/ScorerTests.swift"
+      ],
+      "gap": "Scorer returns explicit errors; research scores outside the allow-list are rejected. No substitute values.",
+      "test_set": "TC-INT-01"
+    },
+    "INT-004": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "Tests/ExplorerCoreTests/Fixtures/score-allowlist.json",
+        "Tests/ExplorerCoreTests/ScorerTests.swift"
+      ],
+      "gap": "Displayed values come from the scorer or the allow-listed server score. Retained comparison at displayed precision against upstream artifacts is pending.",
+      "test_set": "TC-INT-02"
+    },
+    "REL-001": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        ".github/workflows/release.yml",
+        ".github/required-checks.json"
+      ],
+      "gap": "CI definitions exist. Branch protection is not enforced and no approved immutable candidate record exists.",
+      "test_set": "TC-REL-01"
+    },
+    "REL-002": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "README.md",
+        "docs/MERGE_CONFLICT_PLAYBOOK.md",
+        "build_and_notarize.sh"
+      ],
+      "gap": "Install and build steps exist. No candidate-specific rollback record.",
+      "test_set": "TC-REL-01"
+    },
+    "REL-003": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "docs/EXPLORER_AUDIT.md",
+        ".github/workflows/ci.yml"
+      ],
+      "gap": "Audit and CI exist. No per-change validation-impact assessment trail.",
+      "test_set": "TC-REG-01"
+    },
+    "REL-004": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "docs/COMPATIBILITY_MATRIX_ENTRY.md",
+        "contracts/api-contract-pin.json"
+      ],
+      "gap": "App 1.0, bank 1.0.0 and pinned contract are recorded. Compatibility with Protocol v1.2 is not claimed or tested.",
+      "test_set": "TC-REL-02"
+    },
+    "REL-005": {
+      "matrix": "R",
+      "status": "Blocked",
+      "evidence": [],
+      "gap": "No release certificate or archival deposit plan. Certificate-before-deposit rule needs an owner and process.",
+      "test_set": "TC-REL-02"
+    },
+    "CON-001": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/ResearchWorkflow.swift",
+        "Tests/ExplorerCoreTests/WorkflowTests.swift",
+        "Tests/ExplorerCoreTests/Fixtures/consent-texts-approved-for-test.json"
+      ],
+      "gap": "Four-purpose versioned consent validation blocks enrolment and upload. Consent texts are drafts and research is disabled pending S1-PRV-06 approval.",
+      "test_set": "TC-CON-01"
+    },
+    "CON-002": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/ResearchOutbox.swift",
+        "Tests/ExplorerCoreTests/OutboxTests.swift"
+      ],
+      "gap": "Local copy is deleted only after server_verified acknowledgement. Server-side withdrawal orchestration and backup policy are external.",
+      "test_set": "TC-CON-02"
+    },
+    "ACQ-001": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [],
+      "gap": "Explorer performs no hardware acquisition.",
+      "test_set": "n/a"
+    },
+    "VAL-001": {
+      "matrix": "–",
+      "status": "Not applicable",
+      "evidence": [],
+      "gap": "Explorer makes no registered validation decision.",
+      "test_set": "n/a"
+    },
+    "CLI-001": {
+      "matrix": "R",
+      "status": "Partial",
+      "evidence": [
+        "APGI-Explorer/Core/APGIScorer.swift",
+        "APGI-Explorer/AccessibilityManager.swift",
+        "APGI-Explorer/PrivacyPolicyView.swift",
+        "APGI-Explorer/Info.plist",
+        "APGI-ExplorerUITests/APGI_ExplorerUITests.swift"
+      ],
+      "gap": "Reference scoring, privacy manifest and accessibility support exist. The declared accessibility level is [CONFIRM] and no accessibility report is retained.",
+      "test_set": "TC-CLI-01"
+    }
+  }
+}
